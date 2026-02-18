@@ -1,0 +1,166 @@
+version: '3.8'
+
+services:
+  # Nginx Reverse Proxy with SSL
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: budget_nginx
+    restart: unless-stopped
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - /mnt/user/appdata/budget-app/ssl:/etc/nginx/ssl:ro
+      - /mnt/user/appdata/budget-app/logs/nginx:/var/log/nginx
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - budget_public
+    environment:
+      - TZ=America/New_York
+
+  # Frontend (React Production Build)
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=production
+        - VITE_API_URL=/api/v1
+    container_name: budget_frontend
+    restart: unless-stopped
+    networks:
+      - budget_public
+    environment:
+      - NODE_ENV=production
+
+  # Backend API (Production)
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=production
+    container_name: budget_backend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3001:3001"  # Only accessible via nginx
+    volumes:
+      - /mnt/user/appdata/budget-app/logs/backend:/app/logs
+      - /mnt/user/appdata/budget-app/uploads:/app/uploads
+    env_file:
+      - ../secrets/production/.env
+    secrets:
+      - db_password
+      - jwt_secret
+      - encryption_key
+      - password_pepper
+      - redis_password
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - budget_private
+      - budget_public
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # MariaDB with Encryption
+  mariadb:
+    build:
+      context: ./mariadb
+      dockerfile: Dockerfile
+    container_name: budget_mariadb
+    restart: unless-stopped
+    volumes:
+      - /mnt/user/appdata/budget-app/mariadb/data:/var/lib/mysql
+      - /mnt/user/appdata/budget-app/mariadb/backups:/backups
+      - /mnt/user/appdata/budget-app/mariadb/keys:/etc/mysql/encryption:ro
+    env_file:
+      - ../secrets/production/.env.db
+    secrets:
+      - db_root_password
+      - db_encryption_key
+    networks:
+      - budget_private
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --plugin-load-add=file_key_management
+      - --file-key-management-filename=/etc/mysql/encryption/keyfile.enc
+      - --innodb-encrypt-tables=ON
+      - --innodb-encrypt-log=ON
+      - --innodb-encryption-threads=4
+      - --encrypt-tmp-disk-tables=ON
+      - --encrypt-tmp-files=ON
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Redis for Session Management
+  redis:
+    image: redis:7-alpine
+    container_name: budget_redis
+    restart: unless-stopped
+    volumes:
+      - /mnt/user/appdata/budget-app/redis/data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    secrets:
+      - redis_password
+    networks:
+      - budget_private
+    command: sh -c 'redis-server /usr/local/etc/redis/redis.conf --requirepass "$$(cat /run/secrets/redis_password)"'
+    healthcheck:
+      test: ["CMD", "sh", "-c", "redis-cli -a $$(cat /run/secrets/redis_password) ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  budget_public:
+    driver: bridge
+    name: budget_public_network
+  budget_private:
+    driver: bridge
+    name: budget_private_network
+    internal: true  # No external access
+
+secrets:
+  db_password:
+    file: ../secrets/production/db_password.txt
+  db_root_password:
+    file: ../secrets/production/db_root_password.txt
+  db_encryption_key:
+    file: ../secrets/production/db_encryption_key.txt
+  jwt_secret:
+    file: ../secrets/production/jwt_secret.txt
+  encryption_key:
+    file: ../secrets/production/encryption_key.txt
+  password_pepper:
+    file: ../secrets/production/password_pepper.txt
+  redis_password:
+    file: ../secrets/production/redis_password.txt
+
+volumes:
+  mariadb_data:
+    name: budget_mariadb_data
+  redis_data:
+    name: budget_redis_data

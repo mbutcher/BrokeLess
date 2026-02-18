@@ -1,0 +1,424 @@
+# Auth paths — to be merged into openapi.yaml paths section.
+# All paths are relative to /api/v1 (the base server path).
+# Rate limiting: auth endpoints 5 req/15min; all routes 100 req/15min.
+
+components:
+  schemas:
+    PublicUser:
+      type: object
+      required: [id, email, totpEnabled, webauthnEnabled, emailVerified, createdAt]
+      properties:
+        id:          { type: string, format: uuid }
+        email:       { type: string, format: email }
+        totpEnabled: { type: boolean }
+        webauthnEnabled: { type: boolean }
+        emailVerified:   { type: boolean }
+        createdAt:   { type: string, format: date-time }
+
+    Passkey:
+      type: object
+      required: [id, createdAt]
+      properties:
+        id:         { type: string, format: uuid }
+        deviceName: { type: string, nullable: true }
+        transports:
+          type: array
+          nullable: true
+          items: { type: string, enum: [internal, hybrid, ble, usb, nfc] }
+        lastUsedAt: { type: string, format: date-time, nullable: true }
+        createdAt:  { type: string, format: date-time }
+
+    RegisterRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:    { type: string, format: email, maxLength: 254 }
+        password: { type: string, minLength: 12, maxLength: 128 }
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:    { type: string, format: email }
+        password: { type: string }
+
+    LoginResponse:
+      type: object
+      required: [status, data]
+      properties:
+        status: { type: string, enum: [success] }
+        data:
+          oneOf:
+            - description: Full login (no 2FA)
+              required: [accessToken, user]
+              properties:
+                accessToken: { type: string }
+                user:        { $ref: '#/components/schemas/PublicUser' }
+            - description: 2FA required
+              required: [requiresTwoFactor, twoFactorToken, methods]
+              properties:
+                requiresTwoFactor: { type: boolean, enum: [true] }
+                twoFactorToken:    { type: string, description: Short-lived JWT (5 min) for 2FA completion }
+                methods:
+                  type: array
+                  items: { type: string, enum: [totp, webauthn] }
+
+    AuthResponse:
+      type: object
+      required: [status, data]
+      properties:
+        status: { type: string, enum: [success] }
+        data:
+          required: [accessToken, user]
+          properties:
+            accessToken: { type: string, description: JWT (15 min); store in memory only }
+            user:        { $ref: '#/components/schemas/PublicUser' }
+
+    TotpSetupResponse:
+      type: object
+      required: [status, data]
+      properties:
+        status: { type: string, enum: [success] }
+        data:
+          required: [qrCodeDataUrl, otpauthUrl, secret]
+          properties:
+            qrCodeDataUrl: { type: string, description: data:image/png;base64 }
+            otpauthUrl:    { type: string, description: otpauth:// URI for manual entry }
+            secret:        { type: string, description: Base32 secret (show once) }
+
+paths:
+  /auth/register:
+    post:
+      summary: Register a new account
+      tags: [Authentication]
+      security: []
+      x-rateLimit: auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '201':
+          description: Account created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    properties:
+                      user: { $ref: '#/components/schemas/PublicUser' }
+        '409': { description: Email already registered (generic message to prevent enumeration) }
+        '422': { $ref: 'openapi.yaml#/components/responses/ValidationError' }
+        '429': { $ref: 'openapi.yaml#/components/responses/RateLimitError' }
+
+  /auth/login:
+    post:
+      summary: Authenticate with email and password
+      description: |
+        Returns either:
+        - Full tokens (no 2FA): `{ accessToken, user }`
+        - 2FA required: `{ requiresTwoFactor: true, twoFactorToken, methods }`
+
+        The refresh token is set as an **httpOnly cookie** scoped to `/api/v1/auth`.
+        The access token is returned in the response body and must be stored **in memory only**.
+      tags: [Authentication]
+      security: []
+      x-rateLimit: auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Login successful or 2FA required
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LoginResponse' }
+        '401': { description: Invalid credentials (generic — does not reveal whether email exists) }
+        '429': { $ref: 'openapi.yaml#/components/responses/RateLimitError' }
+
+  /auth/logout:
+    post:
+      summary: Revoke current session
+      description: Revokes the refresh token cookie for this device. Access token expires naturally.
+      tags: [Authentication]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Logged out }
+        '401': { $ref: 'openapi.yaml#/components/responses/UnauthorizedError' }
+
+  /auth/logout-all:
+    post:
+      summary: Revoke all sessions
+      description: Revokes all refresh tokens for this user across all devices.
+      tags: [Authentication]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: All sessions revoked }
+        '401': { $ref: 'openapi.yaml#/components/responses/UnauthorizedError' }
+
+  /auth/refresh:
+    post:
+      summary: Rotate the refresh token
+      description: |
+        Exchanges the httpOnly refresh token cookie for a new access token + rotated refresh cookie.
+
+        **Reuse detection**: if a previously revoked token is presented, all user sessions
+        are immediately killed and a security event is logged.
+      tags: [Authentication]
+      security: []
+      x-cookieRequired: refreshToken
+      x-rateLimit: auth
+      responses:
+        '200':
+          description: Tokens rotated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '401': { description: Refresh token missing, expired, or revoked }
+        '429': { $ref: 'openapi.yaml#/components/responses/RateLimitError' }
+
+  /auth/me:
+    get:
+      summary: Get current user profile
+      tags: [Authentication]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    properties:
+                      user: { $ref: '#/components/schemas/PublicUser' }
+        '401': { $ref: 'openapi.yaml#/components/responses/UnauthorizedError' }
+
+  /auth/totp/setup:
+    post:
+      summary: Generate TOTP secret and QR code
+      description: Returns a secret and QR code for display. Secret is NOT persisted until confirmed.
+      tags: [Authentication]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: TOTP setup data
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TotpSetupResponse' }
+
+  /auth/totp/confirm:
+    post:
+      summary: Activate TOTP (confirm setup)
+      description: Verifies first TOTP token, persists encrypted secret, returns 8 one-time backup codes.
+      tags: [Authentication]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, pendingSecret]
+              properties:
+                token:         { type: string, pattern: '^\d{6}$' }
+                pendingSecret: { type: string, description: Base32 secret from /totp/setup }
+      responses:
+        '200':
+          description: TOTP activated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    properties:
+                      backupCodes:
+                        type: array
+                        items: { type: string }
+                        description: 8 one-time backup codes (shown once — save immediately)
+
+  /auth/totp/verify:
+    post:
+      summary: Complete login with TOTP code
+      description: |
+        Second factor for the login flow. Requires the `twoFactorToken` from `/auth/login`
+        as `Authorization: Bearer <twoFactorToken>`.
+      tags: [Authentication]
+      security: [{ twoFactorAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token: { type: string, pattern: '^\d{6}$' }
+      responses:
+        '200':
+          description: Login complete
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '401': { description: Invalid TOTP code or expired two-factor token }
+
+  /auth/totp/backup-verify:
+    post:
+      summary: Complete login with TOTP backup code
+      description: Uses a one-time backup code instead of TOTP. Each code can only be used once.
+      tags: [Authentication]
+      security: [{ twoFactorAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string, minLength: 8, maxLength: 12 }
+      responses:
+        '200':
+          description: Login complete
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '401': { description: Invalid or already-used backup code }
+
+  /auth/totp:
+    delete:
+      summary: Disable TOTP
+      description: Clears the encrypted TOTP secret and all backup codes.
+      tags: [Authentication]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: TOTP disabled }
+        '409': { description: TOTP is not enabled }
+
+  /auth/webauthn/register/options:
+    post:
+      summary: Get WebAuthn registration options
+      description: Returns PublicKeyCredentialCreationOptions. Challenge stored in Redis (5 min TTL).
+      tags: [Authentication]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Registration options (pass to @simplewebauthn/browser startRegistration) }
+
+  /auth/webauthn/register/verify:
+    post:
+      summary: Complete passkey registration
+      description: Verifies the authenticator response, persists the credential.
+      tags: [Authentication]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [response]
+              properties:
+                response:   { type: object, description: RegistrationResponseJSON from browser }
+                deviceName: { type: string, maxLength: 255, description: Optional label (e.g. "MacBook") }
+      responses:
+        '201':
+          description: Passkey registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    properties:
+                      passkey: { $ref: '#/components/schemas/Passkey' }
+        '409': { description: This passkey is already registered }
+
+  /auth/webauthn/authenticate/options:
+    post:
+      summary: Get WebAuthn authentication options
+      description: |
+        Returns PublicKeyCredentialRequestOptions and a `challengeToken` needed for verify.
+        Challenge stored in Redis (5 min TTL) keyed by the challengeToken.
+      tags: [Authentication]
+      security: []
+      x-rateLimit: auth
+      responses:
+        '200':
+          description: Authentication options + challengeToken
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    description: WebAuthn options merged with { challengeToken }
+
+  /auth/webauthn/authenticate/verify:
+    post:
+      summary: Complete passkey authentication
+      description: Verifies the assertion, issues access + refresh tokens.
+      tags: [Authentication]
+      security: []
+      x-rateLimit: auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [response, challengeToken]
+              properties:
+                response:       { type: object, description: AuthenticationResponseJSON from browser }
+                challengeToken: { type: string, description: Token from /authenticate/options }
+      responses:
+        '200':
+          description: Authenticated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '401': { description: Passkey verification failed or challenge expired }
+
+  /auth/passkeys:
+    get:
+      summary: List registered passkeys
+      tags: [Authentication]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: User's passkeys (public key bytes excluded)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    properties:
+                      passkeys:
+                        type: array
+                        items: { $ref: '#/components/schemas/Passkey' }
+
+  /auth/passkeys/{id}:
+    delete:
+      summary: Delete a passkey
+      tags: [Authentication]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200': { description: Passkey removed }
+        '404': { description: Passkey not found or does not belong to this user }

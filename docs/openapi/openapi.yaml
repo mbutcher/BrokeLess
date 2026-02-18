@@ -1,0 +1,332 @@
+openapi: 3.0.3
+info:
+  title: Budget App API
+  description: |
+    Secure personal budgeting application with advanced features like intelligent transfer linking,
+    budget forecasting, and debt tracking.
+
+    ## Features
+    - Multi-factor authentication (2FA, WebAuthn/Passkeys)
+    - Encrypted data storage
+    - SimpleFIN Bridge integration
+    - Budget forecasting with projections
+    - Debt tracking with interest/principal breakdown
+    - Intelligent transfer linking to prevent double-counting
+
+    ## Authentication
+    This API uses JWT bearer tokens for authentication. Include the token in the Authorization header:
+    ```
+    Authorization: Bearer <your-token>
+    ```
+
+    Obtain tokens via the `/api/v1/auth/login` endpoint.
+
+    ## Rate Limiting
+    - Standard endpoints: 100 requests per 15 minutes
+    - Authentication endpoints: 5 requests per 15 minutes
+
+    ## Encryption
+    All sensitive data is encrypted at rest and in transit. Fields marked as "encrypted" in schemas
+    are automatically encrypted before storage and decrypted on retrieval.
+
+  version: 1.0.0
+  contact:
+    name: Budget App Support
+    url: https://github.com/yourusername/budget-app
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3001/api/v1
+    description: Development server
+  - url: https://budget.local/api/v1
+    description: Production server (Unraid)
+
+tags:
+  - name: Authentication
+    description: User registration, login, and session management
+  - name: Users
+    description: User profile and settings management
+  - name: Accounts
+    description: Bank accounts, credit cards, and financial account management
+  - name: Transactions
+    description: Transaction entry, categorization, and management
+  - name: Transfers
+    description: Linked transfer management to prevent double-counting
+  - name: Categories
+    description: Transaction categories and subcategories
+  - name: Budgets
+    description: Budget creation, tracking, and forecasting
+  - name: Debts
+    description: Debt tracking with interest/principal breakdown
+  - name: SimpleFIN
+    description: SimpleFIN Bridge integration for automated bank sync
+  - name: Analytics
+    description: Spending analysis and financial insights
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from /auth/login endpoint
+
+  schemas:
+    Error:
+      type: object
+      required:
+        - status
+        - message
+      properties:
+        status:
+          type: string
+          enum: [error, fail]
+          description: Error status indicator
+        message:
+          type: string
+          description: Human-readable error message
+        code:
+          type: string
+          description: Machine-readable error code
+        details:
+          type: object
+          description: Additional error details
+      example:
+        status: error
+        message: Invalid credentials
+        code: AUTH_INVALID_CREDENTIALS
+
+    ValidationError:
+      type: object
+      required:
+        - status
+        - message
+        - errors
+      properties:
+        status:
+          type: string
+          enum: [fail]
+        message:
+          type: string
+          example: Validation failed
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                example: email
+              message:
+                type: string
+                example: Invalid email format
+              code:
+                type: string
+                example: INVALID_FORMAT
+
+    SuccessResponse:
+      type: object
+      required:
+        - status
+        - message
+      properties:
+        status:
+          type: string
+          enum: [success]
+        message:
+          type: string
+        data:
+          type: object
+      example:
+        status: success
+        message: Operation completed successfully
+        data: {}
+
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+          description: Current page number
+        limit:
+          type: integer
+          example: 20
+          description: Items per page
+        total:
+          type: integer
+          example: 150
+          description: Total number of items
+        totalPages:
+          type: integer
+          example: 8
+          description: Total number of pages
+        hasNext:
+          type: boolean
+          example: true
+          description: Whether there is a next page
+        hasPrev:
+          type: boolean
+          example: false
+          description: Whether there is a previous page
+
+  responses:
+    UnauthorizedError:
+      description: Unauthorized - Invalid or missing authentication token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            status: error
+            message: Authentication token is missing or invalid
+            code: AUTH_UNAUTHORIZED
+
+    ForbiddenError:
+      description: Forbidden - User doesn't have permission for this resource
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            status: error
+            message: You don't have permission to access this resource
+            code: AUTH_FORBIDDEN
+
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            status: error
+            message: Resource not found
+            code: NOT_FOUND
+
+    ValidationError:
+      description: Validation error - Invalid input data
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationError'
+
+    RateLimitError:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            status: error
+            message: Too many requests, please try again later
+            code: RATE_LIMIT_EXCEEDED
+
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            status: error
+            message: An unexpected error occurred
+            code: INTERNAL_ERROR
+
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      description: Page number for pagination
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      example: 1
+
+    LimitParam:
+      name: limit
+      in: query
+      description: Number of items per page
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      example: 20
+
+    SortParam:
+      name: sort
+      in: query
+      description: Sort field and direction (prefix with - for descending)
+      schema:
+        type: string
+      example: -createdAt
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Check if the API is healthy and all dependencies are accessible
+      tags:
+        - System
+      security: []
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok, degraded]
+                  timestamp:
+                    type: string
+                    format: date-time
+                  uptime:
+                    type: number
+                    description: Server uptime in seconds
+                  checks:
+                    type: object
+                    properties:
+                      database:
+                        type: string
+                        enum: [ok, error]
+                      redis:
+                        type: string
+                        enum: [ok, error]
+              example:
+                status: ok
+                timestamp: '2026-02-13T10:30:00Z'
+                uptime: 3600
+                checks:
+                  database: ok
+                  redis: ok
+        '503':
+          description: Service unavailable - One or more dependencies are down
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [degraded, error]
+                  checks:
+                    type: object
+
+# Import path definitions from separate files
+# Paths will be defined in separate YAML files for better organization
+# Import them here as they are created:
+# - auth.yaml
+# - accounts.yaml
+# - transactions.yaml
+# - budgets.yaml
+# - debts.yaml

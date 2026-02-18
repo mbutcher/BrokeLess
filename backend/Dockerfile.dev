@@ -1,0 +1,17 @@
+FROM node:20-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Install dependencies
+COPY package*.json ./
+RUN npm install
+
+# Copy source code (will be overridden by volume mount)
+COPY . .
+
+# Expose ports
+EXPOSE 3001 9229
+
+# Start development server with hot reload
+CMD ["npm", "run", "dev"]

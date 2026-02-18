@@ -1,0 +1,107 @@
+version: '3.8'
+
+services:
+  # Backend API (Development)
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile.dev
+    container_name: budget_backend_dev
+    ports:
+      - "3001:3001"
+      - "9229:9229"  # Node.js debugger
+    volumes:
+      - ../backend:/app
+      - /app/node_modules  # Prevent overwriting node_modules
+      - ../secrets/development:/app/secrets:ro
+    env_file:
+      - ../secrets/development/.env
+    environment:
+      - NODE_ENV=development
+      - DEBUG=budget:*
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - budget_dev
+    command: npm run dev
+    restart: unless-stopped
+
+  # Frontend (Development)
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile.dev
+    container_name: budget_frontend_dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:3001
+      - CHOKIDAR_USEPOLLING=true
+    networks:
+      - budget_dev
+    command: npm run dev
+    restart: unless-stopped
+
+  # MariaDB (Development)
+  mariadb:
+    image: mariadb:11.2
+    container_name: budget_mariadb_dev
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_dev_data:/var/lib/mysql
+      - ../docker/mariadb/init:/docker-entrypoint-initdb.d:ro
+    environment:
+      - MYSQL_ROOT_PASSWORD=dev_root_pass
+      - MYSQL_DATABASE=budget_app
+      - MYSQL_USER=budget_user
+      - MYSQL_PASSWORD=dev_pass
+      - TZ=America/New_York
+    networks:
+      - budget_dev
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # Redis (Development)
+  redis:
+    image: redis:7-alpine
+    container_name: budget_redis_dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_dev_data:/data
+    networks:
+      - budget_dev
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+networks:
+  budget_dev:
+    driver: bridge
+    name: budget_dev_network
+
+volumes:
+  mariadb_dev_data:
+    name: budget_mariadb_dev_data
+  redis_dev_data:
+    name: budget_redis_dev_data
