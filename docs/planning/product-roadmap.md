@@ -1,7 +1,7 @@
 # BudgetApp — Product Development Roadmap
 
 **Last updated:** 2026-02-24
-**Status:** Phase 9 complete; i18n and user preferences shipped
+**Status:** Phase 10 complete; development & test data infrastructure shipped
 
 ---
 
@@ -107,13 +107,31 @@ BudgetApp is a secure, self-hosted personal budgeting application designed for d
 - **9.5 Component updates:** `AppLayout` nav uses `useTranslation()` for all labels; `BudgetLineRow`, `BudgetLineGroup`, `BudgetSummaryBar`, `AccountCard`, `DashboardPage` all migrated from `formatCurrency` import to `useFormatters().currency`
 - **9.6 PreferencesPage:** Full rewrite — 6 sections: Language (locale, `fr-CA` disabled "Coming soon"), Default Currency, Date Format, Time Format (radio), Timezone (grouped IANA optgroup select built from `Intl.supportedValuesOf('timeZone')`), Start of Week; single Save button sends all fields in one `PATCH`
 
+### Phase 10 — Development & Test Data Infrastructure
+**Status:** Complete (2026-02-24)
+
+- **10.1 Seed file:** `backend/src/database/seeds/dev_seed.ts` — single comprehensive seed; covers every entity type in the schema
+- **10.2 Environment guard:** Seed refuses to run when `NODE_ENV` is `production` or `staging`; throws with a clear error message
+- **10.3 Two test users:**
+  - `alpha@test.local / test123` — Canadian profile (CAD, en-CA, America/Toronto, biweekly pay period)
+  - `beta@test.local / test123` — American profile (USD, en-US, America/New_York, semi-monthly pay period)
+- **10.4 Account coverage:** 10 accounts across both users — checking, savings, credit card, loan, investment; realistic starting and current balances; interest rates set on savings and loan accounts
+- **10.5 Category hierarchy:** 13 top-level + ~40 subcategories per user (Housing, Food & Dining, Transportation, Healthcare, Personal Care, Entertainment, Shopping, Financial, Subscriptions, Transfers, Miscellaneous, Employment, Other Income)
+- **10.6 Budget lines:** All 7 frequency types covered — `weekly`, `biweekly`, `semi_monthly`, `monthly`, `every_n_days`, `annually`, `one_time`; both pay period anchors set
+- **10.7 Transaction history:** ~170 transactions for Alpha (Sep 2025 → Feb 2026), ~95 for Beta (Nov 2025 → Feb 2026); includes recurring income/expenses, credit card charges, credit card payment transfers, savings transfers, annual one-off payments, holiday shopping
+- **10.8 Transfer links:** All credit card payment pairs and savings transfer pairs linked via `transaction_links` with correct `link_type`
+- **10.9 Debt payment splits:** All car loan and student loan payments have `transaction_splits` rows with principal/interest breakdown following correct amortization schedule
+- **10.10 Savings goals & debt schedules:** 4 savings goals and 2 debt schedules with full field coverage
+- **10.11 Idempotent:** Truncates all seed-managed tables before inserting; running twice produces a clean, identical dataset
+- **10.12 npm scripts:** `seed` / `seed:dev` (truncate + reload), `seed:fresh` (rollback all → migrate → seed)
+
 ---
 
 ## Upcoming Phases
 
 ---
 
-### Phase 10 — Enhanced Reports & Analytics
+### Phase 11 — Enhanced Reports & Analytics
 **Priority:** High
 **Estimated scope:** Medium
 
@@ -122,21 +140,21 @@ Extend the reporting layer with category-level drill-down, net worth history, an
 
 #### Feature Specs
 
-**10.1 Spending by Category**
+**11.1 Spending by Category**
 - Pie/donut chart: spending per category for a configurable date range
 - Drill-down to subcategory level
 - Toggle between expense categories and income categories
 
-**10.2 Net Worth Over Time**
+**11.2 Net Worth Over Time**
 - Line chart: monthly net worth snapshots stored in `net_worth_snapshots` table
 - Background job or on-demand snapshot via `POST /reports/net-worth/snapshot`
 - Display alongside income/expenses chart on Dashboard
 
-**10.3 Top Payees**
+**11.3 Top Payees**
 - Bar chart: top N payees by total spend for a configurable period
 - Requires decrypting payee field at query time — consider a plaintext search index if performance is a concern
 
-**10.4 Recurring Transactions**
+**11.4 Recurring Transactions**
 - `recurring_transactions` table: template transaction, frequency, next_due_date, end_date
 - Cron job generates actual transactions when due date is reached (idempotent via `next_due_date` advancement)
 - UI to create/edit/pause/delete recurring transactions; "Skip this occurrence" action
@@ -147,16 +165,17 @@ Extend the reporting layer with category-level drill-down, net worth history, an
 - [ ] Recurring transactions are generated on schedule without duplication
 
 #### Notes
-- **10.2 Net worth chart** requires new `net_worth_snapshots` table — no migration yet
-- **10.4 Recurring transactions** — cron idempotency critical; use `next_due_date` advancement, not delete-and-recreate
+- **11.2 Net worth chart** requires new `net_worth_snapshots` table — no migration yet
+- **11.4 Recurring transactions** — cron idempotency critical; use `next_due_date` advancement, not delete-and-recreate
 
 ---
 
-### Phase 11 — Full-Text Transaction Search
+### Phase 12 — Full-Text Transaction Search
 **Priority:** Medium
 **Estimated scope:** Medium
 
 Build a secondary plaintext search index alongside encrypted transaction storage, enabling payee/description search without exposing PII in plaintext at rest.
+
 
 - Dedicated search table (`transaction_search_index`) storing a deterministic hash-based search token or Meilisearch integration
 - `GET /transactions?q=coffee` endpoint

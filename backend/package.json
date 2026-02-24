@@ -19,7 +19,9 @@
     "migrate:make": "knex migrate:make",
     "migrate:rollback": "knex migrate:rollback",
     "migrate:status": "knex migrate:status",
-    "seed": "knex seed:run"
+    "seed": "knex seed:run",
+    "seed:dev": "knex seed:run",
+    "seed:fresh": "node -e \"const e=process.env.NODE_ENV;if(['production','staging'].includes(e))throw new Error('[seed:fresh] Refusing to run in NODE_ENV='+e)\" && knex migrate:rollback --all && knex migrate:latest && knex seed:run"
   },
   "keywords": [
     "budget",
