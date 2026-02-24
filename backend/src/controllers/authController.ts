@@ -88,6 +88,11 @@ class AuthController {
     res.status(200).json({ status: 'success', data: { user } });
   });
 
+  updateProfile = asyncHandler(async (req: Request, res: Response) => {
+    const user = await authService.updateProfile(req.user!.id, req.body);
+    res.status(200).json({ status: 'success', data: { user } });
+  });
+
   // ─── TOTP ─────────────────────────────────────────────────────────────────
 
   totpSetup = asyncHandler(async (req: Request, res: Response) => {

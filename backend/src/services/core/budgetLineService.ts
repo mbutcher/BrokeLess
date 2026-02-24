@@ -1,0 +1,390 @@
+import { budgetLineRepository } from '@repositories/budgetLineRepository';
+import type {
+  BudgetLine,
+  BudgetView,
+  BudgetViewLine,
+  CreateBudgetLineData,
+  Occurrence,
+  PayPeriod,
+  UpdateBudgetLineData,
+} from '@typings/core.types';
+import { categoryRepository } from '@repositories/categoryRepository';
+import { AppError } from '@middleware/errorHandler';
+
+// ─── Schedule math ────────────────────────────────────────────────────────────
+
+/**
+ * Convert a Budget Line amount to its annual equivalent.
+ * Used for prorating to any arbitrary view window.
+ */
+function toAnnual(amount: number, frequency: BudgetLine['frequency'], interval: number | null): number {
+  switch (frequency) {
+    case 'weekly':       return amount * 52;
+    case 'biweekly':     return amount * 26;
+    case 'semi_monthly': return amount * 24;
+    case 'monthly':      return amount * 12;
+    case 'annually':     return amount;
+    case 'every_n_days': return interval && interval > 0 ? amount * (365 / interval) : amount * 12;
+    case 'one_time':     return amount; // handled separately in proration
+  }
+}
+
+/**
+ * Returns the prorated amount for a Budget Line within a view window [start, end].
+ * For one_time: the full amount if anchor_date falls in the window, else 0.
+ */
+function proratedAmount(
+  amount: number,
+  frequency: BudgetLine['frequency'],
+  interval: number | null,
+  anchorDate: Date,
+  windowStart: Date,
+  windowEnd: Date
+): number {
+  if (frequency === 'one_time') {
+    const anchor = anchorDate.getTime();
+    return anchor >= windowStart.getTime() && anchor <= windowEnd.getTime() ? amount : 0;
+  }
+  const daysInWindow = (windowEnd.getTime() - windowStart.getTime()) / 86_400_000 + 1;
+  const annual = toAnnual(amount, frequency, interval);
+  return Math.round((annual * (daysInWindow / 365)) * 100) / 100;
+}
+
+/**
+ * Compute occurrence dates for a Budget Line within [windowStart, windowEnd].
+ * Walks forward from anchor_date using the frequency rule.
+ */
+function computeOccurrences(
+  anchorDate: Date,
+  frequency: BudgetLine['frequency'],
+  interval: number | null,
+  windowStart: Date,
+  windowEnd: Date
+): Date[] {
+  if (frequency === 'one_time') {
+    return anchorDate >= windowStart && anchorDate <= windowEnd ? [anchorDate] : [];
+  }
+
+  const occurrences: Date[] = [];
+
+  // Step function: advance one occurrence period
+  const step = (d: Date): Date => {
+    const next = new Date(d);
+    switch (frequency) {
+      case 'weekly':       next.setUTCDate(next.getUTCDate() + 7);   break;
+      case 'biweekly':     next.setUTCDate(next.getUTCDate() + 14);  break;
+      case 'semi_monthly': {
+        // Alternate between 1st and 15th (or 15th and last-of-month)
+        const day = next.getUTCDate();
+        if (day < 15) {
+          next.setUTCDate(15);
+        } else {
+          next.setUTCMonth(next.getUTCMonth() + 1, 1);
+        }
+        break;
+      }
+      case 'monthly':      next.setUTCMonth(next.getUTCMonth() + 1);  break;
+      case 'every_n_days': next.setUTCDate(next.getUTCDate() + (interval ?? 30)); break;
+      case 'annually':     next.setUTCFullYear(next.getUTCFullYear() + 1); break;
+    }
+    return next;
+  };
+
+  // Walk forward from anchor to collect all occurrences in window
+  let current = new Date(anchorDate);
+  // If anchor is far in the future, bail early
+  if (current > windowEnd) return [];
+
+  while (current <= windowEnd) {
+    if (current >= windowStart) {
+      occurrences.push(new Date(current));
+    }
+    current = step(current);
+  }
+
+  return occurrences;
+}
+
+/**
+ * Given a pay-period anchor Budget Line, compute the start and end of the
+ * pay period that contains `referenceDate` (defaults to today).
+ */
+function computeCurrentPayPeriod(
+  anchorLine: BudgetLine,
+  referenceDate: Date = new Date()
+): { start: Date; end: Date } {
+  const anchor = new Date(anchorLine.anchorDate);
+  const ref = new Date(referenceDate);
+
+  if (anchorLine.frequency === 'one_time') {
+    // Degenerate: use anchor date as single-day period
+    return { start: anchor, end: anchor };
+  }
+
+  const stepMs: number = (() => {
+    switch (anchorLine.frequency) {
+      case 'weekly':       return 7 * 86_400_000;
+      case 'biweekly':     return 14 * 86_400_000;
+      case 'every_n_days': return (anchorLine.frequencyInterval ?? 30) * 86_400_000;
+      default:             return 0; // month-based handled separately
+    }
+  })();
+
+  // Fixed-day-count frequencies
+  if (stepMs > 0) {
+    let periodStart = new Date(anchor);
+    // Walk forward until periodStart > ref
+    while (periodStart.getTime() + stepMs <= ref.getTime()) {
+      periodStart = new Date(periodStart.getTime() + stepMs);
+    }
+    // Walk backward if ref < anchor
+    while (periodStart > ref) {
+      periodStart = new Date(periodStart.getTime() - stepMs);
+    }
+    const periodEnd = new Date(periodStart.getTime() + stepMs - 86_400_000);
+    return { start: periodStart, end: periodEnd };
+  }
+
+  // Month-based frequencies (monthly, semi_monthly, annually)
+  // Find the most recent occurrence on or before ref
+  let current = new Date(anchor);
+  while (current > ref) {
+    // walk back one period
+    switch (anchorLine.frequency) {
+      case 'monthly':      current.setUTCMonth(current.getUTCMonth() - 1);  break;
+      case 'semi_monthly': {
+        const day = current.getUTCDate();
+        if (day >= 15) current.setUTCDate(1);
+        else { current.setUTCMonth(current.getUTCMonth() - 1); current.setUTCDate(15); }
+        break;
+      }
+      case 'annually':     current.setUTCFullYear(current.getUTCFullYear() - 1); break;
+      default: break;
+    }
+  }
+  while (true) {
+    const next = new Date(current);
+    switch (anchorLine.frequency) {
+      case 'monthly':      next.setUTCMonth(next.getUTCMonth() + 1);  break;
+      case 'semi_monthly': {
+        const day = next.getUTCDate();
+        if (day < 15) next.setUTCDate(15);
+        else { next.setUTCMonth(next.getUTCMonth() + 1); next.setUTCDate(1); }
+        break;
+      }
+      case 'annually':     next.setUTCFullYear(next.getUTCFullYear() + 1); break;
+      default: break;
+    }
+    if (next > ref) {
+      const periodEnd = new Date(next.getTime() - 86_400_000);
+      return { start: current, end: periodEnd };
+    }
+    current = next;
+  }
+}
+
+// ─── Service ──────────────────────────────────────────────────────────────────
+
+class BudgetLineService {
+  /**
+   * Validates that categoryId references a top-level Category and, when
+   * provided, that subcategoryId is a direct child of that Category.
+   */
+  private async validateCategoryHierarchy(
+    userId: string,
+    categoryId: string,
+    subcategoryId?: string | null
+  ): Promise<void> {
+    const category = await categoryRepository.findById(categoryId, userId);
+    if (!category) throw new AppError('Category not found', 404);
+    if (category.parentId !== null) {
+      throw new AppError('categoryId must be a top-level Category (not a Subcategory)', 400);
+    }
+
+    if (subcategoryId) {
+      const sub = await categoryRepository.findById(subcategoryId, userId);
+      if (!sub) throw new AppError('Subcategory not found', 404);
+      if (sub.parentId !== categoryId) {
+        throw new AppError('subcategoryId must be a child of the specified categoryId', 400);
+      }
+    }
+  }
+
+  async listBudgetLines(userId: string): Promise<BudgetLine[]> {
+    return budgetLineRepository.findAllForUser(userId);
+  }
+
+  async getBudgetLine(userId: string, id: string): Promise<BudgetLine> {
+    const line = await budgetLineRepository.findById(id, userId);
+    if (!line) throw new AppError('Budget line not found', 404);
+    return line;
+  }
+
+  async createBudgetLine(
+    userId: string,
+    input: Omit<CreateBudgetLineData, 'userId'>
+  ): Promise<BudgetLine> {
+    await this.validateCategoryHierarchy(userId, input.categoryId, input.subcategoryId);
+
+    if (input.isPayPeriodAnchor && input.classification === 'expense') {
+      throw new AppError('isPayPeriodAnchor can only be set on income Budget Lines', 400);
+    }
+
+    // Atomically clear existing anchors and create the new line
+    if (input.isPayPeriodAnchor && input.classification === 'income') {
+      return budgetLineRepository.transaction(async (trx) => {
+        await budgetLineRepository.clearPayPeriodAnchors(userId, trx);
+        return budgetLineRepository.create({ ...input, userId }, trx);
+      });
+    }
+
+    return budgetLineRepository.create({ ...input, userId });
+  }
+
+  async updateBudgetLine(
+    userId: string,
+    id: string,
+    input: UpdateBudgetLineData
+  ): Promise<BudgetLine> {
+    const existing = await budgetLineRepository.findById(id, userId);
+    if (!existing) throw new AppError('Budget line not found', 404);
+
+    if (input.categoryId !== undefined || input.subcategoryId !== undefined) {
+      await this.validateCategoryHierarchy(
+        userId,
+        input.categoryId ?? existing.categoryId,
+        input.subcategoryId
+      );
+    }
+
+    if (input.isPayPeriodAnchor === true) {
+      const effectiveClassification = input.classification ?? existing.classification;
+      if (effectiveClassification !== 'income') {
+        throw new AppError('isPayPeriodAnchor can only be set on income Budget Lines', 400);
+      }
+      // Atomically clear existing anchors and apply the update
+      const updated = await budgetLineRepository.transaction(async (trx) => {
+        await budgetLineRepository.clearPayPeriodAnchors(userId, trx);
+        return budgetLineRepository.update(id, userId, input, trx);
+      });
+      if (!updated) throw new AppError('Budget line not found', 404);
+      return updated;
+    }
+
+    const updated = await budgetLineRepository.update(id, userId, input);
+    if (!updated) throw new AppError('Budget line not found', 404);
+    return updated;
+  }
+
+  async deleteBudgetLine(userId: string, id: string): Promise<void> {
+    const existing = await budgetLineRepository.findById(id, userId);
+    if (!existing) throw new AppError('Budget line not found', 404);
+    await budgetLineRepository.softDelete(id, userId);
+  }
+
+  // ─── Budget View ───────────────────────────────────────────────────────────
+
+  async getBudgetView(userId: string, start: string, end: string): Promise<BudgetView> {
+    const windowStart = new Date(start + 'T00:00:00Z');
+    const windowEnd = new Date(end + 'T23:59:59Z');
+
+    if (windowStart > windowEnd) {
+      throw new AppError('start must be on or before end', 400);
+    }
+
+    const lines = await budgetLineRepository.findAllForUser(userId);
+
+    // Gather all category + subcategory IDs for batch actuals query
+    const expenseCategoryIds = new Set<string>();
+    const incomeCategoryIds = new Set<string>();
+
+    for (const line of lines) {
+      const effectiveId = line.subcategoryId ?? line.categoryId;
+      if (line.classification === 'expense') {
+        expenseCategoryIds.add(effectiveId);
+      } else {
+        incomeCategoryIds.add(effectiveId);
+      }
+    }
+
+    // Fetch actuals for all budget lines in one query each
+    const [expenseActuals, incomeActuals] = await Promise.all([
+      budgetLineRepository.getActuals(userId, [...expenseCategoryIds], start, end),
+      budgetLineRepository.getIncomeActuals(userId, [...incomeCategoryIds], start, end),
+    ]);
+
+    const expenseActualsMap = new Map(expenseActuals.map((a) => [a.categoryId, a.actualAmount]));
+    const incomeActualsMap = new Map(incomeActuals.map((a) => [a.categoryId, a.actualAmount]));
+
+    // Build Budget View Lines
+    const viewLines: BudgetViewLine[] = lines.map((line) => {
+      const anchor = new Date(line.anchorDate + 'T00:00:00Z');
+      const prorated = proratedAmount(
+        line.amount,
+        line.frequency,
+        line.frequencyInterval,
+        anchor,
+        windowStart,
+        windowEnd
+      );
+
+      const effectiveCategoryId = line.subcategoryId ?? line.categoryId;
+      const actualsMap = line.classification === 'income' ? incomeActualsMap : expenseActualsMap;
+      const actual = actualsMap.get(effectiveCategoryId) ?? 0;
+
+      const occurrenceDates = computeOccurrences(
+        anchor,
+        line.frequency,
+        line.frequencyInterval,
+        windowStart,
+        windowEnd
+      );
+
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+
+      const occurrences: Occurrence[] = occurrenceDates.map((d) => ({
+        budgetLineId: line.id,
+        dueDate: d.toISOString().substring(0, 10),
+        expectedAmount: line.amount,
+        status: d <= today ? 'missed' : 'upcoming',
+      }));
+
+      return {
+        budgetLine: line,
+        proratedAmount: prorated,
+        actualAmount: actual,
+        variance: prorated - actual,
+        occurrences,
+      };
+    });
+
+    const expenseLines = viewLines.filter((l) => l.budgetLine.classification === 'expense');
+    const incomeLines = viewLines.filter((l) => l.budgetLine.classification === 'income');
+
+    return {
+      start,
+      end,
+      lines: viewLines,
+      totalProratedIncome: incomeLines.reduce((s, l) => s + l.proratedAmount, 0),
+      totalProratedExpenses: expenseLines.reduce((s, l) => s + l.proratedAmount, 0),
+      totalActualIncome: incomeLines.reduce((s, l) => s + l.actualAmount, 0),
+      totalActualExpenses: expenseLines.reduce((s, l) => s + l.actualAmount, 0),
+    };
+  }
+
+  async getCurrentPayPeriod(userId: string): Promise<PayPeriod | null> {
+    const anchor = await budgetLineRepository.findPayPeriodAnchor(userId);
+    if (!anchor) return null;
+
+    const { start, end } = computeCurrentPayPeriod(anchor);
+    return {
+      start: start.toISOString().substring(0, 10),
+      end: end.toISOString().substring(0, 10),
+      budgetLineId: anchor.id,
+      frequency: anchor.frequency,
+    };
+  }
+}
+
+export const budgetLineService = new BudgetLineService();

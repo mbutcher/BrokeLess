@@ -1,6 +1,6 @@
 import Joi from 'joi';
 
-const ACCOUNT_TYPES = ['checking', 'savings', 'credit_card', 'loan', 'mortgage', 'investment', 'other'];
+const ACCOUNT_TYPES = ['checking', 'savings', 'credit_card', 'loan', 'line_of_credit', 'mortgage', 'investment', 'other'];
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -24,14 +24,22 @@ export const createAccountSchema = Joi.object({
     'string.pattern.base': 'Color must be a valid hex color (e.g. #3b82f6)',
   }),
   institution: Joi.string().max(255).optional().allow(null, ''),
+  annualRate: Joi.number().min(0).max(9.9999).precision(4).optional().allow(null),
 });
 
 export const updateAccountSchema = Joi.object({
   name: Joi.string().max(255),
+  type: Joi.string().valid(...ACCOUNT_TYPES).messages({
+    'any.only': `Account type must be one of: ${ACCOUNT_TYPES.join(', ')}`,
+  }),
+  isAsset: Joi.boolean(),
+  startingBalance: Joi.number().precision(2),
+  currency: Joi.string().length(3).uppercase(),
   color: Joi.string().pattern(HEX_COLOR).allow(null).messages({
     'string.pattern.base': 'Color must be a valid hex color (e.g. #3b82f6)',
   }),
   institution: Joi.string().max(255).allow(null, ''),
+  annualRate: Joi.number().min(0).max(9.9999).precision(4).allow(null),
 }).min(1);
 
 // ─── Category Validators ──────────────────────────────────────────────────────
@@ -194,3 +202,158 @@ export const budgetCategoriesSchema = Joi.object({
       'array.min': 'At least one category allocation is required',
     }),
 });
+
+// ─── Budget Line Validators ───────────────────────────────────────────────────
+
+const BUDGET_LINE_FREQUENCIES = [
+  'weekly', 'biweekly', 'semi_monthly', 'monthly', 'every_n_days', 'annually', 'one_time',
+] as const;
+
+export const createBudgetLineSchema = Joi.object({
+  name: Joi.string().max(100).required().messages({
+    'any.required': 'Budget line name is required',
+  }),
+  classification: Joi.string().valid('income', 'expense').required().messages({
+    'any.required': 'classification is required',
+    'any.only': 'classification must be income or expense',
+  }),
+  flexibility: Joi.string().valid('fixed', 'flexible').required().messages({
+    'any.required': 'flexibility is required',
+    'any.only': 'flexibility must be fixed or flexible',
+  }),
+  categoryId: Joi.string().uuid().required().messages({
+    'any.required': 'categoryId is required',
+    'string.guid': 'categoryId must be a valid UUID',
+  }),
+  subcategoryId: Joi.string().uuid().optional().allow(null),
+  amount: Joi.number().positive().precision(2).required().messages({
+    'any.required': 'amount is required',
+    'number.positive': 'amount must be a positive number',
+  }),
+  frequency: Joi.string().valid(...BUDGET_LINE_FREQUENCIES).required().messages({
+    'any.required': 'frequency is required',
+    'any.only': `frequency must be one of: ${BUDGET_LINE_FREQUENCIES.join(', ')}`,
+  }),
+  frequencyInterval: Joi.number()
+    .integer()
+    .min(1)
+    .when('frequency', { is: 'every_n_days', then: Joi.required() })
+    .optional()
+    .allow(null)
+    .messages({
+      'any.required': 'frequencyInterval is required when frequency is every_n_days',
+      'number.min': 'frequencyInterval must be at least 1',
+    }),
+  anchorDate: Joi.string().pattern(ISO_DATE).required().messages({
+    'any.required': 'anchorDate is required',
+    'string.pattern.base': 'anchorDate must be in YYYY-MM-DD format',
+  }),
+  isPayPeriodAnchor: Joi.boolean().default(false),
+  notes: Joi.string().max(255).optional().allow(null, ''),
+});
+
+export const updateBudgetLineSchema = Joi.object({
+  name: Joi.string().max(100),
+  classification: Joi.string().valid('income', 'expense'),
+  flexibility: Joi.string().valid('fixed', 'flexible'),
+  categoryId: Joi.string().uuid(),
+  subcategoryId: Joi.string().uuid().allow(null),
+  amount: Joi.number().positive().precision(2),
+  frequency: Joi.string().valid(...BUDGET_LINE_FREQUENCIES),
+  frequencyInterval: Joi.number()
+    .integer()
+    .min(1)
+    .when('frequency', { is: 'every_n_days', then: Joi.required() })
+    .allow(null)
+    .messages({
+      'any.required': 'frequencyInterval is required when frequency is every_n_days',
+      'number.min': 'frequencyInterval must be at least 1',
+    }),
+  anchorDate: Joi.string().pattern(ISO_DATE),
+  isPayPeriodAnchor: Joi.boolean(),
+  notes: Joi.string().max(255).allow(null, ''),
+  isActive: Joi.boolean(),
+}).min(1);
+
+export const budgetViewQuerySchema = Joi.object({
+  start: Joi.string().pattern(ISO_DATE).required().messages({
+    'any.required': 'start query param is required (YYYY-MM-DD)',
+    'string.pattern.base': 'start must be in YYYY-MM-DD format',
+  }),
+  end: Joi.string().pattern(ISO_DATE).required().messages({
+    'any.required': 'end query param is required (YYYY-MM-DD)',
+    'string.pattern.base': 'end must be in YYYY-MM-DD format',
+  }),
+});
+
+// ─── SimpleFIN Validators ─────────────────────────────────────────────────────
+
+export const connectSimplefinSchema = Joi.object({
+  setupToken: Joi.string().min(20).required().messages({
+    'any.required': 'SimpleFIN setup token is required',
+    'string.min': 'Setup token appears too short — paste the full token from SimpleFIN Bridge',
+  }),
+});
+
+export const updateSimplefinScheduleSchema = Joi.object({
+  autoSyncEnabled: Joi.boolean().required(),
+  autoSyncIntervalHours: Joi.number().integer().valid(1, 2, 4, 6, 8, 12, 24).required().messages({
+    'any.only': 'Sync interval must be one of: 1, 2, 4, 6, 8, 12, or 24 hours',
+  }),
+  autoSyncWindowStart: Joi.number().integer().min(0).max(23).required().messages({
+    'number.min': 'Window start must be between 0 and 23',
+    'number.max': 'Window start must be between 0 and 23',
+  }),
+  autoSyncWindowEnd: Joi.number().integer().min(0).max(23).required().messages({
+    'number.min': 'Window end must be between 0 and 23',
+    'number.max': 'Window end must be between 0 and 23',
+  }),
+});
+
+export const resolveReviewSchema = Joi.object({
+  action: Joi.string().valid('accept', 'merge', 'discard').required().messages({
+    'any.required': 'action is required',
+    'any.only': 'action must be one of: accept, merge, discard',
+  }),
+  targetTransactionId: Joi.string()
+    .uuid()
+    .when('action', { is: 'merge', then: Joi.required() })
+    .messages({
+      'any.required': 'targetTransactionId is required when action is merge',
+    }),
+});
+
+export const mapAccountSchema = Joi.object({
+  action: Joi.string().valid('create', 'link').required().messages({
+    'any.required': 'action is required',
+    'any.only': 'action must be one of: create, link',
+  }),
+  localAccountId: Joi.string()
+    .uuid()
+    .when('action', { is: 'link', then: Joi.required() })
+    .messages({
+      'any.required': 'localAccountId is required when action is link',
+    }),
+  newAccount: Joi.object({
+    name: Joi.string().max(255).required(),
+    type: Joi.string()
+      .valid('checking', 'savings', 'credit_card', 'loan', 'line_of_credit', 'mortgage', 'investment', 'other')
+      .required(),
+    isAsset: Joi.boolean().required(),
+    currency: Joi.string().length(3).uppercase().default('USD'),
+    color: Joi.string().pattern(HEX_COLOR).optional().allow(null),
+  }).when('action', { is: 'create', then: Joi.required() }),
+});
+
+// ─── User Profile Validators ──────────────────────────────────────────────────
+
+export const updateProfileSchema = Joi.object({
+  defaultCurrency: Joi.string().length(3).uppercase().messages({
+    'string.length': 'defaultCurrency must be a 3-letter currency code (e.g. CAD)',
+  }),
+  locale: Joi.string().max(10),
+  dateFormat: Joi.string().valid('DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD'),
+  timeFormat: Joi.string().valid('12h', '24h'),
+  timezone: Joi.string().max(100),
+  weekStart: Joi.string().valid('sunday', 'monday', 'saturday'),
+}).min(1);

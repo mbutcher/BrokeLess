@@ -5,6 +5,7 @@ export type AccountType =
   | 'savings'
   | 'credit_card'
   | 'loan'
+  | 'line_of_credit'
   | 'mortgage'
   | 'investment'
   | 'other';
@@ -20,6 +21,8 @@ export interface Account {
   currency: string;
   color: string | null;
   institution: string | null;
+  /** Decimal fraction: 0.0525 = 5.25% APR/APY. Null if not set. */
+  annualRate: number | null;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -34,13 +37,19 @@ export interface CreateAccountData {
   currency: string;
   color?: string;
   institution?: string;
+  annualRate?: number;
 }
 
 export interface UpdateAccountData {
   name?: string;
+  type?: AccountType;
+  isAsset?: boolean;
+  startingBalance?: number;
+  currency?: string;
   color?: string | null;
   institution?: string | null;
   isActive?: boolean;
+  annualRate?: number | null;
 }
 
 // ─── Categories ───────────────────────────────────────────────────────────────
@@ -112,6 +121,8 @@ export interface CreateTransactionData {
   notes?: string;
   date: string; // ISO date string 'YYYY-MM-DD'
   categoryId?: string;
+  /** Set when importing from SimpleFIN — used for deduplication on subsequent syncs */
+  simplefinTransactionId?: string;
 }
 
 export interface UpdateTransactionData {
@@ -303,6 +314,119 @@ export interface SavingsGoalProgress {
   projectedDate: string | null; // YYYY-MM-DD
 }
 
+// ─── Budget Lines ─────────────────────────────────────────────────────────────
+
+export type BudgetLineFrequency =
+  | 'weekly'
+  | 'biweekly'
+  | 'semi_monthly'
+  | 'monthly'
+  | 'every_n_days'
+  | 'annually'
+  | 'one_time';
+
+export type BudgetLineClassification = 'income' | 'expense';
+export type BudgetLineFlexibility = 'fixed' | 'flexible';
+
+export interface BudgetLine {
+  id: string;
+  userId: string;
+  name: string;
+  classification: BudgetLineClassification;
+  flexibility: BudgetLineFlexibility;
+  categoryId: string;
+  subcategoryId: string | null;
+  amount: number;
+  frequency: BudgetLineFrequency;
+  /** Only set when frequency = 'every_n_days'. Number of days between occurrences. */
+  frequencyInterval: number | null;
+  /** First/next known occurrence date — establishes the recurrence cycle. YYYY-MM-DD */
+  anchorDate: string;
+  /** True on at most one income Budget Line — drives "This Pay Period" view. */
+  isPayPeriodAnchor: boolean;
+  isActive: boolean;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateBudgetLineData {
+  userId: string;
+  name: string;
+  classification: BudgetLineClassification;
+  flexibility: BudgetLineFlexibility;
+  categoryId: string;
+  subcategoryId?: string | null;
+  amount: number;
+  frequency: BudgetLineFrequency;
+  frequencyInterval?: number | null;
+  anchorDate: string;
+  isPayPeriodAnchor?: boolean;
+  notes?: string | null;
+}
+
+export interface UpdateBudgetLineData {
+  name?: string;
+  classification?: BudgetLineClassification;
+  flexibility?: BudgetLineFlexibility;
+  categoryId?: string;
+  subcategoryId?: string | null;
+  amount?: number;
+  frequency?: BudgetLineFrequency;
+  frequencyInterval?: number | null;
+  anchorDate?: string;
+  isPayPeriodAnchor?: boolean;
+  notes?: string | null;
+  isActive?: boolean;
+}
+
+/**
+ * A specific dated instance of a Budget Line, computed from its Schedule.
+ * MVP: computed on the fly; not persisted.
+ */
+export interface Occurrence {
+  budgetLineId: string;
+  dueDate: string; // YYYY-MM-DD
+  expectedAmount: number;
+  /** upcoming: in the future; missed: due date passed with no matching transaction */
+  status: 'upcoming' | 'missed';
+}
+
+/**
+ * A single row in a Budget View: the prorated plan + actual spend + variance
+ * for one Budget Line within the view window.
+ */
+export interface BudgetViewLine {
+  budgetLine: BudgetLine;
+  /** Budget Line amount normalized to the view window via annual proration. */
+  proratedAmount: number;
+  /** Sum of matching transactions in the category (and subcategory if set) within the window. */
+  actualAmount: number;
+  /** proratedAmount − actualAmount. Negative = overspent (expenses) or under-received (income). */
+  variance: number;
+  /** Occurrences of this Budget Line that fall within the view window. */
+  occurrences: Occurrence[];
+}
+
+/** Computed Budget View — not stored. */
+export interface BudgetView {
+  start: string; // YYYY-MM-DD
+  end: string;   // YYYY-MM-DD
+  lines: BudgetViewLine[];
+  totalProratedIncome: number;
+  totalProratedExpenses: number;
+  totalActualIncome: number;
+  totalActualExpenses: number;
+}
+
+/** The current pay period boundaries, derived from the anchor income Budget Line. */
+export interface PayPeriod {
+  start: string; // YYYY-MM-DD
+  end: string;   // YYYY-MM-DD
+  budgetLineId: string;
+  frequency: BudgetLineFrequency;
+}
+
 // ─── Forecast ─────────────────────────────────────────────────────────────────
 
 export interface ForecastMonth {
@@ -310,4 +434,100 @@ export interface ForecastMonth {
   income: number;
   expenses: number;
   isForecast: true;
+}
+
+// ─── SimpleFIN Integration ────────────────────────────────────────────────────
+
+export interface SimplefinConnection {
+  id: string;
+  userId: string;
+  lastSyncAt: string | null;
+  lastSyncStatus: 'success' | 'error' | 'pending' | null;
+  lastSyncError: string | null;
+  autoSyncEnabled: boolean;
+  autoSyncIntervalHours: number;
+  autoSyncWindowStart: number; // Hour 0–23
+  autoSyncWindowEnd: number;   // Hour 0–23
+  /** JSON array of SimpleFIN tx IDs the user discarded (stored as string, parsed in service) */
+  discardedIdsJson: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  // NOTE: accessUrlEncrypted is stored in DB but NEVER included in this interface
+}
+
+export interface SimplefinAccountMapping {
+  id: string;
+  userId: string;
+  simplefinAccountId: string;
+  simplefinOrgName: string;    // Bank name for display
+  simplefinAccountName: string;
+  simplefinAccountType: string;
+  localAccountId: string | null; // null = not yet mapped by user
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface SimplefinPendingReview {
+  id: string;
+  userId: string;
+  simplefinTransactionId: string;
+  /** Decrypted SimpleFIN transaction JSON — populated by repository before returning to service */
+  rawData: import('./simplefin.types').SimplefinTransaction;
+  candidateTransactionId: string | null;
+  /** Local BudgetApp account this transaction belongs to — set when review is created during sync */
+  localAccountId: string | null;
+  similarityScore: number; // 0.0–1.0
+  createdAt: Date;
+}
+
+export interface SyncResult {
+  imported: number;
+  skipped: number;
+  pendingReviews: number;
+  unmappedAccounts: number;
+}
+
+export interface MapAccountData {
+  action: 'create' | 'link';
+  localAccountId?: string;  // for 'link'
+  newAccount?: {
+    name: string;
+    type: AccountType;
+    isAsset: boolean;
+    currency: string;
+    color?: string;
+  };  // for 'create'
+}
+
+export interface UpdateSimplefinScheduleData {
+  autoSyncEnabled: boolean;
+  autoSyncIntervalHours: number;
+  autoSyncWindowStart: number;
+  autoSyncWindowEnd: number;
+}
+
+// ─── Offline Sync ─────────────────────────────────────────────────────────────
+
+/** Payload returned by GET /api/v1/sync — full or delta snapshot of all user data. */
+export interface SyncPayload {
+  accounts: Account[];
+  categories: Category[];
+  /** Transactions with sensitive fields (payee/description/notes) decrypted */
+  transactions: PublicTransaction[];
+  budgets: Budget[];
+  budgetCategories: BudgetCategory[];
+  savingsGoals: SavingsGoal[];
+  /** ISO 8601 timestamp — client stores this as the cursor for the next delta sync */
+  syncedAt: string;
+}
+
+// ─── Exchange Rates ───────────────────────────────────────────────────────────
+
+export interface ExchangeRate {
+  fromCurrency: string;
+  toCurrency: string;
+  rate: number;
+  fetchedDate: string; // YYYY-MM-DD
+  /** True when rate is older than 24 hours */
+  isStale: boolean;
 }

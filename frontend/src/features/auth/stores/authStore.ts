@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { User, TwoFactorState } from '../types';
+import { clearIndexedDbKey } from '@lib/db/crypto';
 
 interface AuthStore {
   user: User | null;
@@ -31,8 +32,12 @@ export const useAuthStore = create<AuthStore>((set) => ({
   setTwoFactorRequired: (twoFactorToken, methods) =>
     set({ twoFactorState: { twoFactorToken, methods }, isAuthenticated: false }),
 
-  clearAuth: () =>
-    set({ user: null, accessToken: null, twoFactorState: null, isAuthenticated: false }),
+  clearAuth: () => {
+    // Clear the IndexedDB encryption key from memory on logout.
+    // The key lives only in crypto.ts module scope — never in persistent storage.
+    clearIndexedDbKey();
+    set({ user: null, accessToken: null, twoFactorState: null, isAuthenticated: false });
+  },
 
   updateUser: (user) => set({ user }),
 

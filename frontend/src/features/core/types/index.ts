@@ -5,6 +5,7 @@ export type AccountType =
   | 'savings'
   | 'credit_card'
   | 'loan'
+  | 'line_of_credit'
   | 'mortgage'
   | 'investment'
   | 'other';
@@ -20,6 +21,8 @@ export interface Account {
   currency: string;
   color: string | null;
   institution: string | null;
+  /** Decimal fraction: 0.0525 = 5.25% APR/APY. Null if not set. */
+  annualRate: number | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -33,12 +36,19 @@ export interface CreateAccountInput {
   currency: string;
   color?: string;
   institution?: string;
+  annualRate?: number | null;
 }
 
 export interface UpdateAccountInput {
   name?: string;
+  type?: AccountType;
+  isAsset?: boolean;
+  startingBalance?: number;
+  currency?: string;
   color?: string | null;
   institution?: string | null;
+  isActive?: boolean;
+  annualRate?: number | null;
 }
 
 // ─── Categories ───────────────────────────────────────────────────────────────
@@ -174,9 +184,112 @@ export interface UpdateBudgetInput {
   isActive?: boolean;
 }
 
+export interface BudgetCategory {
+  id: string;
+  budgetId: string;
+  categoryId: string;
+  allocatedAmount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface BudgetCategoryEntry {
   categoryId: string;
   allocatedAmount: number;
+}
+
+// ─── Budget Lines ─────────────────────────────────────────────────────────────
+
+export type BudgetLineFrequency =
+  | 'weekly'
+  | 'biweekly'
+  | 'semi_monthly'
+  | 'monthly'
+  | 'every_n_days'
+  | 'annually'
+  | 'one_time';
+
+export type BudgetLineClassification = 'income' | 'expense';
+export type BudgetLineFlexibility = 'fixed' | 'flexible';
+
+export interface BudgetLine {
+  id: string;
+  userId: string;
+  name: string;
+  classification: BudgetLineClassification;
+  flexibility: BudgetLineFlexibility;
+  categoryId: string;
+  subcategoryId: string | null;
+  amount: number;
+  frequency: BudgetLineFrequency;
+  frequencyInterval: number | null;
+  anchorDate: string;
+  isPayPeriodAnchor: boolean;
+  isActive: boolean;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateBudgetLineInput {
+  name: string;
+  classification: BudgetLineClassification;
+  flexibility: BudgetLineFlexibility;
+  categoryId: string;
+  subcategoryId?: string | null;
+  amount: number;
+  frequency: BudgetLineFrequency;
+  frequencyInterval?: number | null;
+  anchorDate: string;
+  isPayPeriodAnchor?: boolean;
+  notes?: string | null;
+}
+
+export interface UpdateBudgetLineInput {
+  name?: string;
+  classification?: BudgetLineClassification;
+  flexibility?: BudgetLineFlexibility;
+  categoryId?: string;
+  subcategoryId?: string | null;
+  amount?: number;
+  frequency?: BudgetLineFrequency;
+  frequencyInterval?: number | null;
+  anchorDate?: string;
+  isPayPeriodAnchor?: boolean;
+  notes?: string | null;
+  isActive?: boolean;
+}
+
+export interface Occurrence {
+  budgetLineId: string;
+  dueDate: string;
+  expectedAmount: number;
+  status: 'upcoming' | 'missed';
+}
+
+export interface BudgetViewLine {
+  budgetLine: BudgetLine;
+  proratedAmount: number;
+  actualAmount: number;
+  variance: number;
+  occurrences: Occurrence[];
+}
+
+export interface BudgetView {
+  start: string;
+  end: string;
+  lines: BudgetViewLine[];
+  totalProratedIncome: number;
+  totalProratedExpenses: number;
+  totalActualIncome: number;
+  totalActualExpenses: number;
+}
+
+export interface PayPeriod {
+  start: string;
+  end: string;
+  budgetLineId: string;
+  frequency: BudgetLineFrequency;
 }
 
 // ─── Debt Schedules ───────────────────────────────────────────────────────────
@@ -268,6 +381,19 @@ export interface SavingsGoalProgress {
   percentComplete: number;
   daysToGoal: number | null;
   projectedDate: string | null;
+}
+
+// ─── Offline Sync ─────────────────────────────────────────────────────────────
+
+/** Full or delta snapshot returned by GET /api/v1/sync */
+export interface SyncPayload {
+  accounts: Account[];
+  categories: Category[];
+  transactions: Transaction[];
+  budgets: Budget[];
+  budgetCategories: BudgetCategory[];
+  savingsGoals: SavingsGoal[];
+  syncedAt: string;
 }
 
 // ─── Forecast ─────────────────────────────────────────────────────────────────

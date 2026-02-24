@@ -1,7 +1,7 @@
 # BudgetApp — Product Development Roadmap
 
-**Last updated:** 2026-02-20
-**Status:** Phase 6 complete (Phase 5 deferred)
+**Last updated:** 2026-02-23
+**Status:** Phase 7 complete; offline-first PWA shipped
 
 ---
 
@@ -55,13 +55,39 @@ BudgetApp is a secure, self-hosted personal budgeting application designed for d
 - **MonthlyChart:** Recharts bar chart (income green / expenses pink), responsive, formatted dollar values
 - **Backend fixes:** `GET /categories/:id` endpoint; `createBatch()` UUID alignment; removed unimplementable `search` filter (ciphertext not searchable)
 
+### Phase 5 — SimpleFIN Bank Sync
+**Status:** Complete (2026-02-20)
+
+- **5.1 SimpleFIN Configuration:** Access URL exchanged from one-time setup token, AES-256-GCM encrypted at rest; `simplefin_connections` table (one per user); connect/disconnect from Settings → Integrations page; Setup Instructions card with 4-step guide and 2FA advisory
+- **5.2 Transaction Import:** `simplefinService.sync(userId)` fetches accounts + transactions; balance updates applied to mapped accounts; imported transactions AES-256-GCM encrypted (same pipeline as manual entry); SimpleFIN transaction ID stored for deduplication
+- **5.3 Deduplication Logic:** Primary key deduplication by `simplefin_transaction_id`; Levenshtein fuzzy-match fallback (≥ 0.70 similarity, same amount within $0.01) flags probable duplicates as pending reviews; discarded IDs stored in `discarded_ids_json` to prevent re-flagging; `simplefin_pending_reviews` table with accept/merge/discard resolution
+- **5.4 Account Mapping:** `simplefin_account_mappings` table; new SimpleFIN accounts surface on the Imports page for user mapping before transactions are imported (create new BudgetApp account or link to existing); auto-type detection from account name + SimpleFIN type string
+- **5.5 Sync Scheduling:** `node-cron` scheduler (15-min poll); per-user configurable interval (1/2/4/6/8/12/24 h) and sync window (start/end hour) to bound bank 2FA prompts; schedule stored in `simplefin_connections`
+- **5.6 Imports Page:** Unmapped accounts section, pending review section (side-by-side bank vs. existing entry + similarity %), sync history; Sync Now button; nav badge showing pending action count
+
 ### Phase 6 — Debt Tracking & Budget Forecasting
-**Status:** Complete (2026-02-20) — Phase 5 deferred
+**Status:** Complete (2026-02-20)
 
 - **6.1 Loan Amortization:** `debt_schedules` table; amortization schedule computed server-side (standard P&I math); `transaction_splits` table stores principal/interest breakdown per payment; `autoSplitPayment` triggered non-fatally after each loan/mortgage/credit_card payment
 - **6.2 Payoff Projections:** `GET /api/v1/debt/what-if/:accountId?extraMonthly=N` — returns months saved and interest saved vs. baseline; DebtDetailPage shows amortization table (24-row preview, "Show all" toggle) and live what-if calculator
 - **6.3 Budget Forecasting:** `GET /api/v1/reports/forecast?months=N` — median of last 6 months of income/expenses projected N months forward; Dashboard MonthlyChart shows forecast bars dimmed via Recharts Cell fillOpacity
 - **6.4 Savings Goals:** `savings_goals` table; progress computed from linked account's currentBalance vs. targetAmount; projectedDate and daysToGoal derived at runtime; SavingsGoalsPage with create/edit/delete; Dashboard widget showing top 3 goals
+- **6.5 Account Enhancements (2026-02-23):** Full account editing (type, isAsset, startingBalance, currency — balance delta preserved); filter/sort bar on Accounts page (by type, institution, assets/liabilities, name, balance, rate); `annual_rate` field on accounts (APR/APY, stored as decimal fraction, shown on card); `line_of_credit` account type; user default currency preference (`PATCH /auth/me`, stored on users table, defaults to CAD); auto-type detection from SimpleFIN account name/type on import mapping
+- **6.5.1 Liability Comparison View (2026-02-23):** `/liabilities` page listing all active liability accounts ranked by `annualRate` descending (avalanche method); summary cards (total outstanding + total monthly interest); per-account what-if paydown simulator reusing existing debt `what-if` endpoint; sort by rate, balance, or monthly interest; "Liabilities" nav item in sidebar
+- **6.5.2 Currency Converter (2026-02-23):** `exchange_rates` table + `exchangeRateService` fetching from Frankfurter/ECB API; `GET /api/v1/exchange-rates?from=&to=` endpoint (cached, refreshed daily); `AccountCard` shows `~{defaultCurrency} {convertedAmount}` for non-default currency accounts; Accounts page net worth converted to user's default currency via `useExchangeRates` (parallel TanStack Query); stale rates shown with ⚠ warning; no conversion when all accounts in default currency
+
+---
+
+### Phase 7 — Offline-First PWA
+**Status:** Complete (2026-02-23)
+
+- **7.1 Dexie Schema & Sync Engine:** `BudgetDB` (8 tables); `syncEngine.push()` flushes `pendingMutations` in creation order; `syncEngine.pull(since?)` fetches delta from `GET /api/v1/sync?updatedSince=`; `sync()` runs push then pull; `lastSyncAt` stored in `syncMeta` table
+- **7.2 PRF Key Derivation:** WebAuthn PRF extension on passkey assertion → HKDF(SHA-256) → AES-256-GCM CryptoKey; stored only in module-level variable (never in Zustand or IndexedDB); `pendingMutations.body` encrypted before storage; password-only users read-only offline
+- **7.3 Service Worker:** Switched to `injectManifest` strategy; custom `sw.ts` with Workbox precaching, NetworkFirst for `/api/`, CacheFirst for images, background sync relay (`FLUSH_MUTATIONS` message to window clients)
+- **7.4 Offline-Aware Hooks:** All 5 core hooks (`useAccounts`, `useTransactions`, `useCategories`, `useBudgets`, `useSavingsGoals`) fall back to Dexie on network error; all mutations queue offline with `queueMutation`; `OfflineWriteNotAvailableError` thrown without PRF key
+- **7.5 Offline UI:** Sticky amber offline banner with pending count; orange passkey prompt banner when write attempted without PRF key; conflict notification toast + detail dialog after reconciliation; pending mutations badge in sidebar; PWA install prompt after 3rd visit
+- **7.6 Icon Generation:** `scripts/generate-pwa-icons.js` using `sharp`; 9 standard PNGs (72–512px) + 2 maskable PNGs (192, 512px); icons committed to `frontend/public/icons/`
+- **Conflict resolution:** Server always wins (simplified from original last-write-wins plan); conflicts surfaced as notifications, not silently merged
 
 ---
 
@@ -69,137 +95,51 @@ BudgetApp is a secure, self-hosted personal budgeting application designed for d
 
 ---
 
-### Phase 5 — SimpleFIN Bank Sync
-**Priority:** High (deferred — implement after Phase 6)
-**Estimated scope:** Large
-
-#### Overview
-Integrate with [SimpleFIN Bridge](https://simplefin.org/) to pull real transaction data from connected bank accounts. Users connect their institutions once via SimpleFIN's OAuth flow; BudgetApp polls periodically and imports new transactions with smart deduplication.
-
-#### Feature Specs
-
-**5.1 SimpleFIN Configuration**
-- Store SimpleFIN access URL per user (encrypted with `encryptionService`)
-- UI: connect/disconnect SimpleFIN from Settings page
-- Backend: `POST /api/v1/settings/simplefin` to store the access URL; `DELETE` to remove
-
-**5.2 Transaction Import**
-- Backend service `simplefinService.sync(userId)` — fetches accounts and transactions from SimpleFIN API
-- Map SimpleFIN account types to BudgetApp account types; create accounts that don't yet exist
-- Import new transactions only (deduplication by SimpleFIN transaction ID stored in a `simplefin_transaction_id` column on the `transactions` table)
-- Imported transactions are AES-256-GCM encrypted before storage (same pipeline as manual entry)
-- Mark imported transactions with `source: 'simplefin'` for display purposes
-
-**5.3 Deduplication Logic**
-- Primary key: `simplefin_transaction_id` (unique per user)
-- Fuzzy match fallback: same account, same date, same amount, payee similarity ≥ 80% (Levenshtein distance) — flag as probable duplicate for user review rather than silently discard
-- Manual review queue UI: accept/merge/discard duplicates
-
-**5.4 Sync Scheduling**
-- Configurable sync interval (default: every 4 hours) stored in user preferences
-- Manual "sync now" button on Accounts page
-- Background job queue (Bull/BullMQ backed by Redis) for scheduled syncs
-- Sync status shown in UI: last synced time, error state if last sync failed
-
-**5.5 Account Reconciliation**
-- After sync, compare `currentBalance` against SimpleFIN's reported balance
-- Flag discrepancies > $0.01 for user review
-- Display "Needs reconciliation" badge on account card
-
-#### Acceptance Criteria
-- [ ] User can connect SimpleFIN and see imported accounts/transactions
-- [ ] Duplicate transactions are not created on repeated syncs
-- [ ] Probable duplicates are surfaced for user review
-- [ ] Sync failures do not corrupt existing data
-- [ ] Sensitive SimpleFIN URLs are encrypted at rest
-
----
-
-
-### Phase 7 — Offline-First PWA
-**Priority:** Medium
-**Estimated scope:** Large
-
-#### Overview
-Convert BudgetApp into a fully offline-capable PWA. Transactions, accounts, and budgets are stored in IndexedDB via Dexie and sync bidirectionally with the server when connectivity is available.
-
-#### Feature Specs
-
-**7.1 Dexie Schema & Sync Engine**
-- Define Dexie tables mirroring server schema (accounts, categories, transactions, budgets, budget_categories)
-- `syncEngine.push()`: batch-upload mutations queued while offline
-- `syncEngine.pull()`: fetch server state modified since last sync timestamp, merge locally
-- Conflict resolution strategy: server wins for balance fields; last-write-wins by `updated_at` for text fields
-
-**7.2 Service Worker**
-- Workbox precaching for app shell (JS, CSS, fonts)
-- Runtime caching for API GET requests (network-first with IndexedDB fallback)
-- Background sync via `SyncManager` API for queued mutations
-- Push notifications for sync completion and reconciliation flags (optional, user opt-in)
-
-**7.3 Offline UI Indicators**
-- Offline banner when `navigator.onLine === false`
-- Pending mutations counter in sidebar ("3 changes pending sync")
-- Optimistic UI: mutations applied locally immediately, confirmed/rolled back on sync
-
-**7.4 Conflict Resolution UI**
-- When a server merge conflict is detected (same record modified both locally and remotely), surface a diff view for user resolution
-- Auto-resolve non-conflicting fields; require manual resolution for amount/date conflicts
-
-**7.5 PWA Install & Manifest**
-- `manifest.json`: app name, icons (192×192, 512×512), theme color, `display: standalone`
-- Install prompt shown once after 3rd visit
-- Installable on iOS, Android, and desktop Chrome/Edge
-
-#### Acceptance Criteria
-- [ ] App loads and allows transaction entry with no network connection
-- [ ] Queued mutations sync automatically when connectivity returns
-- [ ] No data loss on concurrent edits from two devices
-- [ ] Lighthouse PWA score ≥ 90
-
----
-
-### Phase 8 — Advanced Analytics & Data Export
+### Phase 8 — Enhanced Reports & Recurring Transactions
 **Priority:** Medium
 **Estimated scope:** Medium
 
 #### Overview
-Add richer reporting, CSV/OFX export, recurring transaction management, and multi-currency support.
+Add richer reporting and recurring transaction management.
 
 #### Feature Specs
 
 **8.1 Enhanced Reports**
 - Spending by category (pie/donut chart, configurable date range)
-- Income vs. expenses trend (already in Phase 4 as 6-month bar chart; extend to custom range and CSV export)
+- Income vs. expenses trend (extend Phase 4's 6-month bar chart to custom date ranges)
 - Net worth over time (line chart, monthly snapshots stored in `net_worth_snapshots` table)
 - Top payees by spend (bar chart, configurable period)
 
-**8.2 CSV & OFX Export**
-- `GET /api/v1/transactions/export?format=csv&startDate=&endDate=` — streams CSV with decrypted payee/description
-- OFX format export for import into Quicken/Mint
-- All exports rate-limited and scoped to the requesting user
-
-**8.3 Recurring Transactions**
+**8.2 Recurring Transactions**
 - `recurring_transactions` table: template transaction, frequency (daily/weekly/biweekly/monthly/annually), next_due_date, end_date
 - Cron job generates actual transaction records when due date is reached
 - UI to define and manage recurring transactions; "Skip this occurrence" action
 
-**8.4 Multi-Currency Support**
-- Store `currency` on each account (already exists in schema)
-- Fetch daily exchange rates from an open API (e.g., exchangerate.host or ECB) and store in `exchange_rates` table
-- Dashboard net worth calculation converts all balances to user's base currency
-- Reports display amounts in base currency with original currency notation
-
-**8.5 Transaction Notes & Attachments**
-- Encrypted `notes` field already exists; expose in transaction form (Phase 3 stored it but the UI may not expose it fully)
-- Photo attachment support: upload receipt images, stored encrypted in object storage (S3-compatible, e.g., MinIO on Unraid)
-- Thumbnail preview on transaction detail
-
 #### Acceptance Criteria
 - [ ] Spending by category chart is accurate and matches sum of transactions in that category for the period
-- [ ] CSV export is importable into Excel/Google Sheets without modification
 - [ ] Recurring transactions are created on schedule without duplication
 - [ ] Net worth chart reflects balance history accurately
+
+#### Notes
+- **8.1 Net worth chart** requires a new `net_worth_snapshots` table — no migration yet
+- **8.2 Recurring transactions** — cron idempotency is critical; use `next_due_date` advancement (not delete-and-recreate) to prevent duplicates on crash/restart
+
+---
+
+### Future Additions (Deferred)
+
+Features that may be added later if the app is shared or needs broader data portability.
+
+**CSV & OFX Export**
+- `GET /api/v1/transactions/export?format=csv&startDate=&endDate=` — streams CSV with decrypted payee/description
+- OFX format export for import into Quicken/Mint
+- All exports rate-limited and scoped to the requesting user
+- *Note: transaction sensitive fields must be decrypted before streaming*
+
+**Receipt Attachments**
+- Photo attachment support: upload receipt images, stored encrypted in object storage (S3-compatible, e.g., MinIO on Unraid)
+- `transaction_attachments` table: transaction_id FK, storage_key, mime_type, size_bytes; object stored encrypted with AES-256-GCM
+- Thumbnail preview on transaction detail; download button
 
 ---
 

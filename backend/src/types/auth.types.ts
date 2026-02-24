@@ -13,6 +13,12 @@ export interface User {
   failedLoginAttempts: number;
   lockedUntil: Date | null;
   lastLoginAt: Date | null;
+  defaultCurrency: string;
+  locale: string;
+  dateFormat: 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD';
+  timeFormat: '12h' | '24h';
+  timezone: string;
+  weekStart: 'sunday' | 'monday' | 'saturday';
   createdAt: Date;
   updatedAt: Date;
 }
@@ -101,7 +107,22 @@ export interface PublicUser {
   totpEnabled: boolean;
   webauthnEnabled: boolean;
   emailVerified: boolean;
+  defaultCurrency: string;
+  locale: string;
+  dateFormat: 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD';
+  timeFormat: '12h' | '24h';
+  timezone: string;
+  weekStart: 'sunday' | 'monday' | 'saturday';
   createdAt: Date;
+}
+
+export interface UpdateProfileData {
+  defaultCurrency?: string;
+  locale?: string;
+  dateFormat?: 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD';
+  timeFormat?: '12h' | '24h';
+  timezone?: string;
+  weekStart?: 'sunday' | 'monday' | 'saturday';
 }
 
 export interface AuthTokens {

@@ -1,5 +1,5 @@
 import { getDatabase } from '@config/database';
-import type { User, CreateUserData } from '@typings/auth.types';
+import type { User, CreateUserData, UpdateProfileData } from '@typings/auth.types';
 
 // Map snake_case DB row to camelCase User interface
 function rowToUser(row: Record<string, unknown>): User {
@@ -16,6 +16,12 @@ function rowToUser(row: Record<string, unknown>): User {
     failedLoginAttempts: Number(row['failed_login_attempts']),
     lockedUntil: row['locked_until'] ? new Date(row['locked_until'] as string) : null,
     lastLoginAt: row['last_login_at'] ? new Date(row['last_login_at'] as string) : null,
+    defaultCurrency: (row['default_currency'] as string | undefined) ?? 'CAD',
+    locale: (row['locale'] as string | undefined) ?? 'en-CA',
+    dateFormat: ((row['date_format'] as string | undefined) ?? 'DD/MM/YYYY') as User['dateFormat'],
+    timeFormat: ((row['time_format'] as string | undefined) ?? '12h') as User['timeFormat'],
+    timezone: (row['timezone'] as string | undefined) ?? 'America/Toronto',
+    weekStart: ((row['week_start'] as string | undefined) ?? 'sunday') as User['weekStart'],
     createdAt: new Date(row['created_at'] as string),
     updatedAt: new Date(row['updated_at'] as string),
   };
@@ -104,6 +110,20 @@ class UserRepository {
     await this.db('users').where({ id: userId }).update({
       webauthn_enabled: true,
     });
+  }
+
+  async updatePreferences(userId: string, data: UpdateProfileData): Promise<void> {
+    const updates: Record<string, unknown> = {};
+    if (data.defaultCurrency !== undefined) updates['default_currency'] = data.defaultCurrency;
+    if (data.locale !== undefined)          updates['locale'] = data.locale;
+    if (data.dateFormat !== undefined)      updates['date_format'] = data.dateFormat;
+    if (data.timeFormat !== undefined)      updates['time_format'] = data.timeFormat;
+    if (data.timezone !== undefined)        updates['timezone'] = data.timezone;
+    if (data.weekStart !== undefined)       updates['week_start'] = data.weekStart;
+
+    if (Object.keys(updates).length > 0) {
+      await this.db('users').where({ id: userId }).update(updates);
+    }
   }
 }
 

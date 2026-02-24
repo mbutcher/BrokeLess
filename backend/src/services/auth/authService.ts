@@ -17,6 +17,7 @@ import type {
   AuthResult,
   AuthTokens,
   PublicUser,
+  UpdateProfileData,
 } from '@typings/auth.types';
 
 const GENERIC_AUTH_ERROR = 'Invalid email or password';
@@ -235,12 +236,24 @@ class AuthService {
     return { accessToken, refreshToken: rawRefreshToken };
   }
 
+  /** Update user profile preferences. */
+  async updateProfile(userId: string, data: UpdateProfileData): Promise<PublicUser> {
+    await userRepository.updatePreferences(userId, data);
+    return this.getPublicUser(userId);
+  }
+
   private toPublicUser(
     user: {
       id: string;
       totpEnabled: boolean;
       webauthnEnabled: boolean;
       emailVerified: boolean;
+      defaultCurrency: string;
+      locale: string;
+      dateFormat: 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD';
+      timeFormat: '12h' | '24h';
+      timezone: string;
+      weekStart: 'sunday' | 'monday' | 'saturday';
       createdAt: Date;
     },
     email: string
@@ -251,6 +264,12 @@ class AuthService {
       totpEnabled: user.totpEnabled,
       webauthnEnabled: user.webauthnEnabled,
       emailVerified: user.emailVerified,
+      defaultCurrency: user.defaultCurrency,
+      locale: user.locale,
+      dateFormat: user.dateFormat,
+      timeFormat: user.timeFormat,
+      timezone: user.timezone,
+      weekStart: user.weekStart,
       createdAt: user.createdAt,
     };
   }

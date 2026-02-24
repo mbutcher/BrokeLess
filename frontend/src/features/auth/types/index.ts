@@ -4,7 +4,22 @@ export interface User {
   totpEnabled: boolean;
   webauthnEnabled: boolean;
   emailVerified: boolean;
+  defaultCurrency: string;
+  locale: string;
+  dateFormat: 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD';
+  timeFormat: '12h' | '24h';
+  timezone: string;
+  weekStart: 'sunday' | 'monday' | 'saturday';
   createdAt: string;
+}
+
+export interface UpdateProfileInput {
+  defaultCurrency?: string;
+  locale?: string;
+  dateFormat?: 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD';
+  timeFormat?: '12h' | '24h';
+  timezone?: string;
+  weekStart?: 'sunday' | 'monday' | 'saturday';
 }
 
 export interface LoginCredentials {

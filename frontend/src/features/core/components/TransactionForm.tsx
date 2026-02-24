@@ -86,8 +86,20 @@ export function TransactionForm({
     onSuccess();
   }
 
-  const incomeCategories = categories.filter((c) => c.isIncome && c.isActive);
-  const expenseCategories = categories.filter((c) => !c.isIncome && c.isActive);
+  const activeCategories = categories.filter((c) => c.isActive);
+  const topLevelIncome = activeCategories.filter((c) => c.isIncome && c.parentId === null);
+  const topLevelExpense = activeCategories.filter((c) => !c.isIncome && c.parentId === null);
+  const subcategoryMap = new Map<string, typeof categories>(
+    activeCategories
+      .filter((c) => c.parentId !== null)
+      .reduce<[string, typeof categories][]>((acc, c) => {
+        const key = c.parentId!;
+        const existing = acc.find(([k]) => k === key);
+        if (existing) existing[1].push(c);
+        else acc.push([key, [c]]);
+        return acc;
+      }, [])
+  );
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -134,16 +146,38 @@ export function TransactionForm({
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
           <select {...register('categoryId')} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option value="">Uncategorized</option>
-            {incomeCategories.length > 0 && (
-              <optgroup label="Income">
-                {incomeCategories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </optgroup>
+            <option value="">Uncategorised</option>
+            {topLevelIncome.length > 0 && (
+              <>
+                <option disabled>── Income ──</option>
+                {topLevelIncome.map((parent) => {
+                  const subs = subcategoryMap.get(parent.id) ?? [];
+                  return subs.length > 0 ? (
+                    <optgroup key={parent.id} label={parent.name}>
+                      <option value={parent.id}>{parent.name} (general)</option>
+                      {subs.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </optgroup>
+                  ) : (
+                    <option key={parent.id} value={parent.id}>{parent.name}</option>
+                  );
+                })}
+              </>
             )}
-            {expenseCategories.length > 0 && (
-              <optgroup label="Expenses">
-                {expenseCategories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </optgroup>
+            {topLevelExpense.length > 0 && (
+              <>
+                <option disabled>── Expenses ──</option>
+                {topLevelExpense.map((parent) => {
+                  const subs = subcategoryMap.get(parent.id) ?? [];
+                  return subs.length > 0 ? (
+                    <optgroup key={parent.id} label={parent.name}>
+                      <option value={parent.id}>{parent.name} (general)</option>
+                      {subs.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </optgroup>
+                  ) : (
+                    <option key={parent.id} value={parent.id}>{parent.name}</option>
+                  );
+                })}
+              </>
             )}
           </select>
         </div>

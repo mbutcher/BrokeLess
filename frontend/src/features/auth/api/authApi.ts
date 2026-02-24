@@ -1,5 +1,5 @@
 import { apiClient } from '@lib/api/client';
-import type { User, Passkey, TotpSetupData } from '../types';
+import type { User, Passkey, TotpSetupData, UpdateProfileInput } from '../types';
 import type { LoginFormData, RegisterFormData } from '../schemas';
 
 interface ApiResponse<T> {
@@ -34,6 +34,9 @@ export const authApi = {
   refresh: () => apiClient.post<ApiResponse<AuthResponseData>>('/auth/refresh'),
 
   me: () => apiClient.get<ApiResponse<{ user: User }>>('/auth/me'),
+
+  updateProfile: (data: UpdateProfileInput) =>
+    apiClient.patch<ApiResponse<{ user: User }>>('/auth/me', data),
 
   // ─── TOTP ──────────────────────────────────────────────────────────────────
 

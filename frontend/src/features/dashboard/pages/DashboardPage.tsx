@@ -2,11 +2,14 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAccounts } from '@features/core/hooks/useAccounts';
 import { useTransactions } from '@features/core/hooks/useTransactions';
-import { useBudgets, useBudgetProgress } from '@features/core/hooks/useBudgets';
 import { useMonthlySummary, useForecast } from '@features/core/hooks/useReports';
 import { useSavingsGoals, useSavingsGoalProgress } from '@features/core/hooks/useSavingsGoals';
+import { useBudgetView } from '@features/core/hooks/useBudgetView';
+import { isOfflineError } from '@lib/db/offlineHelpers';
 import { AccountCard } from '@features/core/components/AccountCard';
 import { MonthlyChart } from '@components/charts/MonthlyChart';
+import { monthWindow, toISODate } from '@lib/budget/budgetViewUtils';
+import { useFormatters } from '@lib/i18n/useFormatters';
 import type { Transaction, SavingsGoal } from '@features/core/types';
 import type { MonthlySummaryEntry } from '@features/core/api/reportApi';
 
@@ -36,6 +39,7 @@ function SummaryCard({ label, value, valueColor = 'text-gray-900', isLoading }: 
 
 function TransactionRow({ tx }: { tx: Transaction }) {
   const isPositive = tx.amount > 0;
+  const { currency: fmt } = useFormatters();
   return (
     <div className="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0">
       <div className="min-w-0">
@@ -47,50 +51,91 @@ function TransactionRow({ tx }: { tx: Transaction }) {
       <p
         className={`ml-4 text-sm font-semibold tabular-nums flex-shrink-0 ${isPositive ? 'text-green-600' : 'text-gray-900'}`}
       >
-        {isPositive ? '+' : ''}${Math.abs(tx.amount).toFixed(2)}
+        {isPositive ? '+' : ''}{fmt(Math.abs(tx.amount))}
       </p>
     </div>
   );
 }
 
-// ─── Budget progress snapshot ──────────────────────────────────────────────────
+// ─── Budget snapshot widget ────────────────────────────────────────────────────
 
-function BudgetSnapshot({ budgetId }: { budgetId: string }) {
-  const { data: progress, isLoading } = useBudgetProgress(budgetId);
+function BudgetSnapshot() {
+  const today = new Date();
+  const { start, end } = monthWindow(today.getFullYear(), today.getMonth() + 1);
+  const startStr = toISODate(start);
+  const endStr = toISODate(end);
+  const { currency: fmt } = useFormatters();
+
+  const { data: view, isLoading, isError, error } = useBudgetView(startStr, endStr);
 
   if (isLoading) {
-    return <div className="h-16 bg-gray-100 animate-pulse rounded-lg" />;
+    return <div className="h-24 bg-gray-100 animate-pulse rounded-lg" />;
   }
-  if (!progress) return null;
+
+  if (isError) {
+    const msg = isOfflineError(error) ? 'Not available offline.' : 'Could not load budget.';
+    return <p className="text-sm text-gray-400 py-6 text-center">{msg}</p>;
+  }
+
+  if (!view || view.lines.length === 0) {
+    return (
+      <p className="text-sm text-gray-400 py-6 text-center">
+        No budget lines yet.{' '}
+        <Link to="/budget" className="text-blue-600 hover:underline">
+          Set up your budget
+        </Link>
+      </p>
+    );
+  }
 
   const pct =
-    progress.totalAllocated > 0
-      ? Math.min(100, (progress.totalSpent / progress.totalAllocated) * 100)
+    view.totalProratedExpenses > 0
+      ? Math.min(100, (view.totalActualExpenses / view.totalProratedExpenses) * 100)
       : 0;
-  const overBudget = progress.totalSpent > progress.totalAllocated;
+  const overBudget = view.totalActualExpenses > view.totalProratedExpenses;
+  const remaining = view.totalProratedExpenses - view.totalActualExpenses;
+
+  // Top 3 most over-budget lines (by variance ascending — most negative = most overspent)
+  const overBudgetLines = view.lines
+    .filter((l) => l.budgetLine.classification === 'expense' && l.variance < 0)
+    .sort((a, b) => a.variance - b.variance)
+    .slice(0, 3);
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-2">
-        <Link
-          to={`/budgets/${budgetId}`}
-          className="text-sm font-medium text-gray-900 hover:underline"
-        >
-          {progress.budget.name}
-        </Link>
-        <span className={`text-xs font-semibold ${overBudget ? 'text-red-600' : 'text-gray-500'}`}>
-          ${progress.totalSpent.toFixed(2)} / ${progress.totalAllocated.toFixed(2)}
-        </span>
+    <div className="space-y-3">
+      {/* Planned vs actual bar */}
+      <div>
+        <div className="flex items-center justify-between mb-1 text-sm">
+          <span className="text-gray-600">Expenses</span>
+          <span className={overBudget ? 'font-semibold text-red-600' : 'text-gray-600'}>
+            {fmt(view.totalActualExpenses)} / {fmt(view.totalProratedExpenses)}
+          </span>
+        </div>
+        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all ${overBudget ? 'bg-red-500' : 'bg-blue-500'}`}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <p className={`text-xs mt-1 ${remaining < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+          {remaining >= 0 ? `${fmt(remaining)} remaining` : `${fmt(Math.abs(remaining))} over budget`}
+        </p>
       </div>
-      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-        <div
-          className={`h-full rounded-full ${overBudget ? 'bg-red-500' : 'bg-blue-500'}`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <p className="mt-1 text-xs text-gray-400">
-        {progress.budget.startDate} – {progress.budget.endDate}
-      </p>
+
+      {/* Over-budget lines */}
+      {overBudgetLines.length > 0 && (
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Over budget</p>
+          {overBudgetLines.map((l) => (
+            <div key={l.budgetLine.id} className="flex items-center justify-between text-sm">
+              <span className="text-gray-700 truncate">{l.budgetLine.name}</span>
+              <span className="text-red-600 font-medium ml-2 shrink-0">
+                {fmt(Math.abs(l.variance))} over
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -99,6 +144,7 @@ function BudgetSnapshot({ budgetId }: { budgetId: string }) {
 
 function GoalMiniCard({ goal }: { goal: SavingsGoal }) {
   const { data: progress } = useSavingsGoalProgress(goal.id);
+  const { currency: fmt } = useFormatters();
   const pct = progress?.percentComplete ?? 0;
   const current = progress?.currentAmount ?? 0;
 
@@ -107,7 +153,7 @@ function GoalMiniCard({ goal }: { goal: SavingsGoal }) {
       <div className="flex items-center justify-between mb-1">
         <p className="text-sm font-medium text-gray-900 truncate">{goal.name}</p>
         <p className="ml-2 text-xs text-gray-500 flex-shrink-0">
-          ${current.toFixed(0)} / ${goal.targetAmount.toFixed(0)}
+          {fmt(current)} / {fmt(goal.targetAmount)}
         </p>
       </div>
       <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
@@ -127,7 +173,6 @@ export function DashboardPage() {
 
   const { data: accounts = [], isLoading: accountsLoading } = useAccounts();
   const { data: txData, isLoading: txLoading } = useTransactions({ limit: 5, page: 1 });
-  const { data: budgets = [] } = useBudgets();
   const { data: monthlySummary = [], isLoading: summaryLoading } = useMonthlySummary(6);
   const { data: forecastData = [] } = useForecast(3);
   const { data: savingsGoals = [] } = useSavingsGoals();
@@ -142,11 +187,6 @@ export function DashboardPage() {
   // Current month totals: last entry in the summary array (ordered asc by month)
   const currentMonth = monthlySummary.length > 0 ? monthlySummary[monthlySummary.length - 1] : null;
 
-  // Most recent active budget (latest startDate)
-  const latestBudget =
-    budgets.filter((b) => b.isActive).sort((a, b) => b.startDate.localeCompare(a.startDate))[0] ??
-    null;
-
   const recentTransactions = txData?.data ?? [];
 
   const chartData: MonthlySummaryEntry[] = showForecast
@@ -154,12 +194,7 @@ export function DashboardPage() {
     : monthlySummary;
 
   const topGoals = savingsGoals.slice(0, 3);
-
-  const formatMoney = (n: number) =>
-    `$${Math.abs(n).toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })}`;
+  const { currency: fmt } = useFormatters();
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
@@ -169,19 +204,19 @@ export function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <SummaryCard
           label="Net Worth"
-          value={`${netWorth < 0 ? '-' : ''}${formatMoney(netWorth)}`}
+          value={fmt(netWorth)}
           valueColor={netWorth >= 0 ? 'text-gray-900' : 'text-red-600'}
           isLoading={accountsLoading}
         />
         <SummaryCard
           label="Income This Month"
-          value={currentMonth ? formatMoney(currentMonth.income) : '$0.00'}
+          value={currentMonth ? fmt(currentMonth.income) : fmt(0)}
           valueColor="text-green-600"
           isLoading={summaryLoading}
         />
         <SummaryCard
           label="Expenses This Month"
-          value={currentMonth ? formatMoney(currentMonth.expenses) : '$0.00'}
+          value={currentMonth ? fmt(currentMonth.expenses) : fmt(0)}
           isLoading={summaryLoading}
         />
       </div>
@@ -259,16 +294,12 @@ export function DashboardPage() {
         {/* Budget snapshot */}
         <section className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold text-gray-900">Budget</h2>
-            <Link to="/budgets" className="text-sm text-blue-600 hover:underline">
-              View all
+            <h2 className="text-base font-semibold text-gray-900">Budget This Month</h2>
+            <Link to="/budget" className="text-sm text-blue-600 hover:underline">
+              View budget
             </Link>
           </div>
-          {latestBudget ? (
-            <BudgetSnapshot budgetId={latestBudget.id} />
-          ) : (
-            <p className="text-sm text-gray-400 py-6 text-center">No active budgets.</p>
-          )}
+          <BudgetSnapshot />
         </section>
       </div>
 

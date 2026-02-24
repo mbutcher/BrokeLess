@@ -18,7 +18,24 @@
       "Bash(curl:*)",
       "mcp__plugin_chrome-devtools-mcp_chrome-devtools__navigate_page",
       "mcp__plugin_chrome-devtools-mcp_chrome-devtools__list_pages",
-      "Bash(open:*)"
+      "Bash(open:*)",
+      "Bash(grep:*)",
+      "Bash(echo:*)",
+      "WebFetch(domain:www.simplefin.org)",
+      "WebFetch(domain:beta.simplefin.org)",
+      "WebFetch(domain:beta-bridge.simplefin.org)",
+      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__list_network_requests",
+      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__list_console_messages",
+      "Bash(ss:*)",
+      "Bash(netstat:*)",
+      "Bash(lsof:*)",
+      "Bash(docker context use:*)",
+      "Bash(pgrep:*)",
+      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__take_screenshot",
+      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__take_snapshot",
+      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__click",
+      "Bash(npm run migrate:*)",
+      "Bash(node scripts/generate-pwa-icons.js:*)"
     ]
   }
 }

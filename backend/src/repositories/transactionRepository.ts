@@ -84,9 +84,41 @@ class TransactionRepository {
       notes: data.notes ?? null,
       date: data.date,
       category_id: data.categoryId ?? null,
+      simplefin_transaction_id: data.simplefinTransactionId ?? null,
     });
     const row = await db('transactions').where({ id }).first();
     return rowToTransaction(row as Record<string, unknown>);
+  }
+
+  /** Returns the transaction that was imported from this SimpleFIN transaction ID, if any */
+  async findBySimplefinId(
+    userId: string,
+    simplefinTransactionId: string
+  ): Promise<Transaction | null> {
+    const row = await this.db('transactions')
+      .where({ user_id: userId, simplefin_transaction_id: simplefinTransactionId })
+      .first();
+    return row ? rowToTransaction(row) : null;
+  }
+
+  /**
+   * Returns recent transactions for an account (for fuzzy-match deduplication).
+   * Results include encrypted payee/description — caller must decrypt before comparing.
+   */
+  async findRecentForAccount(
+    userId: string,
+    accountId: string,
+    days: number
+  ): Promise<Transaction[]> {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+    const cutoffStr = cutoff.toISOString().slice(0, 10);
+
+    const rows = await this.db('transactions')
+      .where({ user_id: userId, account_id: accountId })
+      .where('date', '>=', cutoffStr)
+      .orderBy('date', 'desc');
+    return rows.map(rowToTransaction);
   }
 
   async update(
@@ -162,6 +194,7 @@ class TransactionRepository {
         currency: row['a_currency'] as string,
         color: (row['a_color'] as string | null) ?? null,
         institution: (row['a_institution'] as string | null) ?? null,
+        annualRate: row['a_annual_rate'] != null ? Number(row['a_annual_rate']) : null,
         isActive: Boolean(row['a_is_active']),
         createdAt: new Date(row['a_created_at'] as string),
         updatedAt: new Date(row['a_updated_at'] as string),

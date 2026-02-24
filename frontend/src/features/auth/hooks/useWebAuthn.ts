@@ -4,7 +4,11 @@ import { startRegistration, startAuthentication } from '@simplewebauthn/browser'
 import type { PublicKeyCredentialCreationOptionsJSON, PublicKeyCredentialRequestOptionsJSON } from '@simplewebauthn/types';
 import { authApi } from '../api/authApi';
 import { useAuthStore } from '../stores/authStore';
+import { deriveKeyFromPRF, setIndexedDbKey } from '@lib/db/crypto';
 import { useNavigate } from 'react-router-dom';
+
+/** Label used as HKDF info when deriving the IndexedDB encryption key from PRF output. */
+const PRF_EVAL_LABEL = new TextEncoder().encode('budgetapp-indexeddb-v1');
 
 export function useWebAuthnRegister() {
   const queryClient = useQueryClient();
@@ -58,16 +62,45 @@ export function useWebAuthnAuthenticate() {
       const optionsResponse = await authApi.webAuthnAuthenticateOptions();
       const { challengeToken, ...options } = optionsResponse.data.data;
 
-      // 2. Prompt browser for assertion
-      const authResponse = await startAuthentication(options as unknown as PublicKeyCredentialRequestOptionsJSON);
+      // 2. Merge PRF extension into options so the authenticator returns a
+      //    deterministic secret we can use to derive an IndexedDB encryption key.
+      const existingExtensions = (
+        ((options as Record<string, unknown>)['extensions'] ?? {}) as Record<string, unknown>
+      );
+      const optionsWithPRF = {
+        ...options,
+        extensions: {
+          ...existingExtensions,
+          prf: { eval: { first: Array.from(PRF_EVAL_LABEL) } },
+        },
+      } as unknown as PublicKeyCredentialRequestOptionsJSON;
 
-      // 3. Verify with server
+      // 3. Prompt browser for assertion (includes PRF if authenticator supports it)
+      const authResponse = await startAuthentication(optionsWithPRF);
+
+      // 4. Derive IndexedDB key from PRF output if available
+      const prfFirst = (authResponse.clientExtensionResults as Record<string, unknown>)?.['prf'];
+      const prfOutput = (prfFirst as Record<string, unknown> | undefined)?.['results'];
+      const prfBytes = (prfOutput as Record<string, unknown> | undefined)?.['first'];
+
+      // 5. Verify with server
       const verifyResponse = await authApi.webAuthnAuthenticateVerify(authResponse, challengeToken);
-      return verifyResponse.data.data;
+      return { ...verifyResponse.data.data, prfBytes };
     },
-    onSuccess: ({ accessToken, user }) => {
+    onSuccess: async ({ accessToken, user, prfBytes }) => {
       setAuth(user, accessToken);
       queryClient.setQueryData(['auth', 'me'], user);
+
+      // Derive IndexedDB encryption key from PRF output (if authenticator supported PRF)
+      if (prfBytes instanceof ArrayBuffer && prfBytes.byteLength > 0) {
+        try {
+          const key = await deriveKeyFromPRF(prfBytes, user.id);
+          setIndexedDbKey(key);
+        } catch {
+          // PRF key derivation failed — offline writes will not be available
+        }
+      }
+
       navigate('/dashboard', { replace: true });
     },
   });

@@ -1,33 +1,50 @@
 import { useState } from 'react';
 import { NavLink, useNavigate, Outlet } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard,
   Wallet,
   ArrowLeftRight,
   PiggyBank,
   Target,
+  TrendingDown,
+  Download,
+  Plug,
   Settings,
+  SlidersHorizontal,
   LogOut,
   Menu,
   X,
+  WifiOff,
 } from 'lucide-react';
 import { authApi } from '@features/auth/api/authApi';
 import { useAuthStore } from '@features/auth/stores/authStore';
 import { Button } from '@components/ui/button';
+import { useSimplefinStatus, usePendingReviewCount, useUnmappedAccounts } from '@features/integrations/hooks/useSimplefin';
+import { useNetworkStore } from '@stores/networkStore';
+import { OfflineBanner } from './OfflineBanner';
+import { SyncNotification } from './SyncNotification';
 
 const navItems = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/accounts', icon: Wallet, label: 'Accounts' },
-  { to: '/transactions', icon: ArrowLeftRight, label: 'Transactions' },
-  { to: '/budgets', icon: PiggyBank, label: 'Budgets' },
-  { to: '/savings-goals', icon: Target, label: 'Savings Goals' },
+  { to: '/dashboard', icon: LayoutDashboard, key: 'nav.dashboard' },
+  { to: '/accounts', icon: Wallet, key: 'nav.accounts' },
+  { to: '/transactions', icon: ArrowLeftRight, key: 'nav.transactions' },
+  { to: '/budget', icon: PiggyBank, key: 'nav.budget' },
+  { to: '/savings-goals', icon: Target, key: 'nav.savingsGoals' },
+  { to: '/liabilities', icon: TrendingDown, key: 'nav.liabilities' },
 ];
 
 function SidebarContent({ onNav }: { onNav?: () => void }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user, clearAuth } = useAuthStore();
+  const { data: sfConnection } = useSimplefinStatus();
+  const { data: reviewCount = 0 } = usePendingReviewCount();
+  const { data: unmapped = [] } = useUnmappedAccounts();
+  const importsBadge = reviewCount + unmapped.length;
+  const { isOnline, pendingCount } = useNetworkStore();
 
   const logoutMutation = useMutation({
     mutationFn: () => authApi.logout(),
@@ -47,7 +64,7 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
 
       {/* Nav links */}
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {navItems.map(({ to, icon: Icon, label }) => (
+        {navItems.map(({ to, icon: Icon, key }) => (
           <NavLink
             key={to}
             to={to}
@@ -62,13 +79,52 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
             }
           >
             <Icon className="h-4 w-4 shrink-0" />
-            {label}
+            {t(key)}
           </NavLink>
         ))}
+
+        {/* Imports — only shown when SimpleFIN is connected */}
+        {sfConnection && (
+          <NavLink
+            to="/imports"
+            onClick={onNav}
+            className={({ isActive }) =>
+              [
+                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                isActive
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
+              ].join(' ')
+            }
+          >
+            <Download className="h-4 w-4 shrink-0" />
+            {t('nav.imports')}
+            {importsBadge > 0 && (
+              <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">
+                {importsBadge > 99 ? '99+' : importsBadge}
+              </span>
+            )}
+          </NavLink>
+        )}
       </nav>
 
       {/* Bottom: settings + user + logout */}
       <div className="px-3 pb-4 space-y-1 border-t border-gray-100 pt-3">
+        <NavLink
+          to="/settings/integrations/simplefin"
+          onClick={onNav}
+          className={({ isActive }) =>
+            [
+              'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+              isActive
+                ? 'bg-blue-50 text-blue-700'
+                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
+            ].join(' ')
+          }
+        >
+          <Plug className="h-4 w-4 shrink-0" />
+          {t('nav.integrations')}
+        </NavLink>
         <NavLink
           to="/settings/security"
           onClick={onNav}
@@ -82,12 +138,44 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
           }
         >
           <Settings className="h-4 w-4 shrink-0" />
-          Settings
+          {t('nav.settings')}
+        </NavLink>
+        <NavLink
+          to="/settings/preferences"
+          onClick={onNav}
+          className={({ isActive }) =>
+            [
+              'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+              isActive
+                ? 'bg-blue-50 text-blue-700'
+                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
+            ].join(' ')
+          }
+        >
+          <SlidersHorizontal className="h-4 w-4 shrink-0" />
+          {t('nav.preferences')}
         </NavLink>
 
         <div className="px-3 py-2">
           <p className="text-xs text-gray-400 truncate">{user?.email}</p>
         </div>
+
+        {/* Offline / pending status */}
+        {(!isOnline || pendingCount > 0) && (
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-amber-50 text-amber-700 text-xs">
+            <WifiOff className="h-3.5 w-3.5 shrink-0" />
+            {!isOnline ? (
+              <span>Offline</span>
+            ) : (
+              <span>{pendingCount} pending sync</span>
+            )}
+            {pendingCount > 0 && isOnline && (
+              <span className="ml-auto flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white">
+                {pendingCount > 99 ? '99+' : pendingCount}
+              </span>
+            )}
+          </div>
+        )}
 
         <Button
           variant="outline"
@@ -97,7 +185,7 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
           onClick={() => logoutMutation.mutate()}
         >
           <LogOut className="h-4 w-4 shrink-0" />
-          Sign out
+          {t('nav.signOut')}
         </Button>
       </div>
     </div>
@@ -155,10 +243,13 @@ export function AppLayout() {
           )}
         </header>
 
+        <OfflineBanner />
         <main className="flex-1">
           <Outlet />
         </main>
       </div>
+
+      <SyncNotification />
     </div>
   );
 }

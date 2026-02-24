@@ -73,6 +73,7 @@ app.get('/health', async (_req, res) => {
 
 // API routes
 import apiRouter from './routes/index';
+import { simplefinScheduler } from './services/integrations/simplefinScheduler';
 app.use('/api/v1', apiRouter);
 
 // 404 handler
@@ -87,6 +88,9 @@ async function startServer() {
     // Initialize database connection
     await initializeDatabase();
 
+    // Start background services
+    simplefinScheduler.start();
+
     // Start server
     const server = app.listen(env.appPort, () => {
       logger.info('🚀 Server started successfully', {
@@ -100,6 +104,7 @@ async function startServer() {
     // Graceful shutdown
     const shutdown = (signal: string) => {
       logger.info(`${signal} received, shutting down gracefully...`);
+      simplefinScheduler.shutdown();
       server.close(async () => {
         await closeDatabase();
         logger.info('Server closed');

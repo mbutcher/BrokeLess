@@ -1,25 +1,37 @@
+import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '@features/auth/hooks/useAuth';
+import { useAuthStore } from '@features/auth/stores/authStore';
 import { ProtectedRoute } from '@features/auth/components/ProtectedRoute';
+import i18n from '@lib/i18n';
 import { AppLayout } from '@components/layout/AppLayout';
+import { PWAInstallBanner } from '@components/common/PWAInstallBanner';
 import { LoginPage } from '@features/auth/pages/LoginPage';
 import { TwoFactorPage } from '@features/auth/pages/TwoFactorPage';
 import { RegisterPage } from '@features/auth/pages/RegisterPage';
 import { SecuritySettingsPage } from '@features/auth/pages/SecuritySettingsPage';
+import { PreferencesPage } from '@features/auth/pages/PreferencesPage';
 import { DashboardPage } from '@features/dashboard/pages/DashboardPage';
 import { AccountsPage } from '@features/core/pages/AccountsPage';
 import { TransactionsPage } from '@features/core/pages/TransactionsPage';
-import { BudgetListPage } from '@features/core/pages/BudgetListPage';
-import { BudgetDetailPage } from '@features/core/pages/BudgetDetailPage';
+import { BudgetPage } from '@features/core/pages/BudgetPage';
 import { DebtDetailPage } from '@features/core/pages/DebtDetailPage';
+import { LiabilitiesPage } from '@features/core/pages/LiabilitiesPage';
 import { SavingsGoalsPage } from '@features/core/pages/SavingsGoalsPage';
+import { SimplefinSettingsPage } from '@features/integrations/pages/SimplefinSettingsPage';
+import { ImportsPage } from '@features/integrations/pages/ImportsPage';
 
 /**
  * AuthInitializer calls GET /auth/me on mount to restore session from
  * the httpOnly refresh cookie (via silent token refresh in the Axios interceptor).
+ * It also syncs the i18n language whenever the user's locale preference changes.
  */
 function AuthInitializer() {
   useAuth();
+  const locale = useAuthStore((s) => s.user?.locale);
+  useEffect(() => {
+    if (locale) void i18n.changeLanguage(locale);
+  }, [locale]);
   return null;
 }
 
@@ -27,6 +39,7 @@ function App() {
   return (
     <>
       <AuthInitializer />
+      <PWAInstallBanner />
       <Routes>
         {/* Public routes */}
         <Route path="/login" element={<LoginPage />} />
@@ -44,11 +57,15 @@ function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/accounts" element={<AccountsPage />} />
           <Route path="/transactions" element={<TransactionsPage />} />
-          <Route path="/budgets" element={<BudgetListPage />} />
-          <Route path="/budgets/:id" element={<BudgetDetailPage />} />
+          <Route path="/budget" element={<BudgetPage />} />
+          <Route path="/budgets" element={<BudgetPage />} />
           <Route path="/accounts/:accountId/debt" element={<DebtDetailPage />} />
+          <Route path="/liabilities" element={<LiabilitiesPage />} />
           <Route path="/savings-goals" element={<SavingsGoalsPage />} />
+          <Route path="/imports" element={<ImportsPage />} />
+          <Route path="/settings/integrations/simplefin" element={<SimplefinSettingsPage />} />
           <Route path="/settings/security" element={<SecuritySettingsPage />} />
+          <Route path="/settings/preferences" element={<PreferencesPage />} />
         </Route>
 
         {/* Default redirect */}
