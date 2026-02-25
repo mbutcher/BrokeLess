@@ -30,9 +30,7 @@ class RefreshTokenRepository {
       ip_address: data.ipAddress,
       expires_at: data.expiresAt,
     });
-    const row = await this.db('refresh_tokens')
-      .where({ token_hash: data.tokenHash })
-      .first();
+    const row = await this.db('refresh_tokens').where({ token_hash: data.tokenHash }).first();
     return rowToRefreshToken(row as Record<string, unknown>);
   }
 
@@ -42,9 +40,7 @@ class RefreshTokenRepository {
   }
 
   async revokeByTokenHash(tokenHash: string): Promise<void> {
-    await this.db('refresh_tokens')
-      .where({ token_hash: tokenHash })
-      .update({ is_revoked: true });
+    await this.db('refresh_tokens').where({ token_hash: tokenHash }).update({ is_revoked: true });
   }
 
   async revokeAllForUser(userId: string): Promise<void> {

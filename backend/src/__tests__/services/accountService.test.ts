@@ -19,6 +19,7 @@ const mockAccount = {
   currency: 'USD',
   color: '#3b82f6',
   institution: 'Chase',
+  annualRate: null,
   isActive: true,
   createdAt: new Date(),
   updatedAt: new Date(),

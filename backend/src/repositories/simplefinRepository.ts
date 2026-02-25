@@ -64,10 +64,12 @@ class SimplefinRepository {
     status: 'success' | 'error' | 'pending',
     error?: string
   ): Promise<void> {
-    await this.db('simplefin_connections').where({ user_id: userId }).update({
-      last_sync_status: status,
-      last_sync_error: error ?? null,
-    });
+    await this.db('simplefin_connections')
+      .where({ user_id: userId })
+      .update({
+        last_sync_status: status,
+        last_sync_error: error ?? null,
+      });
   }
 
   async updateSyncTimestamp(userId: string): Promise<void> {

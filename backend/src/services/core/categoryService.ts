@@ -33,9 +33,7 @@ class CategoryService {
    * Called at user registration to populate their category list with sensible defaults.
    */
   async seedDefaultsForUser(userId: string): Promise<void> {
-    await categoryRepository.createBatch(
-      DEFAULT_CATEGORIES.map((c) => ({ ...c, userId }))
-    );
+    await categoryRepository.createBatch(DEFAULT_CATEGORIES.map((c) => ({ ...c, userId })));
   }
 
   async listCategories(userId: string): Promise<Category[]> {
@@ -55,11 +53,7 @@ class CategoryService {
     return categoryRepository.create({ ...input, userId });
   }
 
-  async updateCategory(
-    userId: string,
-    id: string,
-    input: UpdateCategoryData
-  ): Promise<Category> {
+  async updateCategory(userId: string, id: string, input: UpdateCategoryData): Promise<Category> {
     const existing = await categoryRepository.findById(id, userId);
     if (!existing) throw new AppError('Category not found', 404);
 

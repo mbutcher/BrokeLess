@@ -1,6 +1,15 @@
 import Joi from 'joi';
 
-const ACCOUNT_TYPES = ['checking', 'savings', 'credit_card', 'loan', 'line_of_credit', 'mortgage', 'investment', 'other'];
+const ACCOUNT_TYPES = [
+  'checking',
+  'savings',
+  'credit_card',
+  'loan',
+  'line_of_credit',
+  'mortgage',
+  'investment',
+  'other',
+];
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -11,10 +20,13 @@ export const createAccountSchema = Joi.object({
     'any.required': 'Account name is required',
     'string.max': 'Account name must be 255 characters or fewer',
   }),
-  type: Joi.string().valid(...ACCOUNT_TYPES).required().messages({
-    'any.required': 'Account type is required',
-    'any.only': `Account type must be one of: ${ACCOUNT_TYPES.join(', ')}`,
-  }),
+  type: Joi.string()
+    .valid(...ACCOUNT_TYPES)
+    .required()
+    .messages({
+      'any.required': 'Account type is required',
+      'any.only': `Account type must be one of: ${ACCOUNT_TYPES.join(', ')}`,
+    }),
   isAsset: Joi.boolean().required().messages({
     'any.required': 'isAsset is required',
   }),
@@ -29,9 +41,11 @@ export const createAccountSchema = Joi.object({
 
 export const updateAccountSchema = Joi.object({
   name: Joi.string().max(255),
-  type: Joi.string().valid(...ACCOUNT_TYPES).messages({
-    'any.only': `Account type must be one of: ${ACCOUNT_TYPES.join(', ')}`,
-  }),
+  type: Joi.string()
+    .valid(...ACCOUNT_TYPES)
+    .messages({
+      'any.only': `Account type must be one of: ${ACCOUNT_TYPES.join(', ')}`,
+    }),
   isAsset: Joi.boolean(),
   startingBalance: Joi.number().precision(2),
   currency: Joi.string().length(3).uppercase(),
@@ -206,8 +220,18 @@ export const budgetCategoriesSchema = Joi.object({
 // ─── Budget Line Validators ───────────────────────────────────────────────────
 
 const BUDGET_LINE_FREQUENCIES = [
-  'weekly', 'biweekly', 'semi_monthly', 'monthly', 'every_n_days', 'annually', 'one_time',
+  'weekly',
+  'biweekly',
+  'semi_monthly',
+  'twice_monthly',
+  'monthly',
+  'every_n_days',
+  'annually',
+  'one_time',
 ] as const;
+
+// 1–28 are always safe for every month; 31 is treated as "last day of month"
+const DAY_OF_MONTH = Joi.number().integer().min(1).max(31);
 
 export const createBudgetLineSchema = Joi.object({
   name: Joi.string().max(100).required().messages({
@@ -226,14 +250,18 @@ export const createBudgetLineSchema = Joi.object({
     'string.guid': 'categoryId must be a valid UUID',
   }),
   subcategoryId: Joi.string().uuid().optional().allow(null),
+  accountId: Joi.string().uuid().optional().allow(null),
   amount: Joi.number().positive().precision(2).required().messages({
     'any.required': 'amount is required',
     'number.positive': 'amount must be a positive number',
   }),
-  frequency: Joi.string().valid(...BUDGET_LINE_FREQUENCIES).required().messages({
-    'any.required': 'frequency is required',
-    'any.only': `frequency must be one of: ${BUDGET_LINE_FREQUENCIES.join(', ')}`,
-  }),
+  frequency: Joi.string()
+    .valid(...BUDGET_LINE_FREQUENCIES)
+    .required()
+    .messages({
+      'any.required': 'frequency is required',
+      'any.only': `frequency must be one of: ${BUDGET_LINE_FREQUENCIES.join(', ')}`,
+    }),
   frequencyInterval: Joi.number()
     .integer()
     .min(1)
@@ -243,6 +271,18 @@ export const createBudgetLineSchema = Joi.object({
     .messages({
       'any.required': 'frequencyInterval is required when frequency is every_n_days',
       'number.min': 'frequencyInterval must be at least 1',
+    }),
+  dayOfMonth1: DAY_OF_MONTH.when('frequency', { is: 'twice_monthly', then: Joi.required() })
+    .optional()
+    .allow(null)
+    .messages({
+      'any.required': 'dayOfMonth1 is required when frequency is twice_monthly',
+    }),
+  dayOfMonth2: DAY_OF_MONTH.when('frequency', { is: 'twice_monthly', then: Joi.required() })
+    .optional()
+    .allow(null)
+    .messages({
+      'any.required': 'dayOfMonth2 is required when frequency is twice_monthly',
     }),
   anchorDate: Joi.string().pattern(ISO_DATE).required().messages({
     'any.required': 'anchorDate is required',
@@ -258,6 +298,7 @@ export const updateBudgetLineSchema = Joi.object({
   flexibility: Joi.string().valid('fixed', 'flexible'),
   categoryId: Joi.string().uuid(),
   subcategoryId: Joi.string().uuid().allow(null),
+  accountId: Joi.string().uuid().optional().allow(null),
   amount: Joi.number().positive().precision(2),
   frequency: Joi.string().valid(...BUDGET_LINE_FREQUENCIES),
   frequencyInterval: Joi.number()
@@ -268,6 +309,16 @@ export const updateBudgetLineSchema = Joi.object({
     .messages({
       'any.required': 'frequencyInterval is required when frequency is every_n_days',
       'number.min': 'frequencyInterval must be at least 1',
+    }),
+  dayOfMonth1: DAY_OF_MONTH.when('frequency', { is: 'twice_monthly', then: Joi.required() })
+    .allow(null)
+    .messages({
+      'any.required': 'dayOfMonth1 is required when frequency is twice_monthly',
+    }),
+  dayOfMonth2: DAY_OF_MONTH.when('frequency', { is: 'twice_monthly', then: Joi.required() })
+    .allow(null)
+    .messages({
+      'any.required': 'dayOfMonth2 is required when frequency is twice_monthly',
     }),
   anchorDate: Joi.string().pattern(ISO_DATE),
   isPayPeriodAnchor: Joi.boolean(),
@@ -284,6 +335,30 @@ export const budgetViewQuerySchema = Joi.object({
     'any.required': 'end query param is required (YYYY-MM-DD)',
     'string.pattern.base': 'end must be in YYYY-MM-DD format',
   }),
+}).custom((value, helpers) => {
+  const v = value as { start: string; end: string };
+  if (v.start > v.end) {
+    return helpers.error('any.invalid', { message: 'start must be on or before end' });
+  }
+  return v;
+});
+
+export const upcomingExpensesSchema = Joi.object({
+  start: Joi.string().pattern(ISO_DATE).required().messages({
+    'any.required': 'start query param is required (YYYY-MM-DD)',
+    'string.pattern.base': 'start must be in YYYY-MM-DD format',
+  }),
+  end: Joi.string().pattern(ISO_DATE).required().messages({
+    'any.required': 'end query param is required (YYYY-MM-DD)',
+    'string.pattern.base': 'end must be in YYYY-MM-DD format',
+  }),
+  includeFlexible: Joi.boolean().default(false),
+}).custom((value, helpers) => {
+  const v = value as { start: string; end: string; includeFlexible: boolean };
+  if (v.start > v.end) {
+    return helpers.error('any.invalid', { message: 'start must be on or before end' });
+  }
+  return v;
 });
 
 // ─── SimpleFIN Validators ─────────────────────────────────────────────────────
@@ -337,7 +412,16 @@ export const mapAccountSchema = Joi.object({
   newAccount: Joi.object({
     name: Joi.string().max(255).required(),
     type: Joi.string()
-      .valid('checking', 'savings', 'credit_card', 'loan', 'line_of_credit', 'mortgage', 'investment', 'other')
+      .valid(
+        'checking',
+        'savings',
+        'credit_card',
+        'loan',
+        'line_of_credit',
+        'mortgage',
+        'investment',
+        'other'
+      )
       .required(),
     isAsset: Joi.boolean().required(),
     currency: Joi.string().length(3).uppercase().default('USD'),
@@ -366,7 +450,12 @@ export const netWorthHistorySchema = Joi.object({
 // ─── Recurring Transaction Validators ────────────────────────────────────────
 
 const RECURRING_FREQUENCIES = [
-  'weekly', 'biweekly', 'semi_monthly', 'monthly', 'every_n_days', 'annually',
+  'weekly',
+  'biweekly',
+  'semi_monthly',
+  'monthly',
+  'every_n_days',
+  'annually',
 ] as const;
 
 export const createRecurringTransactionSchema = Joi.object({
@@ -382,10 +471,13 @@ export const createRecurringTransactionSchema = Joi.object({
   payee: Joi.string().max(512).optional().allow(null, ''),
   notes: Joi.string().max(5000).optional().allow(null, ''),
   categoryId: Joi.string().uuid().optional().allow(null),
-  frequency: Joi.string().valid(...RECURRING_FREQUENCIES).required().messages({
-    'any.required': 'frequency is required',
-    'any.only': `frequency must be one of: ${RECURRING_FREQUENCIES.join(', ')}`,
-  }),
+  frequency: Joi.string()
+    .valid(...RECURRING_FREQUENCIES)
+    .required()
+    .messages({
+      'any.required': 'frequency is required',
+      'any.only': `frequency must be one of: ${RECURRING_FREQUENCIES.join(', ')}`,
+    }),
   frequencyInterval: Joi.number()
     .integer()
     .min(1)
@@ -410,9 +502,11 @@ export const updateRecurringTransactionSchema = Joi.object({
   payee: Joi.string().max(512).allow(null, ''),
   notes: Joi.string().max(5000).allow(null, ''),
   categoryId: Joi.string().uuid().allow(null),
-  frequency: Joi.string().valid(...RECURRING_FREQUENCIES).messages({
-    'any.only': `frequency must be one of: ${RECURRING_FREQUENCIES.join(', ')}`,
-  }),
+  frequency: Joi.string()
+    .valid(...RECURRING_FREQUENCIES)
+    .messages({
+      'any.only': `frequency must be one of: ${RECURRING_FREQUENCIES.join(', ')}`,
+    }),
   frequencyInterval: Joi.number()
     .integer()
     .min(1)

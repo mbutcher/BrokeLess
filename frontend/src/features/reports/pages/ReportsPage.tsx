@@ -1,32 +1,14 @@
 import { useState, useMemo } from 'react';
 import { useFormatters } from '@lib/i18n/useFormatters';
-import { frequencyLabel } from '@lib/utils/frequencyLabel';
 import { Button } from '@components/ui/button';
 import { SpendingPieChart } from '@components/charts/SpendingPieChart';
 import { NetWorthChart } from '@components/charts/NetWorthChart';
-import { RecurringTransactionDialog } from '@features/core/components/RecurringTransactionDialog';
-import { useAccounts } from '@features/core/hooks/useAccounts';
-import { useCategories } from '@features/core/hooks/useCategories';
 import {
   useSpendingByCategory,
   useNetWorthHistory,
   useTakeNetWorthSnapshot,
 } from '@features/core/hooks/useReports';
-import {
-  useRecurringTransactions,
-  useUpdateRecurringTransaction,
-  useDeleteRecurringTransaction,
-} from '@features/core/hooks/useRecurringTransactions';
-import type { RecurringTransaction } from '@features/core/types';
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function toLocalISO(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${dd}`;
-}
+import { toLocalISO } from '@lib/budget/budgetViewUtils';
 
 function getPeriodDates(period: string): { start: string; end: string } {
   const today = new Date();
@@ -237,229 +219,13 @@ function NetWorthTab() {
   );
 }
 
-// ─── Recurring Tab ────────────────────────────────────────────────────────────
-
-function RecurringTab() {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<RecurringTransaction | null>(null);
-  const { data: recurring = [], isLoading } = useRecurringTransactions();
-  const { data: accounts = [] } = useAccounts();
-  const { data: categories = [] } = useCategories();
-  const updateRecurring = useUpdateRecurringTransaction();
-  const deleteRecurring = useDeleteRecurringTransaction();
-  const fmt = useFormatters();
-
-  const accountName = (id: string) => accounts.find((a) => a.id === id)?.name ?? '—';
-  const categoryName = (id: string | null) =>
-    id ? (categories.find((c) => c.id === id)?.name ?? '—') : '—';
-
-  const today = new Date();
-  const todayStr = toLocalISO(today);
-  const in30DaysStr = toLocalISO(
-    new Date(today.getFullYear(), today.getMonth(), today.getDate() + 30),
-  );
-
-  const upcoming = useMemo(
-    () =>
-      recurring
-        .filter((r) => r.isActive && r.nextDueDate >= todayStr && r.nextDueDate <= in30DaysStr)
-        .sort((a, b) => a.nextDueDate.localeCompare(b.nextDueDate)),
-    [recurring, todayStr, in30DaysStr],
-  );
-
-  const activeCount = recurring.filter((r) => r.isActive).length;
-
-  return (
-    <div className="space-y-6">
-      {/* Header row */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">
-          {activeCount} active recurring transaction{activeCount !== 1 ? 's' : ''}
-        </p>
-        <Button
-          onClick={() => {
-            setEditing(null);
-            setDialogOpen(true);
-          }}
-        >
-          + Add Recurring
-        </Button>
-      </div>
-
-      {/* Main table */}
-      {isLoading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-12 bg-gray-100 animate-pulse rounded-lg" />
-          ))}
-        </div>
-      ) : recurring.length === 0 ? (
-        <div className="text-center py-16 text-gray-400 text-sm">
-          No recurring transactions yet. Add one to get started.
-        </div>
-      ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50">
-                  <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500">
-                    Payee / Description
-                  </th>
-                  <th className="text-right px-4 py-2.5 text-xs font-medium text-gray-500">
-                    Amount
-                  </th>
-                  <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500">
-                    Frequency
-                  </th>
-                  <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500">
-                    Next Due
-                  </th>
-                  <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500">
-                    Account
-                  </th>
-                  <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500">
-                    Category
-                  </th>
-                  <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500">
-                    Status
-                  </th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {recurring.map((r) => (
-                  <tr
-                    key={r.id}
-                    className={[
-                      'border-b border-gray-50 last:border-0',
-                      !r.isActive && 'opacity-50',
-                    ]
-                      .filter(Boolean)
-                      .join(' ')}
-                  >
-                    <td className="px-4 py-3 text-gray-900 font-medium">
-                      {r.payee ?? r.description ?? '—'}
-                    </td>
-                    <td
-                      className={[
-                        'px-4 py-3 text-right font-medium tabular-nums',
-                        r.amount < 0 ? 'text-red-600' : 'text-green-600',
-                      ].join(' ')}
-                    >
-                      {r.amount < 0 ? '−' : '+'}
-                      {fmt.currency(Math.abs(r.amount))}
-                    </td>
-                    <td className="px-4 py-3 text-gray-700">
-                      {frequencyLabel(r.frequency, r.frequencyInterval)}
-                    </td>
-                    <td className="px-4 py-3 text-gray-700 tabular-nums">{r.nextDueDate}</td>
-                    <td className="px-4 py-3 text-gray-700">{accountName(r.accountId)}</td>
-                    <td className="px-4 py-3 text-gray-500">{categoryName(r.categoryId)}</td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={[
-                          'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
-                          r.isActive
-                            ? 'bg-green-50 text-green-700'
-                            : 'bg-gray-100 text-gray-500',
-                        ].join(' ')}
-                      >
-                        {r.isActive ? 'Active' : 'Paused'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3 justify-end whitespace-nowrap">
-                        <button
-                          onClick={() => {
-                            setEditing(r);
-                            setDialogOpen(true);
-                          }}
-                          className="text-xs text-blue-600 hover:underline"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() =>
-                            updateRecurring.mutate({
-                              id: r.id,
-                              data: { isActive: !r.isActive },
-                            })
-                          }
-                          className="text-xs text-gray-500 hover:underline"
-                        >
-                          {r.isActive ? 'Pause' : 'Resume'}
-                        </button>
-                        <button
-                          onClick={() => deleteRecurring.mutate(r.id)}
-                          className="text-xs text-red-500 hover:underline"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Upcoming section */}
-      {upcoming.length > 0 && (
-        <div>
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">Upcoming — next 30 days</h3>
-          <div className="space-y-2">
-            {upcoming.map((r) => (
-              <div
-                key={r.id}
-                className="flex items-center justify-between bg-white rounded-lg border border-gray-200 px-4 py-2.5"
-              >
-                <div>
-                  <span className="text-sm font-medium text-gray-900">
-                    {r.payee ?? r.description ?? '—'}
-                  </span>
-                  <span className="ml-2 text-xs text-gray-400">{accountName(r.accountId)}</span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span
-                    className={[
-                      'text-sm font-medium tabular-nums',
-                      r.amount < 0 ? 'text-red-600' : 'text-green-600',
-                    ].join(' ')}
-                  >
-                    {r.amount < 0 ? '−' : '+'}
-                    {fmt.currency(Math.abs(r.amount))}
-                  </span>
-                  <span className="text-xs text-gray-400 tabular-nums">{r.nextDueDate}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <RecurringTransactionDialog
-        open={dialogOpen}
-        recurring={editing ?? undefined}
-        onClose={() => {
-          setDialogOpen(false);
-          setEditing(null);
-        }}
-      />
-    </div>
-  );
-}
-
 // ─── ReportsPage ──────────────────────────────────────────────────────────────
 
-type Tab = 'spending' | 'networth' | 'recurring';
+type Tab = 'spending' | 'networth';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'spending', label: 'Spending' },
   { id: 'networth', label: 'Net Worth' },
-  { id: 'recurring', label: 'Recurring' },
 ];
 
 export function ReportsPage() {
@@ -470,7 +236,7 @@ export function ReportsPage() {
       {/* Page header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Analyse your spending, net worth, and recurring transactions.</p>
+        <p className="text-sm text-gray-500 mt-0.5">Analyse your spending and net worth over time.</p>
       </div>
 
       {/* Tab bar */}
@@ -494,7 +260,6 @@ export function ReportsPage() {
       {/* Tab content */}
       {tab === 'spending' && <SpendingTab />}
       {tab === 'networth' && <NetWorthTab />}
-      {tab === 'recurring' && <RecurringTab />}
     </div>
   );
 }

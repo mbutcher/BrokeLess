@@ -1,7 +1,10 @@
 import type { Request, Response } from 'express';
 import { asyncHandler } from '@middleware/errorHandler';
 import { recurringTransactionService } from '@services/core/recurringTransactionService';
-import type { CreateRecurringTransactionData, UpdateRecurringTransactionData } from '@typings/core.types';
+import type {
+  CreateRecurringTransactionData,
+  UpdateRecurringTransactionData,
+} from '@typings/core.types';
 
 class RecurringTransactionController {
   list = asyncHandler(async (req: Request, res: Response) => {

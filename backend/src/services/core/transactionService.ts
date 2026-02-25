@@ -91,12 +91,7 @@ class TransactionService {
     const debtAccountTypes = ['loan', 'mortgage', 'credit_card'];
     if (debtAccountTypes.includes(account.type) && input.amount < 0) {
       // Fire-and-forget — failure is logged inside debtService but must not reject the response
-      void debtService.autoSplitPayment(
-        createdTx!.id,
-        input.accountId,
-        userId,
-        input.amount
-      );
+      void debtService.autoSplitPayment(createdTx!.id, input.accountId, userId, input.amount);
     }
 
     // Candidate detection is outside the DB transaction — it's a read-only suggestion

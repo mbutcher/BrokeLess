@@ -24,12 +24,7 @@ export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('budget_categories', (table) => {
     table.uuid('id').primary().defaultTo(knex.raw('(UUID())'));
 
-    table
-      .uuid('budget_id')
-      .notNullable()
-      .references('id')
-      .inTable('budgets')
-      .onDelete('CASCADE');
+    table.uuid('budget_id').notNullable().references('id').inTable('budgets').onDelete('CASCADE');
 
     table
       .uuid('category_id')

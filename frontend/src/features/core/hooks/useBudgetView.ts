@@ -36,3 +36,24 @@ export function usePayPeriod() {
     retry: false,
   });
 }
+
+/**
+ * Fetches upcoming fixed expense occurrences and (optionally) prorated flexible amounts
+ * within a given date window.
+ */
+export function useUpcomingExpenses(
+  start: string,
+  end: string,
+  includeFlexible = false,
+) {
+  return useQuery({
+    queryKey: [...BUDGET_VIEW_KEY, 'upcoming', start, end, includeFlexible],
+    queryFn: async () => {
+      const res = await budgetLineApi.getUpcoming(start, end, includeFlexible);
+      return res.data.data.upcoming;
+    },
+    enabled: Boolean(start) && Boolean(end),
+    networkMode: 'always',
+    retry: false,
+  });
+}

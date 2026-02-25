@@ -4,7 +4,13 @@ export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('simplefin_connections', (table) => {
     table.uuid('id').primary().defaultTo(knex.raw('(UUID())'));
     // One SimpleFIN connection per user
-    table.uuid('user_id').notNullable().unique().references('id').inTable('users').onDelete('CASCADE');
+    table
+      .uuid('user_id')
+      .notNullable()
+      .unique()
+      .references('id')
+      .inTable('users')
+      .onDelete('CASCADE');
 
     // AES-256-GCM encrypted SimpleFIN access URL (iv:authTag:ciphertext)
     table.text('access_url_encrypted').notNullable();

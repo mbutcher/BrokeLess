@@ -17,9 +17,7 @@ class NetWorthScheduler {
   private async takeSnapshotsForAllUsers(): Promise<void> {
     let userIds: string[];
     try {
-      const rows = await getDatabase()('users')
-        .where({ is_active: true })
-        .select('id');
+      const rows = await getDatabase()('users').where({ is_active: true }).select('id');
       userIds = rows.map((r: Record<string, unknown>) => r['id'] as string);
     } catch (err) {
       logger.error('Net worth scheduler: failed to load active users', { err });

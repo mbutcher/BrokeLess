@@ -1,9 +1,6 @@
 import { env } from '@config/env';
 import { logger, loggers } from '@utils/logger';
-import {
-  ConflictError,
-  UnauthorizedError,
-} from '@middleware/errorHandler';
+import { ConflictError, UnauthorizedError } from '@middleware/errorHandler';
 import { encryptionService } from '@services/encryption/encryptionService';
 import { categoryService } from '@services/core/categoryService';
 import { passwordService } from './passwordService';

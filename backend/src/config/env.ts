@@ -20,14 +20,7 @@ const readSecret = (filename: string): string | undefined => {
 };
 
 // Required environment variables
-const requiredEnvVars = [
-  'NODE_ENV',
-  'APP_PORT',
-  'DB_HOST',
-  'DB_PORT',
-  'DB_NAME',
-  'DB_USER',
-];
+const requiredEnvVars = ['NODE_ENV', 'APP_PORT', 'DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER'];
 
 // Bracket notation required by noPropertyAccessFromIndexSignature
 const e = process.env;

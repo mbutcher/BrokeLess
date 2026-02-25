@@ -17,10 +17,16 @@ function rowToBudgetLine(row: Record<string, unknown>): BudgetLine {
     flexibility: row['flexibility'] as BudgetLine['flexibility'],
     categoryId: row['category_id'] as string,
     subcategoryId: (row['subcategory_id'] as string | null) ?? null,
+    accountId: (row['account_id'] as string | null) ?? null,
     amount: Number(row['amount']),
     frequency: row['frequency'] as BudgetLineFrequency,
     frequencyInterval: row['frequency_interval'] != null ? Number(row['frequency_interval']) : null,
-    anchorDate: row['anchor_date'] as string,
+    dayOfMonth1: row['day_of_month_1'] != null ? Number(row['day_of_month_1']) : null,
+    dayOfMonth2: row['day_of_month_2'] != null ? Number(row['day_of_month_2']) : null,
+    anchorDate:
+      row['anchor_date'] instanceof Date
+        ? row['anchor_date'].toISOString().slice(0, 10)
+        : String(row['anchor_date']).slice(0, 10),
     isPayPeriodAnchor: Boolean(row['is_pay_period_anchor']),
     isActive: Boolean(row['is_active']),
     notes: (row['notes'] as string | null) ?? null,
@@ -79,9 +85,12 @@ class BudgetLineRepository {
       flexibility: data.flexibility,
       category_id: data.categoryId,
       subcategory_id: data.subcategoryId ?? null,
+      account_id: data.accountId ?? null,
       amount: data.amount,
       frequency: data.frequency,
       frequency_interval: data.frequencyInterval ?? null,
+      day_of_month_1: data.dayOfMonth1 ?? null,
+      day_of_month_2: data.dayOfMonth2 ?? null,
       anchor_date: data.anchorDate,
       is_pay_period_anchor: data.isPayPeriodAnchor ?? false,
       notes: data.notes ?? null,
@@ -103,11 +112,16 @@ class BudgetLineRepository {
     if (data.flexibility !== undefined) updates['flexibility'] = data.flexibility;
     if (data.categoryId !== undefined) updates['category_id'] = data.categoryId;
     if (data.subcategoryId !== undefined) updates['subcategory_id'] = data.subcategoryId;
+    if (data.accountId !== undefined) updates['account_id'] = data.accountId;
     if (data.amount !== undefined) updates['amount'] = data.amount;
     if (data.frequency !== undefined) updates['frequency'] = data.frequency;
-    if (data.frequencyInterval !== undefined) updates['frequency_interval'] = data.frequencyInterval;
+    if (data.frequencyInterval !== undefined)
+      updates['frequency_interval'] = data.frequencyInterval;
+    if (data.dayOfMonth1 !== undefined) updates['day_of_month_1'] = data.dayOfMonth1;
+    if (data.dayOfMonth2 !== undefined) updates['day_of_month_2'] = data.dayOfMonth2;
     if (data.anchorDate !== undefined) updates['anchor_date'] = data.anchorDate;
-    if (data.isPayPeriodAnchor !== undefined) updates['is_pay_period_anchor'] = data.isPayPeriodAnchor;
+    if (data.isPayPeriodAnchor !== undefined)
+      updates['is_pay_period_anchor'] = data.isPayPeriodAnchor;
     if (data.notes !== undefined) updates['notes'] = data.notes;
     if (data.isActive !== undefined) updates['is_active'] = data.isActive;
 

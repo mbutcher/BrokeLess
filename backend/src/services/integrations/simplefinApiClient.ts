@@ -21,7 +21,10 @@ class SimplefinApiClient {
       // Validate that decoding produced a URL (not garbage)
       new URL(claimUrl);
     } catch {
-      throw new AppError('Invalid SimpleFIN setup token — it must be the base64-encoded token from SimpleFIN Bridge', 400);
+      throw new AppError(
+        'Invalid SimpleFIN setup token — it must be the base64-encoded token from SimpleFIN Bridge',
+        400
+      );
     }
 
     try {
@@ -41,7 +44,10 @@ class SimplefinApiClient {
       if (err instanceof AppError) throw err;
       if (axios.isAxiosError(err)) {
         if (err.response?.status === 403) {
-          throw new AppError('This SimpleFIN setup token has already been used — generate a new one from SimpleFIN Bridge', 409);
+          throw new AppError(
+            'This SimpleFIN setup token has already been used — generate a new one from SimpleFIN Bridge',
+            409
+          );
         }
         throw new AppError(
           `Failed to claim SimpleFIN token: ${err.response?.status ?? err.message}`,
@@ -85,10 +91,7 @@ class SimplefinApiClient {
         if (err.code === 'ECONNABORTED') {
           throw new AppError('SimpleFIN request timed out — the service may be unavailable', 503);
         }
-        throw new AppError(
-          `SimpleFIN sync failed: ${err.response?.status ?? err.message}`,
-          502
-        );
+        throw new AppError(`SimpleFIN sync failed: ${err.response?.status ?? err.message}`, 502);
       }
       throw err;
     }

@@ -26,6 +26,7 @@ const mockAccount = {
   currency: 'USD',
   color: null,
   institution: null,
+  annualRate: null,
   isActive: true,
   createdAt: new Date(),
   updatedAt: new Date(),

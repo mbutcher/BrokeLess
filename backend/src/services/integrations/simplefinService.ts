@@ -22,7 +22,7 @@ import type { SimplefinTransaction } from '@typings/simplefin.types';
 /** Amount tolerance for fuzzy-match deduplication (within $0.01) */
 const AMOUNT_TOLERANCE = 0.01;
 /** Minimum payee similarity score to flag as probable duplicate */
-const FUZZY_THRESHOLD = 0.70;
+const FUZZY_THRESHOLD = 0.7;
 /** How many days back to look for fuzzy-match candidates */
 const FUZZY_LOOKBACK_DAYS = 14;
 /** Safety overlap: re-fetch transactions since (lastSyncAt - 3 days) */
@@ -117,7 +117,7 @@ class SimplefinService {
         // Update local account balance from SimpleFIN's reported balance
         const sfBalance = parseFloat(sfAccount.balance);
         if (!isNaN(sfBalance)) {
-          await accountRepository.setCurrentBalance(mapping.localAccountId, sfBalance);
+          await accountRepository.setCurrentBalance(mapping.localAccountId, userId, sfBalance);
         }
 
         // Import transactions for this mapped account
@@ -271,7 +271,11 @@ class SimplefinService {
       const account = await accountRepository.findById(data.localAccountId, userId);
       if (!account) throw new AppError('Account not found', 404);
 
-      await accountRepository.setSimplefinAccountId(data.localAccountId, userId, simplefinAccountId);
+      await accountRepository.setSimplefinAccountId(
+        data.localAccountId,
+        userId,
+        simplefinAccountId
+      );
       await simplefinAccountMappingRepository.setLocalAccount(
         userId,
         simplefinAccountId,

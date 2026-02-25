@@ -1,6 +1,8 @@
-# Getting Started with Budget App Development
+# Getting Started with BudgetApp Development
 
-This guide will help you set up your development environment and start contributing to the Budget App project.
+> **v0.1** — This guide covers setting up a local development environment.
+
+This guide will help you set up your development environment and start contributing to the BudgetApp project.
 
 ## Prerequisites
 
@@ -445,18 +447,14 @@ npm cache clean --force
 
 ## Next Steps
 
-- Read [Development Workflow](development-workflow.md)
-- Review [Coding Standards](coding-standards.md)
-- Understand [Security Guidelines](security-guidelines.md)
-- Explore [API Documentation](api-documentation.md)
-- Check [Testing Strategy](testing-strategy.md)
+- Review [Architecture Decisions](../planning/architecture-decisions/) — key technical decision records
+- Explore [Database Schema](../planning/database-schema.md) — full schema reference
 
 ## Getting Help
 
 - **Documentation**: Check `docs/` directory
-- **API Reference**: http://localhost:3001/api-docs
+- **API Reference**: http://localhost:3001/api-docs (Swagger UI, requires running backend)
 - **Issues**: Create an issue on GitHub
-- **Code Review**: Submit PR for feedback
 
 ## Development Tips
 

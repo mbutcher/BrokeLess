@@ -25,7 +25,9 @@ class SavingsGoalRepository {
   }
 
   async findAllByUser(userId: string): Promise<SavingsGoal[]> {
-    const rows = await this.db('savings_goals').where({ user_id: userId }).orderBy('created_at', 'asc');
+    const rows = await this.db('savings_goals')
+      .where({ user_id: userId })
+      .orderBy('created_at', 'asc');
     return rows.map(rowToGoal);
   }
 
@@ -48,7 +50,11 @@ class SavingsGoalRepository {
     return rowToGoal(row as Record<string, unknown>);
   }
 
-  async update(userId: string, goalId: string, data: UpdateSavingsGoalData): Promise<SavingsGoal | null> {
+  async update(
+    userId: string,
+    goalId: string,
+    data: UpdateSavingsGoalData
+  ): Promise<SavingsGoal | null> {
     const updates: Record<string, unknown> = {};
     if (data.name !== undefined) updates['name'] = data.name;
     if (data.targetAmount !== undefined) updates['target_amount'] = data.targetAmount;

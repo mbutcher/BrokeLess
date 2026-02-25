@@ -3,12 +3,7 @@ import type { Knex } from 'knex';
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('refresh_tokens', (table) => {
     table.uuid('id').primary().defaultTo(knex.raw('(UUID())'));
-    table
-      .uuid('user_id')
-      .notNullable()
-      .references('id')
-      .inTable('users')
-      .onDelete('CASCADE');
+    table.uuid('user_id').notNullable().references('id').inTable('users').onDelete('CASCADE');
 
     // SHA-256 of the raw JWT refresh token (raw token sent as httpOnly cookie, never stored)
     table.string('token_hash', 64).notNullable().unique();

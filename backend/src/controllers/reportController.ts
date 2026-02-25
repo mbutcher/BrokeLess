@@ -68,10 +68,7 @@ class ReportController {
     const db = getDatabase();
 
     // Sign filter: expenses are negative amounts, income is positive
-    const amountFilter =
-      type === 'income'
-        ? db.raw('t.amount > 0')
-        : db.raw('t.amount < 0');
+    const amountFilter = type === 'income' ? db.raw('t.amount > 0') : db.raw('t.amount < 0');
 
     const rows = (await db('transactions as t')
       .join('categories as c', 't.category_id', 'c.id')
@@ -81,12 +78,7 @@ class ReportController {
       .where('t.date', '>=', start)
       .where('t.date', '<=', end)
       .whereRaw(amountFilter)
-      .select(
-        't.category_id',
-        'c.name as category_name',
-        'c.parent_id',
-        'c.color',
-      )
+      .select('t.category_id', 'c.name as category_name', 'c.parent_id', 'c.color')
       .sum({ total: db.raw('ABS(t.amount)') })
       .groupBy('t.category_id', 'c.name', 'c.parent_id', 'c.color')
       .orderBy('total', 'desc')) as CategorySpendRow[];

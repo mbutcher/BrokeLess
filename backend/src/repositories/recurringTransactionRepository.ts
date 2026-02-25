@@ -71,7 +71,9 @@ class RecurringTransactionRepository {
     return rows.map(rowToRecurring);
   }
 
-  async create(data: CreateRecurringTransactionData & { nextDueDate: string }): Promise<RecurringTransaction> {
+  async create(
+    data: CreateRecurringTransactionData & { nextDueDate: string }
+  ): Promise<RecurringTransaction> {
     const id = randomUUID();
     await this.db('recurring_transactions').insert({
       id,
@@ -95,7 +97,7 @@ class RecurringTransactionRepository {
   async update(
     id: string,
     userId: string,
-    data: UpdateRecurringTransactionData,
+    data: UpdateRecurringTransactionData
   ): Promise<RecurringTransaction | null> {
     const updates: Record<string, unknown> = {};
     if (data.accountId !== undefined) updates['account_id'] = data.accountId;
@@ -105,7 +107,8 @@ class RecurringTransactionRepository {
     if (data.notes !== undefined) updates['notes'] = data.notes;
     if (data.categoryId !== undefined) updates['category_id'] = data.categoryId;
     if (data.frequency !== undefined) updates['frequency'] = data.frequency;
-    if (data.frequencyInterval !== undefined) updates['frequency_interval'] = data.frequencyInterval;
+    if (data.frequencyInterval !== undefined)
+      updates['frequency_interval'] = data.frequencyInterval;
     if (data.anchorDate !== undefined) updates['anchor_date'] = data.anchorDate;
     if (data.nextDueDate !== undefined) updates['next_due_date'] = data.nextDueDate;
     if (data.endDate !== undefined) updates['end_date'] = data.endDate;

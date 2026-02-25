@@ -115,11 +115,11 @@ class UserRepository {
   async updatePreferences(userId: string, data: UpdateProfileData): Promise<void> {
     const updates: Record<string, unknown> = {};
     if (data.defaultCurrency !== undefined) updates['default_currency'] = data.defaultCurrency;
-    if (data.locale !== undefined)          updates['locale'] = data.locale;
-    if (data.dateFormat !== undefined)      updates['date_format'] = data.dateFormat;
-    if (data.timeFormat !== undefined)      updates['time_format'] = data.timeFormat;
-    if (data.timezone !== undefined)        updates['timezone'] = data.timezone;
-    if (data.weekStart !== undefined)       updates['week_start'] = data.weekStart;
+    if (data.locale !== undefined) updates['locale'] = data.locale;
+    if (data.dateFormat !== undefined) updates['date_format'] = data.dateFormat;
+    if (data.timeFormat !== undefined) updates['time_format'] = data.timeFormat;
+    if (data.timezone !== undefined) updates['timezone'] = data.timezone;
+    if (data.weekStart !== undefined) updates['week_start'] = data.weekStart;
 
     if (Object.keys(updates).length > 0) {
       await this.db('users').where({ id: userId }).update(updates);

@@ -9,6 +9,8 @@ import type {
   UpdateBudgetLineData,
 } from '@typings/core.types';
 import { categoryRepository } from '@repositories/categoryRepository';
+import { accountRepository } from '@repositories/accountRepository';
+import { computeOccurrences, toISODate } from '@utils/recurringDates';
 import { AppError } from '@middleware/errorHandler';
 
 // ─── Schedule math ────────────────────────────────────────────────────────────
@@ -17,15 +19,28 @@ import { AppError } from '@middleware/errorHandler';
  * Convert a Budget Line amount to its annual equivalent.
  * Used for prorating to any arbitrary view window.
  */
-function toAnnual(amount: number, frequency: BudgetLine['frequency'], interval: number | null): number {
+function toAnnual(
+  amount: number,
+  frequency: BudgetLine['frequency'],
+  interval: number | null
+): number {
   switch (frequency) {
-    case 'weekly':       return amount * 52;
-    case 'biweekly':     return amount * 26;
-    case 'semi_monthly': return amount * 24;
-    case 'monthly':      return amount * 12;
-    case 'annually':     return amount;
-    case 'every_n_days': return interval && interval > 0 ? amount * (365 / interval) : amount * 12;
-    case 'one_time':     return amount; // handled separately in proration
+    case 'weekly':
+      return amount * 52;
+    case 'biweekly':
+      return amount * 26;
+    case 'semi_monthly':
+      return amount * 24;
+    case 'twice_monthly':
+      return amount * 24;
+    case 'monthly':
+      return amount * 12;
+    case 'annually':
+      return amount;
+    case 'every_n_days':
+      return interval && interval > 0 ? amount * (365 / interval) : amount * 12;
+    case 'one_time':
+      return amount; // handled separately in proration
   }
 }
 
@@ -47,62 +62,7 @@ function proratedAmount(
   }
   const daysInWindow = (windowEnd.getTime() - windowStart.getTime()) / 86_400_000 + 1;
   const annual = toAnnual(amount, frequency, interval);
-  return Math.round((annual * (daysInWindow / 365)) * 100) / 100;
-}
-
-/**
- * Compute occurrence dates for a Budget Line within [windowStart, windowEnd].
- * Walks forward from anchor_date using the frequency rule.
- */
-function computeOccurrences(
-  anchorDate: Date,
-  frequency: BudgetLine['frequency'],
-  interval: number | null,
-  windowStart: Date,
-  windowEnd: Date
-): Date[] {
-  if (frequency === 'one_time') {
-    return anchorDate >= windowStart && anchorDate <= windowEnd ? [anchorDate] : [];
-  }
-
-  const occurrences: Date[] = [];
-
-  // Step function: advance one occurrence period
-  const step = (d: Date): Date => {
-    const next = new Date(d);
-    switch (frequency) {
-      case 'weekly':       next.setUTCDate(next.getUTCDate() + 7);   break;
-      case 'biweekly':     next.setUTCDate(next.getUTCDate() + 14);  break;
-      case 'semi_monthly': {
-        // Alternate between 1st and 15th (or 15th and last-of-month)
-        const day = next.getUTCDate();
-        if (day < 15) {
-          next.setUTCDate(15);
-        } else {
-          next.setUTCMonth(next.getUTCMonth() + 1, 1);
-        }
-        break;
-      }
-      case 'monthly':      next.setUTCMonth(next.getUTCMonth() + 1);  break;
-      case 'every_n_days': next.setUTCDate(next.getUTCDate() + (interval ?? 30)); break;
-      case 'annually':     next.setUTCFullYear(next.getUTCFullYear() + 1); break;
-    }
-    return next;
-  };
-
-  // Walk forward from anchor to collect all occurrences in window
-  let current = new Date(anchorDate);
-  // If anchor is far in the future, bail early
-  if (current > windowEnd) return [];
-
-  while (current <= windowEnd) {
-    if (current >= windowStart) {
-      occurrences.push(new Date(current));
-    }
-    current = step(current);
-  }
-
-  return occurrences;
+  return Math.round(annual * (daysInWindow / 365) * 100) / 100;
 }
 
 /**
@@ -123,10 +83,14 @@ function computeCurrentPayPeriod(
 
   const stepMs: number = (() => {
     switch (anchorLine.frequency) {
-      case 'weekly':       return 7 * 86_400_000;
-      case 'biweekly':     return 14 * 86_400_000;
-      case 'every_n_days': return (anchorLine.frequencyInterval ?? 30) * 86_400_000;
-      default:             return 0; // month-based handled separately
+      case 'weekly':
+        return 7 * 86_400_000;
+      case 'biweekly':
+        return 14 * 86_400_000;
+      case 'every_n_days':
+        return (anchorLine.frequencyInterval ?? 30) * 86_400_000;
+      default:
+        return 0; // month-based handled separately
     }
   })();
 
@@ -145,47 +109,121 @@ function computeCurrentPayPeriod(
     return { start: periodStart, end: periodEnd };
   }
 
-  // Month-based frequencies (monthly, semi_monthly, annually)
-  // Find the most recent occurrence on or before ref
-  let current = new Date(anchor);
-  while (current > ref) {
-    // walk back one period
+  // Month-based frequencies (monthly, semi_monthly, twice_monthly, annually)
+  // Find the most recent occurrence on or before ref, then the next one after.
+  const d1 = anchorLine.dayOfMonth1 ?? 1;
+  const d2 = anchorLine.dayOfMonth2 ?? 15;
+
+  const stepForward = (d: Date): Date => {
+    const next = new Date(d);
     switch (anchorLine.frequency) {
-      case 'monthly':      current.setUTCMonth(current.getUTCMonth() - 1);  break;
-      case 'semi_monthly': {
-        const day = current.getUTCDate();
-        if (day >= 15) current.setUTCDate(1);
-        else { current.setUTCMonth(current.getUTCMonth() - 1); current.setUTCDate(15); }
+      case 'monthly':
+        next.setUTCMonth(next.getUTCMonth() + 1);
         break;
-      }
-      case 'annually':     current.setUTCFullYear(current.getUTCFullYear() - 1); break;
-      default: break;
-    }
-  }
-  while (true) {
-    const next = new Date(current);
-    switch (anchorLine.frequency) {
-      case 'monthly':      next.setUTCMonth(next.getUTCMonth() + 1);  break;
       case 'semi_monthly': {
         const day = next.getUTCDate();
         if (day < 15) next.setUTCDate(15);
-        else { next.setUTCMonth(next.getUTCMonth() + 1); next.setUTCDate(1); }
+        else {
+          next.setUTCMonth(next.getUTCMonth() + 1);
+          next.setUTCDate(1);
+        }
         break;
       }
-      case 'annually':     next.setUTCFullYear(next.getUTCFullYear() + 1); break;
-      default: break;
+      case 'twice_monthly': {
+        const currentDay = next.getUTCDate();
+        const lastDayThisMonth = new Date(
+          Date.UTC(next.getUTCFullYear(), next.getUTCMonth() + 1, 0)
+        ).getUTCDate();
+        const resolvedD2 = d2 === 31 ? lastDayThisMonth : Math.min(d2, lastDayThisMonth);
+        if (currentDay < resolvedD2) {
+          next.setUTCDate(resolvedD2);
+        } else {
+          next.setUTCMonth(next.getUTCMonth() + 1, 1);
+          const lastDayNextMonth = new Date(
+            Date.UTC(next.getUTCFullYear(), next.getUTCMonth() + 1, 0)
+          ).getUTCDate();
+          next.setUTCDate(d1 === 31 ? lastDayNextMonth : Math.min(d1, lastDayNextMonth));
+        }
+        break;
+      }
+      case 'annually':
+        next.setUTCFullYear(next.getUTCFullYear() + 1);
+        break;
+      default:
+        break;
     }
-    if (next > ref) {
-      const periodEnd = new Date(next.getTime() - 86_400_000);
-      return { start: current, end: periodEnd };
+    return next;
+  };
+
+  // Step backward one occurrence (inverse of stepForward)
+  const stepBackward = (d: Date): Date => {
+    const prev = new Date(d);
+    switch (anchorLine.frequency) {
+      case 'monthly':
+        prev.setUTCMonth(prev.getUTCMonth() - 1);
+        break;
+      case 'semi_monthly': {
+        const day = prev.getUTCDate();
+        if (day >= 15) {
+          prev.setUTCDate(1);
+        } else {
+          prev.setUTCMonth(prev.getUTCMonth() - 1);
+          prev.setUTCDate(15);
+        }
+        break;
+      }
+      case 'twice_monthly': {
+        const currentDay = prev.getUTCDate();
+        const lastDayThisMonth = new Date(
+          Date.UTC(prev.getUTCFullYear(), prev.getUTCMonth() + 1, 0)
+        ).getUTCDate();
+        const resolvedD1 = d1 === 31 ? lastDayThisMonth : Math.min(d1, lastDayThisMonth);
+        if (currentDay <= resolvedD1) {
+          // We're at d1 — step back to d2 of previous month
+          prev.setUTCMonth(prev.getUTCMonth() - 1);
+          const lastDayPrev = new Date(
+            Date.UTC(prev.getUTCFullYear(), prev.getUTCMonth() + 1, 0)
+          ).getUTCDate();
+          prev.setUTCDate(d2 === 31 ? lastDayPrev : Math.min(d2, lastDayPrev));
+        } else {
+          // We're at d2 — step back to d1 of same month
+          prev.setUTCDate(resolvedD1);
+        }
+        break;
+      }
+      case 'annually':
+        prev.setUTCFullYear(prev.getUTCFullYear() - 1);
+        break;
+      default:
+        break;
     }
-    current = next;
+    return prev;
+  };
+
+  let current = new Date(anchor);
+  // If anchor is ahead of ref, walk backward until we're at or before ref
+  while (current > ref) {
+    current = stepBackward(current);
   }
+  // Walk forward to find the last period start still <= ref
+  while (stepForward(current) <= ref) {
+    current = stepForward(current);
+  }
+  const next = stepForward(current);
+  const periodEnd = new Date(next.getTime() - 86_400_000);
+  return { start: current, end: periodEnd };
 }
 
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 class BudgetLineService {
+  /** Validates that accountId, if provided, belongs to the requesting user. */
+  private async validateAccountOwnership(userId: string, accountId?: string | null): Promise<void> {
+    if (!accountId) return;
+    const account = await accountRepository.findById(accountId, userId);
+    if (!account) throw new AppError('Account not found', 404);
+  }
+
   /**
    * Validates that categoryId references a top-level Category and, when
    * provided, that subcategoryId is a direct child of that Category.
@@ -225,6 +263,7 @@ class BudgetLineService {
     input: Omit<CreateBudgetLineData, 'userId'>
   ): Promise<BudgetLine> {
     await this.validateCategoryHierarchy(userId, input.categoryId, input.subcategoryId);
+    await this.validateAccountOwnership(userId, input.accountId);
 
     if (input.isPayPeriodAnchor && input.classification === 'expense') {
       throw new AppError('isPayPeriodAnchor can only be set on income Budget Lines', 400);
@@ -257,6 +296,10 @@ class BudgetLineService {
       );
     }
 
+    if (input.accountId !== undefined) {
+      await this.validateAccountOwnership(userId, input.accountId);
+    }
+
     if (input.isPayPeriodAnchor === true) {
       const effectiveClassification = input.classification ?? existing.classification;
       if (effectiveClassification !== 'income') {
@@ -285,8 +328,8 @@ class BudgetLineService {
   // ─── Budget View ───────────────────────────────────────────────────────────
 
   async getBudgetView(userId: string, start: string, end: string): Promise<BudgetView> {
-    const windowStart = new Date(start + 'T00:00:00Z');
-    const windowEnd = new Date(end + 'T23:59:59Z');
+    const windowStart = new Date(start + 'T00:00:00');
+    const windowEnd = new Date(end + 'T00:00:00');
 
     if (windowStart > windowEnd) {
       throw new AppError('start must be on or before end', 400);
@@ -318,7 +361,7 @@ class BudgetLineService {
 
     // Build Budget View Lines
     const viewLines: BudgetViewLine[] = lines.map((line) => {
-      const anchor = new Date(line.anchorDate + 'T00:00:00Z');
+      const anchor = new Date(line.anchorDate + 'T00:00:00');
       const prorated = proratedAmount(
         line.amount,
         line.frequency,
@@ -337,15 +380,17 @@ class BudgetLineService {
         line.frequency,
         line.frequencyInterval,
         windowStart,
-        windowEnd
+        windowEnd,
+        line.dayOfMonth1,
+        line.dayOfMonth2
       );
 
       const today = new Date();
-      today.setUTCHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
 
       const occurrences: Occurrence[] = occurrenceDates.map((d) => ({
         budgetLineId: line.id,
-        dueDate: d.toISOString().substring(0, 10),
+        dueDate: toISODate(d),
         expectedAmount: line.amount,
         status: d <= today ? 'missed' : 'upcoming',
       }));

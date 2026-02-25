@@ -33,12 +33,16 @@ class DebtRepository {
   }
 
   async findByUserAndAccount(userId: string, accountId: string): Promise<DebtSchedule | null> {
-    const row = await this.db('debt_schedules').where({ user_id: userId, account_id: accountId }).first();
+    const row = await this.db('debt_schedules')
+      .where({ user_id: userId, account_id: accountId })
+      .first();
     return row ? rowToSchedule(row) : null;
   }
 
   async findAllByUser(userId: string): Promise<DebtSchedule[]> {
-    const rows = await this.db('debt_schedules').where({ user_id: userId }).orderBy('created_at', 'asc');
+    const rows = await this.db('debt_schedules')
+      .where({ user_id: userId })
+      .orderBy('created_at', 'asc');
     return rows.map(rowToSchedule);
   }
 
@@ -95,7 +99,9 @@ class DebtRepository {
   }
 
   async findSplitByTransaction(transactionId: string): Promise<TransactionSplit | null> {
-    const row = await this.db('transaction_splits').where({ transaction_id: transactionId }).first();
+    const row = await this.db('transaction_splits')
+      .where({ transaction_id: transactionId })
+      .first();
     return row ? rowToSplit(row) : null;
   }
 }

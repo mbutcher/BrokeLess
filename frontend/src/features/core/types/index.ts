@@ -204,6 +204,7 @@ export type BudgetLineFrequency =
   | 'weekly'
   | 'biweekly'
   | 'semi_monthly'
+  | 'twice_monthly'
   | 'monthly'
   | 'every_n_days'
   | 'annually'
@@ -220,9 +221,12 @@ export interface BudgetLine {
   flexibility: BudgetLineFlexibility;
   categoryId: string;
   subcategoryId: string | null;
+  accountId: string | null;
   amount: number;
   frequency: BudgetLineFrequency;
   frequencyInterval: number | null;
+  dayOfMonth1: number | null;
+  dayOfMonth2: number | null;
   anchorDate: string;
   isPayPeriodAnchor: boolean;
   isActive: boolean;
@@ -237,9 +241,12 @@ export interface CreateBudgetLineInput {
   flexibility: BudgetLineFlexibility;
   categoryId: string;
   subcategoryId?: string | null;
+  accountId?: string | null;
   amount: number;
   frequency: BudgetLineFrequency;
   frequencyInterval?: number | null;
+  dayOfMonth1?: number | null;
+  dayOfMonth2?: number | null;
   anchorDate: string;
   isPayPeriodAnchor?: boolean;
   notes?: string | null;
@@ -251,13 +258,45 @@ export interface UpdateBudgetLineInput {
   flexibility?: BudgetLineFlexibility;
   categoryId?: string;
   subcategoryId?: string | null;
+  accountId?: string | null;
   amount?: number;
   frequency?: BudgetLineFrequency;
   frequencyInterval?: number | null;
+  dayOfMonth1?: number | null;
+  dayOfMonth2?: number | null;
   anchorDate?: string;
   isPayPeriodAnchor?: boolean;
   notes?: string | null;
   isActive?: boolean;
+}
+
+// ─── Upcoming Expenses ────────────────────────────────────────────────────────
+
+export interface UpcomingFixedItem {
+  budgetLineId: string;
+  name: string;
+  amount: number;
+  date: string;
+  categoryId: string;
+  subcategoryId: string | null;
+  accountId: string | null;
+  accountName: string | null;
+}
+
+export interface UpcomingFlexibleItem {
+  budgetLineId: string;
+  name: string;
+  fullPeriodAmount: number;
+  proratedAmount: number;
+  frequency: string;
+  categoryId: string;
+}
+
+export interface UpcomingExpensesResponse {
+  start: string;
+  end: string;
+  fixedItems: UpcomingFixedItem[];
+  flexibleItems: UpcomingFlexibleItem[];
 }
 
 export interface Occurrence {

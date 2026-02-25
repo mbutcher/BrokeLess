@@ -16,18 +16,45 @@ interface BudgetLineRowProps {
 }
 
 const FREQUENCIES: BudgetLineFrequency[] = [
-  'weekly', 'biweekly', 'semi_monthly', 'monthly', 'every_n_days', 'annually', 'one_time',
+  'weekly', 'biweekly', 'semi_monthly', 'twice_monthly', 'monthly', 'every_n_days', 'annually', 'one_time',
 ];
 
-const editSchema = z.object({
-  name: z.string().min(1).max(100),
-  amount: z.number().positive(),
-  flexibility: z.enum(['fixed', 'flexible']),
-  frequency: z.enum(['weekly', 'biweekly', 'semi_monthly', 'monthly', 'every_n_days', 'annually', 'one_time']),
-  frequencyInterval: z.number().int().min(1).optional().nullable(),
-  anchorDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  notes: z.string().max(255).optional().nullable(),
-});
+/** Day-of-month picker options. 31 = "last day of month" */
+const DAY_OPTIONS = [
+  ...Array.from({ length: 28 }, (_, i) => ({ value: i + 1, label: String(i + 1) })),
+  { value: 29, label: '29' },
+  { value: 30, label: '30' },
+  { value: 31, label: 'Last day of month' },
+];
+
+const editSchema = z
+  .object({
+    name: z.string().min(1).max(100),
+    amount: z.number().positive(),
+    flexibility: z.enum(['fixed', 'flexible']),
+    frequency: z.enum(['weekly', 'biweekly', 'semi_monthly', 'twice_monthly', 'monthly', 'every_n_days', 'annually', 'one_time']),
+    frequencyInterval: z.number().int().min(1).optional().nullable(),
+    dayOfMonth1: z.number().int().min(1).max(31).optional().nullable(),
+    dayOfMonth2: z.number().int().min(1).max(31).optional().nullable(),
+    anchorDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    notes: z.string().max(255).optional().nullable(),
+  })
+  .refine(
+    (v) => v.frequency !== 'twice_monthly' || v.dayOfMonth1 != null,
+    { message: 'First day required', path: ['dayOfMonth1'] }
+  )
+  .refine(
+    (v) => v.frequency !== 'twice_monthly' || v.dayOfMonth2 != null,
+    { message: 'Second day required', path: ['dayOfMonth2'] }
+  )
+  .refine(
+    (v) =>
+      v.frequency !== 'twice_monthly' ||
+      v.dayOfMonth1 == null ||
+      v.dayOfMonth2 == null ||
+      v.dayOfMonth1 < v.dayOfMonth2,
+    { message: 'First day must be before second day', path: ['dayOfMonth2'] }
+  );
 
 type EditFormValues = z.infer<typeof editSchema>;
 
@@ -51,7 +78,7 @@ export function BudgetLineRow({ viewLine, subcategoryName }: BudgetLineRowProps)
   const updateLine = useUpdateBudgetLine();
   const deleteLine = useDeleteBudgetLine();
 
-  const { register, handleSubmit, watch, formState: { errors, isDirty } } = useForm<EditFormValues>({
+  const { register, handleSubmit, watch, setValue, formState: { errors, isDirty } } = useForm<EditFormValues>({
     resolver: zodResolver(editSchema),
     defaultValues: {
       name: line.name,
@@ -59,12 +86,23 @@ export function BudgetLineRow({ viewLine, subcategoryName }: BudgetLineRowProps)
       flexibility: line.flexibility,
       frequency: line.frequency,
       frequencyInterval: line.frequencyInterval,
+      dayOfMonth1: line.dayOfMonth1,
+      dayOfMonth2: line.dayOfMonth2,
       anchorDate: line.anchorDate,
       notes: line.notes ?? '',
     },
   });
 
   const watchedFrequency = watch('frequency');
+
+  // Reset frequency-specific fields when frequency changes
+  useEffect(() => {
+    if (watchedFrequency !== 'every_n_days') setValue('frequencyInterval', null);
+    if (watchedFrequency !== 'twice_monthly') {
+      setValue('dayOfMonth1', null);
+      setValue('dayOfMonth2', null);
+    }
+  }, [watchedFrequency, setValue]);
 
   const onSave = (values: EditFormValues) => {
     updateLine.mutate(
@@ -76,6 +114,8 @@ export function BudgetLineRow({ viewLine, subcategoryName }: BudgetLineRowProps)
           flexibility: values.flexibility as BudgetLineFlexibility,
           frequency: values.frequency as BudgetLineFrequency,
           frequencyInterval: values.frequency === 'every_n_days' ? (values.frequencyInterval ?? null) : null,
+          dayOfMonth1: values.frequency === 'twice_monthly' ? (values.dayOfMonth1 ?? null) : null,
+          dayOfMonth2: values.frequency === 'twice_monthly' ? (values.dayOfMonth2 ?? null) : null,
           anchorDate: values.anchorDate,
           notes: values.notes ?? null,
         },
@@ -116,7 +156,7 @@ export function BudgetLineRow({ viewLine, subcategoryName }: BudgetLineRowProps)
           </div>
           <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
             <FlexibilityBadge flexibility={line.flexibility} />
-            <FrequencyBadge frequency={line.frequency} interval={line.frequencyInterval} />
+            <FrequencyBadge frequency={line.frequency} interval={line.frequencyInterval} dayOfMonth1={line.dayOfMonth1} dayOfMonth2={line.dayOfMonth2} />
           </div>
         </div>
 
@@ -256,6 +296,37 @@ export function BudgetLineRow({ viewLine, subcategoryName }: BudgetLineRowProps)
                   className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+            )}
+
+            {watchedFrequency === 'twice_monthly' && (
+              <>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">First day of month</label>
+                  <select
+                    {...register('dayOfMonth1', { valueAsNumber: true })}
+                    className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select day</option>
+                    {DAY_OPTIONS.map(({ value, label }) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </select>
+                  {errors.dayOfMonth1 && <p className="text-xs text-red-600 mt-0.5">{errors.dayOfMonth1.message}</p>}
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Second day of month</label>
+                  <select
+                    {...register('dayOfMonth2', { valueAsNumber: true })}
+                    className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select day</option>
+                    {DAY_OPTIONS.map(({ value, label }) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </select>
+                  {errors.dayOfMonth2 && <p className="text-xs text-red-600 mt-0.5">{errors.dayOfMonth2.message}</p>}
+                </div>
+              </>
             )}
 
             <div>

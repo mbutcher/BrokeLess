@@ -3,12 +3,7 @@ import type { Knex } from 'knex';
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('totp_backup_codes', (table) => {
     table.uuid('id').primary().defaultTo(knex.raw('(UUID())'));
-    table
-      .uuid('user_id')
-      .notNullable()
-      .references('id')
-      .inTable('users')
-      .onDelete('CASCADE');
+    table.uuid('user_id').notNullable().references('id').inTable('users').onDelete('CASCADE');
 
     // SHA-256 of the raw backup code (raw codes shown once at setup, then discarded)
     table.string('code_hash', 64).notNullable();

@@ -17,16 +17,12 @@ export function detectAccountType(
     return { type: 'credit_card', isAsset: false };
   if (/line.?of.?credit|\bloc\b|heloc|personal line/.test(text))
     return { type: 'line_of_credit', isAsset: false };
-  if (/mortgage/.test(text))
-    return { type: 'mortgage', isAsset: false };
-  if (/\bloan\b/.test(text))
-    return { type: 'loan', isAsset: false };
-  if (/saving|hisa|tfsa/.test(text))
-    return { type: 'savings', isAsset: true };
+  if (/mortgage/.test(text)) return { type: 'mortgage', isAsset: false };
+  if (/\bloan\b/.test(text)) return { type: 'loan', isAsset: false };
+  if (/saving|hisa|tfsa/.test(text)) return { type: 'savings', isAsset: true };
   if (/invest|brokerage|rrsp|resp|\bira\b|401k|403b/.test(text))
     return { type: 'investment', isAsset: true };
-  if (/chequ|check/.test(text))
-    return { type: 'checking', isAsset: true };
+  if (/chequ|check/.test(text)) return { type: 'checking', isAsset: true };
 
   return { type: 'other', isAsset: true };
 }

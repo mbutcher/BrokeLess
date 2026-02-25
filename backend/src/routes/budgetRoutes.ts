@@ -17,6 +17,10 @@ router.post('/', validateRequest(createBudgetSchema), budgetController.create);
 router.get('/:id', budgetController.get);
 router.patch('/:id', validateRequest(updateBudgetSchema), budgetController.update);
 router.delete('/:id', budgetController.delete);
-router.put('/:id/categories', validateRequest(budgetCategoriesSchema), budgetController.upsertCategories);
+router.put(
+  '/:id/categories',
+  validateRequest(budgetCategoriesSchema),
+  budgetController.upsertCategories
+);
 
 export default router;

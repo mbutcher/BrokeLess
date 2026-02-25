@@ -19,21 +19,14 @@ class BudgetService {
     return budget;
   }
 
-  async createBudget(
-    userId: string,
-    input: Omit<CreateBudgetData, 'userId'>
-  ): Promise<Budget> {
+  async createBudget(userId: string, input: Omit<CreateBudgetData, 'userId'>): Promise<Budget> {
     if (input.startDate >= input.endDate) {
       throw new AppError('start_date must be before end_date', 422);
     }
     return budgetRepository.create({ ...input, userId });
   }
 
-  async updateBudget(
-    userId: string,
-    id: string,
-    input: UpdateBudgetData
-  ): Promise<Budget> {
+  async updateBudget(userId: string, id: string, input: UpdateBudgetData): Promise<Budget> {
     const existing = await budgetRepository.findById(id, userId);
     if (!existing) throw new AppError('Budget not found', 404);
 

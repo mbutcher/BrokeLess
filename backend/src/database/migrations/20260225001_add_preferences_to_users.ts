@@ -9,10 +9,7 @@ export async function up(knex: Knex): Promise<void> {
       .defaultTo('DD/MM/YYYY');
     table.enum('time_format', ['12h', '24h']).notNullable().defaultTo('12h');
     table.string('timezone', 100).notNullable().defaultTo('America/Toronto');
-    table
-      .enum('week_start', ['sunday', 'monday', 'saturday'])
-      .notNullable()
-      .defaultTo('sunday');
+    table.enum('week_start', ['sunday', 'monday', 'saturday']).notNullable().defaultTo('sunday');
   });
 }
 

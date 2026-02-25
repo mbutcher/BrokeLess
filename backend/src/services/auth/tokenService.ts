@@ -3,10 +3,7 @@ import * as crypto from 'crypto';
 import type { StringValue } from 'ms';
 import { env } from '@config/env';
 import { UnauthorizedError } from '@middleware/errorHandler';
-import type {
-  AccessTokenPayload,
-  TwoFactorTokenPayload,
-} from '@typings/auth.types';
+import type { AccessTokenPayload, TwoFactorTokenPayload } from '@typings/auth.types';
 
 class TokenService {
   private readonly secret: string;
@@ -85,10 +82,7 @@ class TokenService {
    * Used for binding refresh tokens to the issuing device.
    */
   computeFingerprint(ip: string, userAgent: string): string {
-    return crypto
-      .createHash('sha256')
-      .update(`${ip}:${userAgent}`)
-      .digest('hex');
+    return crypto.createHash('sha256').update(`${ip}:${userAgent}`).digest('hex');
   }
 }
 

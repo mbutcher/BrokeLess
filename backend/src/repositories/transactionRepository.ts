@@ -178,7 +178,23 @@ class TransactionRepository {
       .where('t.amount', targetAmount)
       .whereNull('tl.id') // not already linked
       .whereRaw('ABS(DATEDIFF(t.date, ?)) <= 3', [tx.date.toISOString().substring(0, 10)])
-      .select('t.*', 'a.id as a_id', 'a.name as a_name', 'a.type as a_type', 'a.is_asset as a_is_asset', 'a.starting_balance as a_starting_balance', 'a.current_balance as a_current_balance', 'a.currency as a_currency', 'a.color as a_color', 'a.institution as a_institution', 'a.is_active as a_is_active', 'a.created_at as a_created_at', 'a.updated_at as a_updated_at', 'a.user_id as a_user_id')
+      .select(
+        't.*',
+        'a.id as a_id',
+        'a.name as a_name',
+        'a.type as a_type',
+        'a.is_asset as a_is_asset',
+        'a.starting_balance as a_starting_balance',
+        'a.current_balance as a_current_balance',
+        'a.currency as a_currency',
+        'a.color as a_color',
+        'a.institution as a_institution',
+        'a.annual_rate as a_annual_rate',
+        'a.is_active as a_is_active',
+        'a.created_at as a_created_at',
+        'a.updated_at as a_updated_at',
+        'a.user_id as a_user_id'
+      )
       .limit(5); // cap candidates returned
 
     return rows.map((row: Record<string, unknown>) => ({

@@ -1,10 +1,6 @@
 import { accountRepository } from '@repositories/accountRepository';
 import { AppError } from '@middleware/errorHandler';
-import type {
-  Account,
-  CreateAccountData,
-  UpdateAccountData,
-} from '@typings/core.types';
+import type { Account, CreateAccountData, UpdateAccountData } from '@typings/core.types';
 
 class AccountService {
   async listAccounts(userId: string): Promise<Account[]> {
@@ -17,18 +13,11 @@ class AccountService {
     return account;
   }
 
-  async createAccount(
-    userId: string,
-    input: Omit<CreateAccountData, 'userId'>
-  ): Promise<Account> {
+  async createAccount(userId: string, input: Omit<CreateAccountData, 'userId'>): Promise<Account> {
     return accountRepository.create({ ...input, userId });
   }
 
-  async updateAccount(
-    userId: string,
-    id: string,
-    input: UpdateAccountData
-  ): Promise<Account> {
+  async updateAccount(userId: string, id: string, input: UpdateAccountData): Promise<Account> {
     const existing = await accountRepository.findById(id, userId);
     if (!existing) throw new AppError('Account not found', 404);
 

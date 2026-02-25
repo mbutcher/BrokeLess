@@ -44,9 +44,7 @@ class BudgetRepository {
   }
 
   async findAllForUser(userId: string): Promise<Budget[]> {
-    const rows = await this.db('budgets')
-      .where({ user_id: userId })
-      .orderBy('start_date', 'desc');
+    const rows = await this.db('budgets').where({ user_id: userId }).orderBy('start_date', 'desc');
     return rows.map(rowToBudget);
   }
 

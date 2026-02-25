@@ -12,12 +12,7 @@ export async function up(knex: Knex): Promise<void> {
     table.boolean('is_income').notNullable().defaultTo(false);
 
     // Self-referential FK for subcategories (nullable = top-level category)
-    table
-      .uuid('parent_id')
-      .nullable()
-      .references('id')
-      .inTable('categories')
-      .onDelete('SET NULL');
+    table.uuid('parent_id').nullable().references('id').inTable('categories').onDelete('SET NULL');
 
     // Soft delete — preserved on existing transactions
     table.boolean('is_active').notNullable().defaultTo(true);

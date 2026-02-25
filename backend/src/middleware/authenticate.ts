@@ -37,11 +37,7 @@ export const authenticate = (req: Request, _res: Response, next: NextFunction): 
  * Only accepts tokens with type '2fa_pending'.
  * Rejects regular access tokens.
  */
-export const authenticateTwoFactor = (
-  req: Request,
-  _res: Response,
-  next: NextFunction
-): void => {
+export const authenticateTwoFactor = (req: Request, _res: Response, next: NextFunction): void => {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
     return next(new UnauthorizedError('Two-factor authentication token required'));

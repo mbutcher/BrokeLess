@@ -78,9 +78,7 @@ class SimplefinPendingReviewRepository {
   }
 
   async delete(userId: string, reviewId: string): Promise<void> {
-    await this.db('simplefin_pending_reviews')
-      .where({ id: reviewId, user_id: userId })
-      .delete();
+    await this.db('simplefin_pending_reviews').where({ id: reviewId, user_id: userId }).delete();
   }
 
   async countByUser(userId: string): Promise<number> {

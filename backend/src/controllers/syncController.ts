@@ -2,7 +2,14 @@ import type { Request, Response } from 'express';
 import { asyncHandler, AppError } from '@middleware/errorHandler';
 import { getDatabase } from '@config/database';
 import { encryptionService } from '@services/encryption/encryptionService';
-import type { Account, Category, PublicTransaction, Budget, BudgetCategory, SavingsGoal } from '@typings/core.types';
+import type {
+  Account,
+  Category,
+  PublicTransaction,
+  Budget,
+  BudgetCategory,
+  SavingsGoal,
+} from '@typings/core.types';
 
 class SyncController {
   /**
@@ -99,15 +106,10 @@ class SyncController {
       userId: String(r['user_id']),
       accountId: String(r['account_id']),
       amount: Number(r['amount']),
-      description: r['description'] != null
-        ? encryptionService.decrypt(String(r['description']))
-        : null,
-      payee: r['payee'] != null
-        ? encryptionService.decrypt(String(r['payee']))
-        : null,
-      notes: r['notes'] != null
-        ? encryptionService.decrypt(String(r['notes']))
-        : null,
+      description:
+        r['description'] != null ? encryptionService.decrypt(String(r['description'])) : null,
+      payee: r['payee'] != null ? encryptionService.decrypt(String(r['payee'])) : null,
+      notes: r['notes'] != null ? encryptionService.decrypt(String(r['notes'])) : null,
       date: new Date(String(r['date'])),
       categoryId: r['category_id'] != null ? String(r['category_id']) : null,
       isTransfer: Boolean(r['is_transfer']),
@@ -127,7 +129,9 @@ class SyncController {
       updatedAt: new Date(String(r['updated_at'])),
     }));
 
-    const budgetCategories: BudgetCategory[] = (budgetCategoryRows as Record<string, unknown>[]).map((r) => ({
+    const budgetCategories: BudgetCategory[] = (
+      budgetCategoryRows as Record<string, unknown>[]
+    ).map((r) => ({
       id: String(r['id']),
       budgetId: String(r['budget_id']),
       categoryId: String(r['category_id']),

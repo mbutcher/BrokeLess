@@ -8,9 +8,19 @@ export async function up(knex: Knex): Promise<void> {
     table.enu('classification', ['income', 'expense']).notNullable();
     table.enu('flexibility', ['fixed', 'flexible']).notNullable();
     // Category (top-level) — RESTRICT to preserve data integrity on category delete
-    table.uuid('category_id').notNullable().references('id').inTable('categories').onDelete('RESTRICT');
+    table
+      .uuid('category_id')
+      .notNullable()
+      .references('id')
+      .inTable('categories')
+      .onDelete('RESTRICT');
     // Subcategory (child of category_id) — optional; SET NULL if subcategory deleted
-    table.uuid('subcategory_id').nullable().references('id').inTable('categories').onDelete('SET NULL');
+    table
+      .uuid('subcategory_id')
+      .nullable()
+      .references('id')
+      .inTable('categories')
+      .onDelete('SET NULL');
     // Schedule (embedded)
     table.decimal('amount', 15, 2).notNullable();
     table
@@ -34,7 +44,10 @@ export async function up(knex: Knex): Promise<void> {
     table.boolean('is_active').notNullable().defaultTo(true);
     table.string('notes', 255).nullable();
     table.timestamp('created_at').notNullable().defaultTo(knex.fn.now());
-    table.timestamp('updated_at').notNullable().defaultTo(knex.raw('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'));
+    table
+      .timestamp('updated_at')
+      .notNullable()
+      .defaultTo(knex.raw('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'));
 
     table.index(['user_id']);
     table.index(['category_id']);

@@ -23,10 +23,7 @@ class TotpBackupCodeRepository {
     await this.db('totp_backup_codes').insert(rows);
   }
 
-  async findUnusedByUserAndHash(
-    userId: string,
-    codeHash: string
-  ): Promise<TotpBackupCode | null> {
+  async findUnusedByUserAndHash(userId: string, codeHash: string): Promise<TotpBackupCode | null> {
     const row = await this.db('totp_backup_codes')
       .where({ user_id: userId, code_hash: codeHash, is_used: false })
       .first();

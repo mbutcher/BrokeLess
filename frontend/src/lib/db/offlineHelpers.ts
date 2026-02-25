@@ -45,7 +45,7 @@ export async function getDecryptedTransactions(
   userId: string,
   filters?: Pick<TransactionFilters, 'accountId' | 'startDate' | 'endDate'>
 ): Promise<Transaction[]> {
-  let query = db.transactions.where('userId').equals(userId);
+  const query = db.transactions.where('userId').equals(userId);
 
   const rows = await query.toArray();
 

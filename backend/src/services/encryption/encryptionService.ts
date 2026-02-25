@@ -27,17 +27,12 @@ class EncryptionService {
       authTagLength: AUTH_TAG_LENGTH,
     });
 
-    const encrypted = Buffer.concat([
-      cipher.update(plaintext, 'utf8'),
-      cipher.final(),
-    ]);
+    const encrypted = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
     const authTag = cipher.getAuthTag();
 
-    return [
-      iv.toString('base64'),
-      authTag.toString('base64'),
-      encrypted.toString('base64'),
-    ].join(':');
+    return [iv.toString('base64'), authTag.toString('base64'), encrypted.toString('base64')].join(
+      ':'
+    );
   }
 
   /**
@@ -60,10 +55,7 @@ class EncryptionService {
     });
     decipher.setAuthTag(authTag);
 
-    return Buffer.concat([
-      decipher.update(ciphertext),
-      decipher.final(),
-    ]).toString('utf8');
+    return Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString('utf8');
   }
 
   /**
@@ -72,10 +64,7 @@ class EncryptionService {
    * Returns a 64-character hex string.
    */
   hash(value: string): string {
-    return crypto
-      .createHmac('sha256', this.key)
-      .update(value)
-      .digest('hex');
+    return crypto.createHmac('sha256', this.key).update(value).digest('hex');
   }
 
   /**

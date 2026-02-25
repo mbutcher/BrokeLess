@@ -39,7 +39,7 @@ class RecurringTransactionService {
 
   async create(
     userId: string,
-    input: Omit<CreateRecurringTransactionData, 'userId'>,
+    input: Omit<CreateRecurringTransactionData, 'userId'>
   ): Promise<RecurringTransaction> {
     const account = await accountRepository.findById(input.accountId, userId);
     if (!account) throw new AppError('Account not found', 404);
@@ -47,7 +47,7 @@ class RecurringTransactionService {
     const nextDueDate = computeInitialNextDueDate(
       input.anchorDate,
       input.frequency,
-      input.frequencyInterval,
+      input.frequencyInterval
     );
 
     const data: CreateRecurringTransactionData & { nextDueDate: string } = {
@@ -66,7 +66,7 @@ class RecurringTransactionService {
   async update(
     id: string,
     userId: string,
-    input: UpdateRecurringTransactionData,
+    input: UpdateRecurringTransactionData
   ): Promise<RecurringTransaction> {
     const existing = await recurringTransactionRepository.findById(id, userId);
     if (!existing) throw new AppError('Recurring transaction not found', 404);
@@ -149,7 +149,7 @@ class RecurringTransactionService {
                 date: nextDue,
                 categoryId: record.categoryId ?? undefined,
               },
-              trx,
+              trx
             );
             await accountRepository.updateBalance(record.accountId, record.amount, trx);
           });
@@ -157,7 +157,11 @@ class RecurringTransactionService {
         } catch (err) {
           // Log and continue — don't abort the whole batch for one failure
           const logger = (await import('@utils/logger')).default;
-          logger.error('Recurring transaction generation failed', { recordId: record.id, date: nextDue, err });
+          logger.error('Recurring transaction generation failed', {
+            recordId: record.id,
+            date: nextDue,
+            err,
+          });
           break;
         }
 
@@ -165,7 +169,7 @@ class RecurringTransactionService {
         const nextDate = computeNextDueDate(
           new Date(nextDue + 'T00:00:00'),
           record.frequency,
-          record.frequencyInterval,
+          record.frequencyInterval
         );
         nextDue = toISODate(nextDate);
       }

@@ -1,11 +1,7 @@
 import type { Request, Response } from 'express';
 import { asyncHandler } from '@middleware/errorHandler';
 import { budgetService } from '@services/core/budgetService';
-import type {
-  CreateBudgetData,
-  UpdateBudgetData,
-  BudgetCategoryEntry,
-} from '@typings/core.types';
+import type { CreateBudgetData, UpdateBudgetData, BudgetCategoryEntry } from '@typings/core.types';
 
 class BudgetController {
   list = asyncHandler(async (req: Request, res: Response) => {

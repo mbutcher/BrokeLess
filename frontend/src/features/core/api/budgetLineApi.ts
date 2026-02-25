@@ -5,6 +5,7 @@ import type {
   PayPeriod,
   CreateBudgetLineInput,
   UpdateBudgetLineInput,
+  UpcomingExpensesResponse,
 } from '../types';
 
 interface ApiResponse<T> {
@@ -33,4 +34,9 @@ export const budgetLineApi = {
 
   getPayPeriod: () =>
     apiClient.get<ApiResponse<{ payPeriod: PayPeriod | null }>>('/budget-view/pay-period'),
+
+  getUpcoming: (start: string, end: string, includeFlexible = false) =>
+    apiClient.get<ApiResponse<{ upcoming: UpcomingExpensesResponse }>>(
+      `/budget-view/upcoming?start=${start}&end=${end}&includeFlexible=${includeFlexible}`,
+    ),
 };

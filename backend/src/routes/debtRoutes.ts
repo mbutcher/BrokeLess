@@ -10,7 +10,11 @@ router.use(authenticate);
 
 // Debt schedule CRUD (keyed by accountId)
 router.get('/schedule/:accountId', debtController.getSchedule);
-router.put('/schedule/:accountId', validateRequest(upsertDebtScheduleSchema), debtController.upsertSchedule);
+router.put(
+  '/schedule/:accountId',
+  validateRequest(upsertDebtScheduleSchema),
+  debtController.upsertSchedule
+);
 router.delete('/schedule/:accountId', debtController.deleteSchedule);
 
 // Amortization + what-if

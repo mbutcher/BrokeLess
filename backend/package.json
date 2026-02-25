@@ -1,6 +1,6 @@
 {
   "name": "budget-app-backend",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Secure personal budgeting application API",
   "main": "dist/index.js",
   "scripts": {
@@ -84,6 +84,8 @@
     "npm": ">=10.0.0"
   },
   "ts-node": {
-    "require": ["tsconfig-paths/register"]
+    "require": [
+      "tsconfig-paths/register"
+    ]
   }
 }

@@ -28,9 +28,7 @@ class CategoryRepository {
   }
 
   async findAllForUser(userId: string): Promise<Category[]> {
-    const rows = await this.db('categories')
-      .where({ user_id: userId })
-      .orderBy('name', 'asc');
+    const rows = await this.db('categories').where({ user_id: userId }).orderBy('name', 'asc');
     return rows.map(rowToCategory);
   }
 

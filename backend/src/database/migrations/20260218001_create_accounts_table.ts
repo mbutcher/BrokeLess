@@ -7,7 +7,15 @@ export async function up(knex: Knex): Promise<void> {
 
     table.string('name', 255).notNullable();
     table
-      .enum('type', ['checking', 'savings', 'credit_card', 'loan', 'mortgage', 'investment', 'other'])
+      .enum('type', [
+        'checking',
+        'savings',
+        'credit_card',
+        'loan',
+        'mortgage',
+        'investment',
+        'other',
+      ])
       .notNullable();
 
     // true = asset (checking/savings), false = liability (credit card/loan)

@@ -18,10 +18,7 @@ export async function up(knex: Knex): Promise<void> {
       .inTable('transactions')
       .onDelete('CASCADE');
 
-    table
-      .enum('link_type', ['transfer', 'payment', 'refund'])
-      .notNullable()
-      .defaultTo('transfer');
+    table.enum('link_type', ['transfer', 'payment', 'refund']).notNullable().defaultTo('transfer');
 
     // Links are immutable — no updated_at
     table.timestamp('created_at').notNullable().defaultTo(knex.fn.now());

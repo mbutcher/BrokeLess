@@ -8,6 +8,7 @@ import { useBudgetView } from '@features/core/hooks/useBudgetView';
 import { isOfflineError } from '@lib/db/offlineHelpers';
 import { AccountCard } from '@features/core/components/AccountCard';
 import { MonthlyChart } from '@components/charts/MonthlyChart';
+import { UpcomingExpenses } from '../components/UpcomingExpenses';
 import { monthWindow, toISODate } from '@lib/budget/budgetViewUtils';
 import { useFormatters } from '@lib/i18n/useFormatters';
 import type { Transaction, SavingsGoal } from '@features/core/types';
@@ -262,6 +263,11 @@ export function DashboardPage() {
         {showForecast && (
           <p className="mt-2 text-xs text-gray-400">Dimmed bars = projected based on last 6 months median.</p>
         )}
+      </section>
+
+      {/* Upcoming expenses */}
+      <section className="bg-white rounded-xl border border-gray-200 p-5">
+        <UpcomingExpenses />
       </section>
 
       {/* Recent transactions + Budget snapshot */}

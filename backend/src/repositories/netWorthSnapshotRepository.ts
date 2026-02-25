@@ -46,9 +46,7 @@ class NetWorthSnapshotRepository {
     const today = new Date().toISOString().slice(0, 10);
 
     // Upsert: delete existing snapshot for today then insert fresh
-    await this.db('net_worth_snapshots')
-      .where({ user_id: userId, snapshot_date: today })
-      .delete();
+    await this.db('net_worth_snapshots').where({ user_id: userId, snapshot_date: today }).delete();
 
     const id = randomUUID();
     await this.db('net_worth_snapshots').insert({

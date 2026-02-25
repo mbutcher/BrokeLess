@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Plus, WifiOff } from 'lucide-react';
 import { Button } from '@components/ui/button';
-import { PeriodSelector, getDefaultPeriod, type ViewMode } from '../components/PeriodSelector';
+import { PeriodSelector, type ViewMode } from '../components/PeriodSelector';
+import { getDefaultPeriod } from '@lib/budget/budgetViewUtils';
 import { BudgetSummaryBar } from '../components/BudgetSummaryBar';
 import { BudgetLineGroup } from '../components/BudgetLineGroup';
 import { AddBudgetLineDialog } from '../components/AddBudgetLineDialog';

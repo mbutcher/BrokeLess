@@ -107,8 +107,8 @@ class AccountRepository {
       .update({ simplefin_account_id: simplefinAccountId });
   }
 
-  async setCurrentBalance(id: string, balance: number): Promise<void> {
-    await this.db('accounts').where({ id }).update({ current_balance: balance });
+  async setCurrentBalance(id: string, userId: string, balance: number): Promise<void> {
+    await this.db('accounts').where({ id, user_id: userId }).update({ current_balance: balance });
   }
 }
 

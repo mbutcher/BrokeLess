@@ -6,6 +6,7 @@ import { X } from 'lucide-react';
 import { Button } from '@components/ui/button';
 import { useCreateBudgetLine } from '../hooks/useBudgetLines';
 import { useCategories } from '../hooks/useCategories';
+import { useAccounts } from '../hooks/useAccounts';
 import type {
   BudgetLineFrequency,
   BudgetLineClassification,
@@ -15,11 +16,20 @@ import type {
 const FREQUENCIES: { value: BudgetLineFrequency; label: string }[] = [
   { value: 'weekly', label: 'Weekly' },
   { value: 'biweekly', label: 'Biweekly' },
-  { value: 'semi_monthly', label: 'Twice monthly' },
+  { value: 'semi_monthly', label: '1st & 15th (semi-monthly)' },
+  { value: 'twice_monthly', label: 'Twice monthly (custom days)' },
   { value: 'monthly', label: 'Monthly' },
   { value: 'every_n_days', label: 'Every N days' },
   { value: 'annually', label: 'Annually' },
   { value: 'one_time', label: 'One time' },
+];
+
+/** Day-of-month picker options. 31 = "last day of month" */
+const DAY_OPTIONS = [
+  ...Array.from({ length: 28 }, (_, i) => ({ value: i + 1, label: String(i + 1) })),
+  { value: 29, label: '29' },
+  { value: 30, label: '30' },
+  { value: 31, label: 'Last day of month' },
 ];
 
 const schema = z
@@ -29,11 +39,14 @@ const schema = z
     flexibility: z.enum(['fixed', 'flexible']),
     categoryId: z.string().uuid('Category is required'),
     subcategoryId: z.preprocess((v) => (v === '' ? null : v), z.string().uuid().optional().nullable()),
+    accountId: z.preprocess((v) => (v === '' ? null : v), z.string().uuid().optional().nullable()),
     amount: z.number().positive('Amount must be positive').finite(),
     frequency: z.enum([
-      'weekly', 'biweekly', 'semi_monthly', 'monthly', 'every_n_days', 'annually', 'one_time',
+      'weekly', 'biweekly', 'semi_monthly', 'twice_monthly', 'monthly', 'every_n_days', 'annually', 'one_time',
     ]),
     frequencyInterval: z.number().int().min(1).optional().nullable(),
+    dayOfMonth1: z.number().int().min(1).max(31).optional().nullable(),
+    dayOfMonth2: z.number().int().min(1).max(31).optional().nullable(),
     anchorDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date required'),
     isPayPeriodAnchor: z.boolean().default(false),
     notes: z.string().max(255).optional().nullable(),
@@ -41,6 +54,22 @@ const schema = z
   .refine(
     (v) => v.frequency !== 'every_n_days' || (v.frequencyInterval != null && v.frequencyInterval >= 1),
     { message: 'Interval required for "every N days"', path: ['frequencyInterval'] }
+  )
+  .refine(
+    (v) => v.frequency !== 'twice_monthly' || v.dayOfMonth1 != null,
+    { message: 'First day of month is required', path: ['dayOfMonth1'] }
+  )
+  .refine(
+    (v) => v.frequency !== 'twice_monthly' || v.dayOfMonth2 != null,
+    { message: 'Second day of month is required', path: ['dayOfMonth2'] }
+  )
+  .refine(
+    (v) =>
+      v.frequency !== 'twice_monthly' ||
+      v.dayOfMonth1 == null ||
+      v.dayOfMonth2 == null ||
+      v.dayOfMonth1 < v.dayOfMonth2,
+    { message: 'First day must be before second day', path: ['dayOfMonth2'] }
   );
 
 type FormValues = z.infer<typeof schema>;
@@ -60,6 +89,7 @@ export function AddBudgetLineDialog({
 }: AddBudgetLineDialogProps) {
   const createLine = useCreateBudgetLine();
   const { data: allCategories = [] } = useCategories();
+  const { data: accounts = [] } = useAccounts();
 
   const topLevel = allCategories.filter((c) => c.parentId === null && c.isActive);
 
@@ -78,9 +108,12 @@ export function AddBudgetLineDialog({
       flexibility: 'fixed',
       categoryId: defaultCategoryId ?? '',
       subcategoryId: null,
+      accountId: null,
       amount: 0,
       frequency: 'monthly',
       frequencyInterval: null,
+      dayOfMonth1: null,
+      dayOfMonth2: null,
       anchorDate: new Date().toISOString().substring(0, 10),
       isPayPeriodAnchor: false,
       notes: null,
@@ -89,6 +122,7 @@ export function AddBudgetLineDialog({
 
   const watchedCategoryId = watch('categoryId');
   const watchedClassification = watch('classification');
+  const watchedFlexibility = watch('flexibility');
   const watchedFrequency = watch('frequency');
 
   const subcategories = allCategories.filter(
@@ -100,6 +134,15 @@ export function AddBudgetLineDialog({
     setValue('subcategoryId', null);
   }, [watchedCategoryId, setValue]);
 
+  // Reset frequency-specific fields when frequency changes
+  useEffect(() => {
+    if (watchedFrequency !== 'every_n_days') setValue('frequencyInterval', null);
+    if (watchedFrequency !== 'twice_monthly') {
+      setValue('dayOfMonth1', null);
+      setValue('dayOfMonth2', null);
+    }
+  }, [watchedFrequency, setValue]);
+
   const onSubmit = (values: FormValues) => {
     createLine.mutate(
       {
@@ -108,9 +151,12 @@ export function AddBudgetLineDialog({
         flexibility: values.flexibility as BudgetLineFlexibility,
         categoryId: values.categoryId,
         subcategoryId: values.subcategoryId ?? null,
+        accountId: values.accountId ?? null,
         amount: values.amount,
         frequency: values.frequency as BudgetLineFrequency,
         frequencyInterval: values.frequency === 'every_n_days' ? (values.frequencyInterval ?? null) : null,
+        dayOfMonth1: values.frequency === 'twice_monthly' ? (values.dayOfMonth1 ?? null) : null,
+        dayOfMonth2: values.frequency === 'twice_monthly' ? (values.dayOfMonth2 ?? null) : null,
         anchorDate: values.anchorDate,
         isPayPeriodAnchor: values.isPayPeriodAnchor,
         notes: values.notes ?? null,
@@ -213,6 +259,27 @@ export function AddBudgetLineDialog({
             </div>
           </div>
 
+          {/* Account (expense + fixed only) */}
+          {watchedClassification === 'expense' && watchedFlexibility === 'fixed' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Account <span className="text-gray-400 font-normal">(optional)</span>
+              </label>
+              <select
+                {...register('accountId')}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">None</option>
+                {accounts.filter((a) => a.isActive).map((a) => (
+                  <option key={a.id} value={a.id}>{a.name}</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-400 mt-1">
+                Which account this expense is drawn from. Used for overdraft warnings.
+              </p>
+            </div>
+          )}
+
           {/* Amount */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Amount per occurrence</label>
@@ -229,45 +296,85 @@ export function AddBudgetLineDialog({
             {errors.amount && <p className="text-xs text-red-600 mt-1">{errors.amount.message}</p>}
           </div>
 
-          {/* Frequency + interval */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Frequency */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Frequency</label>
+            <select
+              {...register('frequency')}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {FREQUENCIES.map(({ value, label }) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Every N days interval */}
+          {watchedFrequency === 'every_n_days' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Frequency</label>
-              <select
-                {...register('frequency')}
+              <label className="block text-sm font-medium text-gray-700 mb-1">Every N days</label>
+              <input
+                type="number"
+                min={1}
+                {...register('frequencyInterval', { valueAsNumber: true })}
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {FREQUENCIES.map(({ value, label }) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
+              />
+              {errors.frequencyInterval && (
+                <p className="text-xs text-red-600 mt-1">{errors.frequencyInterval.message}</p>
+              )}
             </div>
-            {watchedFrequency === 'every_n_days' && (
+          )}
+
+          {/* Twice-monthly day pickers */}
+          {watchedFrequency === 'twice_monthly' && (
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Every N days</label>
-                <input
-                  type="number"
-                  min={1}
-                  {...register('frequencyInterval', { valueAsNumber: true })}
+                <label className="block text-sm font-medium text-gray-700 mb-1">First day of month</label>
+                <select
+                  {...register('dayOfMonth1', { valueAsNumber: true })}
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                {errors.frequencyInterval && (
-                  <p className="text-xs text-red-600 mt-1">{errors.frequencyInterval.message}</p>
+                >
+                  <option value="">Select day</option>
+                  {DAY_OPTIONS.map(({ value, label }) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+                {errors.dayOfMonth1 && (
+                  <p className="text-xs text-red-600 mt-1">{errors.dayOfMonth1.message}</p>
                 )}
               </div>
-            )}
-          </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Second day of month</label>
+                <select
+                  {...register('dayOfMonth2', { valueAsNumber: true })}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select day</option>
+                  {DAY_OPTIONS.map(({ value, label }) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+                {errors.dayOfMonth2 && (
+                  <p className="text-xs text-red-600 mt-1">{errors.dayOfMonth2.message}</p>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Anchor date */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Anchor date</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {watchedFrequency === 'twice_monthly' ? 'Starting from (anchor date)' : 'Anchor date'}
+            </label>
             <input
               type="date"
               {...register('anchorDate')}
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <p className="text-xs text-gray-400 mt-1">
-              The date of the first/next known occurrence. Occurrences are computed from this date.
+              {watchedFrequency === 'twice_monthly'
+                ? 'The first occurrence on or after this date will be used as the starting point.'
+                : 'The date of the first/next known occurrence. Occurrences are computed from this date.'}
             </p>
             {errors.anchorDate && (
               <p className="text-xs text-red-600 mt-1">{errors.anchorDate.message}</p>

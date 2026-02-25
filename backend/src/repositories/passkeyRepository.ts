@@ -37,9 +37,7 @@ class PasskeyRepository {
   }
 
   async findAllForUser(userId: string): Promise<Passkey[]> {
-    const rows = await this.db('passkeys')
-      .where({ user_id: userId })
-      .orderBy('created_at', 'desc');
+    const rows = await this.db('passkeys').where({ user_id: userId }).orderBy('created_at', 'desc');
     return rows.map((row) => rowToPasskey(row as Record<string, unknown>));
   }
 
@@ -61,17 +59,11 @@ class PasskeyRepository {
       device_name: data.deviceName,
       transports: data.transports ? JSON.stringify(data.transports) : null,
     });
-    const row = await this.db('passkeys')
-      .where({ credential_id: data.credentialId })
-      .first();
+    const row = await this.db('passkeys').where({ credential_id: data.credentialId }).first();
     return rowToPasskey(row as Record<string, unknown>);
   }
 
-  async updateCounter(
-    credentialId: string,
-    counter: number,
-    lastUsedAt: Date
-  ): Promise<void> {
+  async updateCounter(credentialId: string, counter: number, lastUsedAt: Date): Promise<void> {
     await this.db('passkeys').where({ credential_id: credentialId }).update({
       counter,
       last_used_at: lastUsedAt,

@@ -139,9 +139,3 @@ export function PeriodSelector({
   );
 }
 
-/** Returns today's month as the default period. */
-export function getDefaultPeriod(): { start: string; end: string } {
-  const today = new Date();
-  const { start, end } = monthWindow(today.getFullYear(), today.getMonth() + 1);
-  return { start: toISODate(start), end: toISODate(end) };
-}

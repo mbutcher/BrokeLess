@@ -105,8 +105,7 @@ export interface Transaction {
 }
 
 /** Decrypted shape returned in API responses */
-export interface PublicTransaction
-  extends Omit<Transaction, 'description' | 'payee' | 'notes'> {
+export interface PublicTransaction extends Omit<Transaction, 'description' | 'payee' | 'notes'> {
   description: string | null;
   payee: string | null;
   notes: string | null;
@@ -320,6 +319,7 @@ export type BudgetLineFrequency =
   | 'weekly'
   | 'biweekly'
   | 'semi_monthly'
+  | 'twice_monthly'
   | 'monthly'
   | 'every_n_days'
   | 'annually'
@@ -336,10 +336,16 @@ export interface BudgetLine {
   flexibility: BudgetLineFlexibility;
   categoryId: string;
   subcategoryId: string | null;
+  /** Optional account this expense is drawn from (used for overdraft projections). */
+  accountId: string | null;
   amount: number;
   frequency: BudgetLineFrequency;
   /** Only set when frequency = 'every_n_days'. Number of days between occurrences. */
   frequencyInterval: number | null;
+  /** First day-of-month for 'twice_monthly' frequency (1–28, or 31 = last day). */
+  dayOfMonth1: number | null;
+  /** Second day-of-month for 'twice_monthly' frequency (must be > dayOfMonth1; 31 = last day). */
+  dayOfMonth2: number | null;
   /** First/next known occurrence date — establishes the recurrence cycle. YYYY-MM-DD */
   anchorDate: string;
   /** True on at most one income Budget Line — drives "This Pay Period" view. */
@@ -357,9 +363,12 @@ export interface CreateBudgetLineData {
   flexibility: BudgetLineFlexibility;
   categoryId: string;
   subcategoryId?: string | null;
+  accountId?: string | null;
   amount: number;
   frequency: BudgetLineFrequency;
   frequencyInterval?: number | null;
+  dayOfMonth1?: number | null;
+  dayOfMonth2?: number | null;
   anchorDate: string;
   isPayPeriodAnchor?: boolean;
   notes?: string | null;
@@ -371,13 +380,45 @@ export interface UpdateBudgetLineData {
   flexibility?: BudgetLineFlexibility;
   categoryId?: string;
   subcategoryId?: string | null;
+  accountId?: string | null;
   amount?: number;
   frequency?: BudgetLineFrequency;
   frequencyInterval?: number | null;
+  dayOfMonth1?: number | null;
+  dayOfMonth2?: number | null;
   anchorDate?: string;
   isPayPeriodAnchor?: boolean;
   notes?: string | null;
   isActive?: boolean;
+}
+
+// ─── Upcoming Expenses ────────────────────────────────────────────────────────
+
+export interface UpcomingFixedItem {
+  budgetLineId: string;
+  name: string;
+  amount: number;
+  date: string; // YYYY-MM-DD occurrence date
+  categoryId: string;
+  subcategoryId: string | null;
+  accountId: string | null;
+  accountName: string | null;
+}
+
+export interface UpcomingFlexibleItem {
+  budgetLineId: string;
+  name: string;
+  fullPeriodAmount: number;
+  proratedAmount: number;
+  frequency: string;
+  categoryId: string;
+}
+
+export interface UpcomingExpensesResponse {
+  start: string;
+  end: string;
+  fixedItems: UpcomingFixedItem[];
+  flexibleItems: UpcomingFlexibleItem[];
 }
 
 /**
@@ -411,7 +452,7 @@ export interface BudgetViewLine {
 /** Computed Budget View — not stored. */
 export interface BudgetView {
   start: string; // YYYY-MM-DD
-  end: string;   // YYYY-MM-DD
+  end: string; // YYYY-MM-DD
   lines: BudgetViewLine[];
   totalProratedIncome: number;
   totalProratedExpenses: number;
@@ -422,7 +463,7 @@ export interface BudgetView {
 /** The current pay period boundaries, derived from the anchor income Budget Line. */
 export interface PayPeriod {
   start: string; // YYYY-MM-DD
-  end: string;   // YYYY-MM-DD
+  end: string; // YYYY-MM-DD
   budgetLineId: string;
   frequency: BudgetLineFrequency;
 }
@@ -544,7 +585,7 @@ export interface SimplefinConnection {
   autoSyncEnabled: boolean;
   autoSyncIntervalHours: number;
   autoSyncWindowStart: number; // Hour 0–23
-  autoSyncWindowEnd: number;   // Hour 0–23
+  autoSyncWindowEnd: number; // Hour 0–23
   /** JSON array of SimpleFIN tx IDs the user discarded (stored as string, parsed in service) */
   discardedIdsJson: string | null;
   createdAt: Date;
@@ -556,7 +597,7 @@ export interface SimplefinAccountMapping {
   id: string;
   userId: string;
   simplefinAccountId: string;
-  simplefinOrgName: string;    // Bank name for display
+  simplefinOrgName: string; // Bank name for display
   simplefinAccountName: string;
   simplefinAccountType: string;
   localAccountId: string | null; // null = not yet mapped by user
@@ -586,14 +627,14 @@ export interface SyncResult {
 
 export interface MapAccountData {
   action: 'create' | 'link';
-  localAccountId?: string;  // for 'link'
+  localAccountId?: string; // for 'link'
   newAccount?: {
     name: string;
     type: AccountType;
     isAsset: boolean;
     currency: string;
     color?: string;
-  };  // for 'create'
+  }; // for 'create'
 }
 
 export interface UpdateSimplefinScheduleData {

@@ -74,12 +74,7 @@ class SimplefinController {
       action: 'accept' | 'merge' | 'discard';
       targetTransactionId?: string;
     };
-    await simplefinService.resolveReview(
-      req.user!.id,
-      reviewId!,
-      action,
-      targetTransactionId
-    );
+    await simplefinService.resolveReview(req.user!.id, reviewId!, action, targetTransactionId);
     res.json({ status: 'success', data: null });
   });
 }

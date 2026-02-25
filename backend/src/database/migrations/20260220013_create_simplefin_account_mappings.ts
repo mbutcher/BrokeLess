@@ -7,9 +7,9 @@ export async function up(knex: Knex): Promise<void> {
 
     // SimpleFIN Bridge account identifiers (for display and lookup)
     table.string('simplefin_account_id', 255).notNullable();
-    table.string('simplefin_org_name', 255).notNullable();     // Bank name
+    table.string('simplefin_org_name', 255).notNullable(); // Bank name
     table.string('simplefin_account_name', 255).notNullable();
-    table.string('simplefin_account_type', 50).notNullable();  // SimpleFIN's type string
+    table.string('simplefin_account_type', 50).notNullable(); // SimpleFIN's type string
 
     // Null = discovered but not yet mapped by user; set after user maps it
     table
