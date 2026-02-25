@@ -404,3 +404,91 @@ export interface ForecastMonth {
   expenses: number;
   isForecast: true;
 }
+
+// ─── Recurring Transactions ───────────────────────────────────────────────────
+
+export type RecurringFrequency =
+  | 'weekly'
+  | 'biweekly'
+  | 'semi_monthly'
+  | 'monthly'
+  | 'every_n_days'
+  | 'annually';
+
+export interface RecurringTransaction {
+  id: string;
+  userId: string;
+  accountId: string;
+  amount: number;
+  description: string | null;
+  payee: string | null;
+  notes: string | null;
+  categoryId: string | null;
+  frequency: RecurringFrequency;
+  frequencyInterval: number | null;
+  anchorDate: string;
+  nextDueDate: string;
+  endDate: string | null;
+  isActive: boolean;
+  lastGeneratedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateRecurringTransactionInput {
+  accountId: string;
+  amount: number;
+  description?: string;
+  payee?: string;
+  notes?: string;
+  categoryId?: string;
+  frequency: RecurringFrequency;
+  frequencyInterval?: number;
+  anchorDate: string;
+  endDate?: string;
+}
+
+export interface UpdateRecurringTransactionInput {
+  accountId?: string;
+  amount?: number;
+  description?: string | null;
+  payee?: string | null;
+  notes?: string | null;
+  categoryId?: string | null;
+  frequency?: RecurringFrequency;
+  frequencyInterval?: number | null;
+  anchorDate?: string;
+  endDate?: string | null;
+  isActive?: boolean;
+}
+
+// ─── Net Worth ────────────────────────────────────────────────────────────────
+
+export interface NetWorthSnapshot {
+  id: string;
+  userId: string;
+  snapshotDate: string; // YYYY-MM-DD
+  totalAssets: number;
+  totalLiabilities: number;
+  netWorth: number;
+  createdAt: string;
+}
+
+// ─── Spending by Category ─────────────────────────────────────────────────────
+
+export interface SpendingByCategoryItem {
+  categoryId: string;
+  categoryName: string;
+  parentId: string | null;
+  color: string | null;
+  totalAmount: number;
+  percentage: number;
+}
+
+export interface SpendingByCategoryResponse {
+  start: string;
+  end: string;
+  type: 'expense' | 'income';
+  total: number;
+  categories: SpendingByCategoryItem[];
+}

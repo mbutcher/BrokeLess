@@ -17,6 +17,7 @@ import type {
   BudgetCategory,
   BudgetLine,
   SavingsGoal,
+  RecurringTransaction,
 } from '@features/core/types';
 
 // Local entity types alias the frontend API types directly.
@@ -29,6 +30,7 @@ export type LocalBudget = Budget;
 export type LocalBudgetCategory = BudgetCategory;
 export type LocalBudgetLine = BudgetLine;
 export type LocalSavingsGoal = SavingsGoal;
+export type LocalRecurringTransaction = RecurringTransaction;
 
 /** A queued API mutation to be flushed when the device is back online. */
 export interface PendingMutation {

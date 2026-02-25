@@ -1,5 +1,9 @@
 import { apiClient } from '@lib/api/client';
-import type { ForecastMonth } from '../types';
+import type {
+  ForecastMonth,
+  NetWorthSnapshot,
+  SpendingByCategoryResponse,
+} from '../types';
 
 interface ApiResponse<T> {
   status: string;
@@ -23,4 +27,17 @@ export const reportApi = {
     apiClient.get<ApiResponse<{ forecast: ForecastMonth[] }>>(
       `/reports/forecast?months=${months}`
     ),
+
+  spendingByCategory: (start: string, end: string, type: 'expense' | 'income' = 'expense') =>
+    apiClient.get<ApiResponse<SpendingByCategoryResponse>>(
+      `/reports/spending-by-category?start=${start}&end=${end}&type=${type}`
+    ),
+
+  netWorthHistory: (months = 12) =>
+    apiClient.get<ApiResponse<{ snapshots: NetWorthSnapshot[]; latest: NetWorthSnapshot | null }>>(
+      `/reports/net-worth?months=${months}`
+    ),
+
+  takeNetWorthSnapshot: () =>
+    apiClient.post<ApiResponse<{ snapshot: NetWorthSnapshot }>>('/reports/net-worth/snapshot', {}),
 };

@@ -427,6 +427,103 @@ export interface PayPeriod {
   frequency: BudgetLineFrequency;
 }
 
+// ─── Recurring Transactions ───────────────────────────────────────────────────
+
+export type RecurringFrequency =
+  | 'weekly'
+  | 'biweekly'
+  | 'semi_monthly'
+  | 'monthly'
+  | 'every_n_days'
+  | 'annually';
+
+export interface RecurringTransaction {
+  id: string;
+  userId: string;
+  accountId: string;
+  amount: number;
+  /** AES-256-GCM encrypted at rest */
+  description: string | null;
+  /** AES-256-GCM encrypted at rest */
+  payee: string | null;
+  /** AES-256-GCM encrypted at rest */
+  notes: string | null;
+  categoryId: string | null;
+  frequency: RecurringFrequency;
+  /** Only set when frequency = 'every_n_days'. */
+  frequencyInterval: number | null;
+  /** First/next known occurrence date — YYYY-MM-DD */
+  anchorDate: string;
+  /** Next computed occurrence date — YYYY-MM-DD */
+  nextDueDate: string;
+  /** Optional end date — null = indefinite. YYYY-MM-DD */
+  endDate: string | null;
+  isActive: boolean;
+  lastGeneratedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateRecurringTransactionData {
+  userId: string;
+  accountId: string;
+  amount: number;
+  description?: string;
+  payee?: string;
+  notes?: string;
+  categoryId?: string;
+  frequency: RecurringFrequency;
+  frequencyInterval?: number;
+  anchorDate: string;
+  endDate?: string;
+}
+
+export interface UpdateRecurringTransactionData {
+  accountId?: string;
+  amount?: number;
+  description?: string | null;
+  payee?: string | null;
+  notes?: string | null;
+  categoryId?: string | null;
+  frequency?: RecurringFrequency;
+  frequencyInterval?: number | null;
+  anchorDate?: string;
+  nextDueDate?: string;
+  endDate?: string | null;
+  isActive?: boolean;
+}
+
+// ─── Net Worth Snapshots ──────────────────────────────────────────────────────
+
+export interface NetWorthSnapshot {
+  id: string;
+  userId: string;
+  snapshotDate: string; // YYYY-MM-DD
+  totalAssets: number;
+  totalLiabilities: number;
+  netWorth: number;
+  createdAt: Date;
+}
+
+// ─── Spending by Category ─────────────────────────────────────────────────────
+
+export interface SpendingByCategoryItem {
+  categoryId: string;
+  categoryName: string;
+  parentId: string | null;
+  color: string | null;
+  totalAmount: number;
+  percentage: number;
+}
+
+export interface SpendingByCategoryResponse {
+  start: string;
+  end: string;
+  type: 'expense' | 'income';
+  total: number;
+  categories: SpendingByCategoryItem[];
+}
+
 // ─── Forecast ─────────────────────────────────────────────────────────────────
 
 export interface ForecastMonth {

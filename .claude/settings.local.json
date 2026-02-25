@@ -35,7 +35,9 @@
       "mcp__plugin_chrome-devtools-mcp_chrome-devtools__take_snapshot",
       "mcp__plugin_chrome-devtools-mcp_chrome-devtools__click",
       "Bash(npm run migrate:*)",
-      "Bash(node scripts/generate-pwa-icons.js:*)"
+      "Bash(node scripts/generate-pwa-icons.js:*)",
+      "Bash(docker-compose:*)",
+      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__press_key"
     ]
   }
 }

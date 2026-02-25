@@ -74,6 +74,8 @@ app.get('/health', async (_req, res) => {
 // API routes
 import apiRouter from './routes/index';
 import { simplefinScheduler } from './services/integrations/simplefinScheduler';
+import { netWorthScheduler } from './services/netWorthScheduler';
+import { recurringTransactionScheduler } from './services/recurringTransactionScheduler';
 app.use('/api/v1', apiRouter);
 
 // 404 handler
@@ -90,6 +92,8 @@ async function startServer() {
 
     // Start background services
     simplefinScheduler.start();
+    netWorthScheduler.start();
+    recurringTransactionScheduler.start();
 
     // Start server
     const server = app.listen(env.appPort, () => {
@@ -105,6 +109,8 @@ async function startServer() {
     const shutdown = (signal: string) => {
       logger.info(`${signal} received, shutting down gracefully...`);
       simplefinScheduler.shutdown();
+      netWorthScheduler.shutdown();
+      recurringTransactionScheduler.shutdown();
       server.close(async () => {
         await closeDatabase();
         logger.info('Server closed');

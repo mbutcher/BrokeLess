@@ -19,9 +19,9 @@
     "migrate:make": "knex migrate:make",
     "migrate:rollback": "knex migrate:rollback",
     "migrate:status": "knex migrate:status",
-    "seed": "knex seed:run",
-    "seed:dev": "knex seed:run",
-    "seed:fresh": "node -e \"const e=process.env.NODE_ENV;if(['production','staging'].includes(e))throw new Error('[seed:fresh] Refusing to run in NODE_ENV='+e)\" && knex migrate:rollback --all && knex migrate:latest && knex seed:run"
+    "seed": "node -r ts-node/register -r tsconfig-paths/register node_modules/.bin/knex seed:run",
+    "seed:dev": "node -r ts-node/register -r tsconfig-paths/register node_modules/.bin/knex seed:run",
+    "seed:fresh": "node -e \"const e=process.env.NODE_ENV;if(['production','staging'].includes(e))throw new Error('[seed:fresh] Refusing to run in NODE_ENV='+e)\" && knex migrate:rollback --all && knex migrate:latest && node -r ts-node/register -r tsconfig-paths/register node_modules/.bin/knex seed:run"
   },
   "keywords": [
     "budget",
@@ -82,5 +82,8 @@
   "engines": {
     "node": ">=20.0.0",
     "npm": ">=10.0.0"
+  },
+  "ts-node": {
+    "require": ["tsconfig-paths/register"]
   }
 }

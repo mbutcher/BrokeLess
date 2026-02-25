@@ -9,6 +9,7 @@ import {
   PiggyBank,
   Target,
   TrendingDown,
+  BarChart2,
   Download,
   Plug,
   Settings,
@@ -33,6 +34,7 @@ const navItems = [
   { to: '/budget', icon: PiggyBank, key: 'nav.budget' },
   { to: '/savings-goals', icon: Target, key: 'nav.savingsGoals' },
   { to: '/liabilities', icon: TrendingDown, key: 'nav.liabilities' },
+  { to: '/reports', icon: BarChart2, key: 'nav.reports' },
 ];
 
 function SidebarContent({ onNav }: { onNav?: () => void }) {

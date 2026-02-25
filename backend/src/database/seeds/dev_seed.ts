@@ -7,8 +7,8 @@
  * debt schedules, transaction splits, and transfer links.
  *
  * TEST USERS
- *   alpha@test.local / test123  — Canadian user, CAD, en-CA, Toronto timezone
- *   beta@test.local  / test123  — American user, USD, en-US, New York timezone
+ *   mike+alpha@thebutchers.ca / test123  — Canadian user, CAD, en-CA, Toronto timezone
+ *   mike+beta@thebutchers.ca  / test123  — American user, USD, en-US, New York timezone
  *
  * SAFETY: Refuses to run in production or staging environments.
  */
@@ -554,10 +554,10 @@ export async function seed(knex: Knex): Promise<void> {
     hashPassword('test123'),
   ]);
 
-  const alphaEmailEnc = encryptionService.encrypt('alpha@test.local');
-  const alphaEmailHash = encryptionService.hash('alpha@test.local');
-  const betaEmailEnc = encryptionService.encrypt('beta@test.local');
-  const betaEmailHash = encryptionService.hash('beta@test.local');
+  const alphaEmailEnc = encryptionService.encrypt('mike+alpha@thebutchers.ca');
+  const alphaEmailHash = encryptionService.hash('mike+alpha@thebutchers.ca');
+  const betaEmailEnc = encryptionService.encrypt('mike+beta@thebutchers.ca');
+  const betaEmailHash = encryptionService.hash('mike+beta@thebutchers.ca');
 
   // ── Truncate all seed-managed tables ───────────────────────────────────────
   console.log('[dev_seed] Truncating tables...');
@@ -1814,7 +1814,7 @@ export async function seed(knex: Knex): Promise<void> {
   console.log(`  Transactions: ${txns.length} (${links.length} linked transfers, ${splits.length} debt splits)`);
   console.log('');
   console.log('  Test credentials:');
-  console.log('    alpha@test.local / test123  (CAD · en-CA · Toronto)');
-  console.log('    beta@test.local  / test123  (USD · en-US · New York)');
+  console.log('    mike+alpha@thebutchers.ca / test123  (CAD · en-CA · Toronto)');
+  console.log('    mike+beta@thebutchers.ca  / test123  (USD · en-US · New York)');
   console.log('');
 }

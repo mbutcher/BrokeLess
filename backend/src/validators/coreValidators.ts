@@ -345,6 +345,88 @@ export const mapAccountSchema = Joi.object({
   }).when('action', { is: 'create', then: Joi.required() }),
 });
 
+// ─── Report Validators ────────────────────────────────────────────────────────
+
+export const spendingByCategorySchema = Joi.object({
+  start: Joi.string().isoDate().required().messages({
+    'any.required': 'start query param is required',
+    'string.isoDate': 'start must be a valid ISO date',
+  }),
+  end: Joi.string().isoDate().required().messages({
+    'any.required': 'end query param is required',
+    'string.isoDate': 'end must be a valid ISO date',
+  }),
+  type: Joi.string().valid('expense', 'income').default('expense'),
+});
+
+export const netWorthHistorySchema = Joi.object({
+  months: Joi.number().integer().min(1).max(60).default(12),
+});
+
+// ─── Recurring Transaction Validators ────────────────────────────────────────
+
+const RECURRING_FREQUENCIES = [
+  'weekly', 'biweekly', 'semi_monthly', 'monthly', 'every_n_days', 'annually',
+] as const;
+
+export const createRecurringTransactionSchema = Joi.object({
+  accountId: Joi.string().uuid().required().messages({
+    'any.required': 'accountId is required',
+    'string.guid': 'accountId must be a valid UUID',
+  }),
+  amount: Joi.number().precision(2).not(0).required().messages({
+    'any.required': 'amount is required',
+    'number.base': 'amount must be a number',
+  }),
+  description: Joi.string().max(1000).optional().allow(null, ''),
+  payee: Joi.string().max(512).optional().allow(null, ''),
+  notes: Joi.string().max(5000).optional().allow(null, ''),
+  categoryId: Joi.string().uuid().optional().allow(null),
+  frequency: Joi.string().valid(...RECURRING_FREQUENCIES).required().messages({
+    'any.required': 'frequency is required',
+    'any.only': `frequency must be one of: ${RECURRING_FREQUENCIES.join(', ')}`,
+  }),
+  frequencyInterval: Joi.number()
+    .integer()
+    .min(1)
+    .when('frequency', { is: 'every_n_days', then: Joi.required() })
+    .optional()
+    .allow(null)
+    .messages({
+      'any.required': 'frequencyInterval is required when frequency is every_n_days',
+      'number.min': 'frequencyInterval must be at least 1',
+    }),
+  anchorDate: Joi.string().pattern(ISO_DATE).required().messages({
+    'any.required': 'anchorDate is required',
+    'string.pattern.base': 'anchorDate must be in YYYY-MM-DD format',
+  }),
+  endDate: Joi.string().pattern(ISO_DATE).optional().allow(null),
+});
+
+export const updateRecurringTransactionSchema = Joi.object({
+  accountId: Joi.string().uuid(),
+  amount: Joi.number().precision(2).not(0),
+  description: Joi.string().max(1000).allow(null, ''),
+  payee: Joi.string().max(512).allow(null, ''),
+  notes: Joi.string().max(5000).allow(null, ''),
+  categoryId: Joi.string().uuid().allow(null),
+  frequency: Joi.string().valid(...RECURRING_FREQUENCIES).messages({
+    'any.only': `frequency must be one of: ${RECURRING_FREQUENCIES.join(', ')}`,
+  }),
+  frequencyInterval: Joi.number()
+    .integer()
+    .min(1)
+    .when('frequency', { is: 'every_n_days', then: Joi.required() })
+    .allow(null)
+    .messages({
+      'any.required': 'frequencyInterval is required when frequency is every_n_days',
+      'number.min': 'frequencyInterval must be at least 1',
+    }),
+  anchorDate: Joi.string().pattern(ISO_DATE),
+  endDate: Joi.string().pattern(ISO_DATE).allow(null),
+  isActive: Joi.boolean(),
+}).min(1);
+
 // ─── User Profile Validators ──────────────────────────────────────────────────
 
 export const updateProfileSchema = Joi.object({

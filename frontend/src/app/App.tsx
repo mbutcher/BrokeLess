@@ -20,6 +20,7 @@ import { LiabilitiesPage } from '@features/core/pages/LiabilitiesPage';
 import { SavingsGoalsPage } from '@features/core/pages/SavingsGoalsPage';
 import { SimplefinSettingsPage } from '@features/integrations/pages/SimplefinSettingsPage';
 import { ImportsPage } from '@features/integrations/pages/ImportsPage';
+import { ReportsPage } from '@features/reports/pages/ReportsPage';
 
 /**
  * AuthInitializer calls GET /auth/me on mount to restore session from
@@ -62,6 +63,7 @@ function App() {
           <Route path="/accounts/:accountId/debt" element={<DebtDetailPage />} />
           <Route path="/liabilities" element={<LiabilitiesPage />} />
           <Route path="/savings-goals" element={<SavingsGoalsPage />} />
+          <Route path="/reports" element={<ReportsPage />} />
           <Route path="/imports" element={<ImportsPage />} />
           <Route path="/settings/integrations/simplefin" element={<SimplefinSettingsPage />} />
           <Route path="/settings/security" element={<SecuritySettingsPage />} />

@@ -13,6 +13,7 @@ import exchangeRateRoutes from './exchangeRateRoutes';
 import syncRoutes from './syncRoutes';
 import budgetLineRoutes from './budgetLineRoutes';
 import budgetViewRoutes from './budgetViewRoutes';
+import recurringTransactionRoutes from './recurringTransactionRoutes';
 
 const router = Router();
 
@@ -33,5 +34,6 @@ router.use('/exchange-rates', exchangeRateRoutes);
 router.use('/sync', syncRoutes);
 router.use('/budget-lines', budgetLineRoutes);
 router.use('/budget-view', budgetViewRoutes);
+router.use('/recurring-transactions', recurringTransactionRoutes);
 
 export default router;
