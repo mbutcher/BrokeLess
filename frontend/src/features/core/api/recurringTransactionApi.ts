@@ -33,4 +33,10 @@ export const recurringTransactionApi = {
 
   generate: () =>
     apiClient.post<ApiResponse<{ generated: number }>>('/recurring-transactions/generate', {}),
+
+  skip: (id: string) =>
+    apiClient.post<ApiResponse<{ recurringTransaction: RecurringTransaction }>>(
+      `/recurring-transactions/${id}/skip`,
+      {}
+    ),
 };

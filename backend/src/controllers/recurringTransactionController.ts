@@ -34,6 +34,12 @@ class RecurringTransactionController {
     const count = await recurringTransactionService.generateDue();
     res.json({ status: 'success', data: { generated: count } });
   });
+
+  /** Skip the next occurrence without generating a transaction. */
+  skip = asyncHandler(async (req: Request, res: Response) => {
+    const record = await recurringTransactionService.skipOccurrence(req.params['id']!, req.user!.id);
+    res.json({ status: 'success', data: { recurringTransaction: record } });
+  });
 }
 
 export const recurringTransactionController = new RecurringTransactionController();

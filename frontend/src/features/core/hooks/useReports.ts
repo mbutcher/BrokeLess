@@ -46,6 +46,22 @@ export function useNetWorthHistory(months = 12) {
   });
 }
 
+export function useTopPayees(
+  start: string,
+  end: string,
+  limit = 10,
+  type: 'expense' | 'income' = 'expense',
+) {
+  return useQuery({
+    queryKey: ['reports', 'top-payees', start, end, limit, type],
+    queryFn: async () => {
+      const res = await reportApi.topPayees(start, end, limit, type);
+      return res.data.data;
+    },
+    enabled: Boolean(start && end),
+  });
+}
+
 export function useTakeNetWorthSnapshot() {
   const qc = useQueryClient();
   return useMutation({

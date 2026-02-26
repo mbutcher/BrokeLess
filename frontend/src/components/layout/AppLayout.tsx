@@ -10,6 +10,7 @@ import {
   Target,
   TrendingDown,
   BarChart2,
+  RefreshCw,
   Download,
   Plug,
   Settings,
@@ -35,6 +36,7 @@ const navItems = [
   { to: '/savings-goals', icon: Target, key: 'nav.savingsGoals' },
   { to: '/liabilities', icon: TrendingDown, key: 'nav.liabilities' },
   { to: '/reports', icon: BarChart2, key: 'nav.reports' },
+  { to: '/recurring-transactions', icon: RefreshCw, key: 'nav.recurringTransactions' },
 ];
 
 function SidebarContent({ onNav }: { onNav?: () => void }) {

@@ -3,6 +3,7 @@ import type {
   ForecastMonth,
   NetWorthSnapshot,
   SpendingByCategoryResponse,
+  TopPayeesResponse,
 } from '../types';
 
 interface ApiResponse<T> {
@@ -40,4 +41,14 @@ export const reportApi = {
 
   takeNetWorthSnapshot: () =>
     apiClient.post<ApiResponse<{ snapshot: NetWorthSnapshot }>>('/reports/net-worth/snapshot', {}),
+
+  topPayees: (
+    start: string,
+    end: string,
+    limit = 10,
+    type: 'expense' | 'income' = 'expense'
+  ) =>
+    apiClient.get<ApiResponse<TopPayeesResponse>>(
+      `/reports/top-payees?start=${start}&end=${end}&limit=${limit}&type=${type}`
+    ),
 };

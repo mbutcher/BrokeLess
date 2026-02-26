@@ -129,3 +129,15 @@ export function useDeleteRecurringTransaction() {
     onSuccess: () => qc.invalidateQueries({ queryKey: RECURRING_TRANSACTIONS_KEY }),
   });
 }
+
+export function useSkipRecurringTransaction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      if (!navigator.onLine) throw new Error('Skip requires an online connection.');
+      const res = await recurringTransactionApi.skip(id);
+      return res.data.data.recurringTransaction;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: RECURRING_TRANSACTIONS_KEY }),
+  });
+}

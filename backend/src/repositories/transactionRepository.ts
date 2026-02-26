@@ -44,7 +44,15 @@ class TransactionRepository {
     return row ? rowToTransaction(row) : null;
   }
 
-  async findAll(userId: string, filters: TransactionFilters): Promise<PaginatedTransactions> {
+  async findAll(
+    userId: string,
+    filters: TransactionFilters & { allowedIds?: string[] }
+  ): Promise<PaginatedTransactions> {
+    // Short-circuit: search returned no matches
+    if (filters.allowedIds !== undefined && filters.allowedIds.length === 0) {
+      return { data: [], total: 0, page: filters.page, limit: filters.limit };
+    }
+
     let query = this.db('transactions').where('transactions.user_id', userId);
 
     if (filters.accountId) query = query.where('account_id', filters.accountId);
@@ -52,6 +60,9 @@ class TransactionRepository {
     if (filters.startDate) query = query.where('date', '>=', filters.startDate);
     if (filters.endDate) query = query.where('date', '<=', filters.endDate);
     if (filters.isTransfer !== undefined) query = query.where('is_transfer', filters.isTransfer);
+    if (filters.allowedIds && filters.allowedIds.length > 0) {
+      query = query.whereIn('id', filters.allowedIds);
+    }
 
     const countResult = await query.clone().count('* as count').first();
     const total = Number(countResult?.['count'] ?? 0);

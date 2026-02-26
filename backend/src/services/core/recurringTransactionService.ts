@@ -109,6 +109,26 @@ class RecurringTransactionService {
   }
 
   /**
+   * Skip the next occurrence of a recurring transaction by advancing
+   * next_due_date by one period without generating a transaction.
+   */
+  async skipOccurrence(id: string, userId: string): Promise<RecurringTransaction> {
+    const existing = await recurringTransactionRepository.findById(id, userId);
+    if (!existing) throw new AppError('Recurring transaction not found', 404);
+
+    const nextDate = computeNextDueDate(
+      new Date(existing.nextDueDate + 'T00:00:00'),
+      existing.frequency,
+      existing.frequencyInterval ?? undefined
+    );
+    const nextDueDateStr = toISODate(nextDate);
+    await recurringTransactionRepository.advanceNextDue(id, nextDueDateStr);
+
+    const updated = await recurringTransactionRepository.findById(id, userId);
+    return decryptRecurring(updated!);
+  }
+
+  /**
    * Generate real transactions for all due recurring entries.
    *
    * For each due record:

@@ -23,6 +23,7 @@ router.patch(
   recurringTransactionController.update
 );
 router.delete('/:id', recurringTransactionController.delete);
+router.post('/:id/skip', recurringTransactionController.skip);
 // Manual generation trigger — useful for debugging / admin
 router.post('/generate', recurringTransactionController.generate);
 

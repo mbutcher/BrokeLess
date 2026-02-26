@@ -141,6 +141,8 @@ export interface TransactionFilters {
   startDate?: string;
   endDate?: string;
   isTransfer?: boolean;
+  /** Plaintext full-text search query. Matched against payee and description via HMAC token index. */
+  q?: string;
   page: number;
   limit: number;
 }
@@ -563,6 +565,22 @@ export interface SpendingByCategoryResponse {
   type: 'expense' | 'income';
   total: number;
   categories: SpendingByCategoryItem[];
+}
+
+// ─── Top Payees ───────────────────────────────────────────────────────────────
+
+export interface TopPayeeItem {
+  payee: string;
+  totalAmount: number;
+  percentage: number;
+}
+
+export interface TopPayeesResponse {
+  start: string;
+  end: string;
+  type: 'expense' | 'income';
+  total: number;
+  payees: TopPayeeItem[];
 }
 
 // ─── Forecast ─────────────────────────────────────────────────────────────────

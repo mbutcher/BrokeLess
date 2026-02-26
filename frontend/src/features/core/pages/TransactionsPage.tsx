@@ -1,20 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAccounts } from '../hooks/useAccounts';
 import { useCategories } from '../hooks/useCategories';
 import { TransactionList } from '../components/TransactionList';
 import { TransactionForm } from '../components/TransactionForm';
 import { TransferLinkingDialog } from '../components/TransferLinkingDialog';
+import { useNetworkStore } from '@stores/networkStore';
 import type { Transaction, TransactionFilters, TransferCandidate } from '../types';
 
 export function TransactionsPage() {
   const { data: accounts = [] } = useAccounts();
   const { data: categories = [] } = useCategories();
+  const isOnline = useNetworkStore((s) => s.isOnline);
 
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
   const [pendingLink, setPendingLink] = useState<{ txId: string; candidates: TransferCandidate[] } | null>(null);
 
   const [filters, setFilters] = useState<TransactionFilters>({ page: 1, limit: 50 });
+  const [searchInput, setSearchInput] = useState('');
+
+  // Debounce search input → update filters.q after 300 ms idle
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters((f) => ({ ...f, q: searchInput.trim() || undefined, page: 1 }));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -29,50 +40,78 @@ export function TransactionsPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Account</label>
-          <select
-            className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
-            value={filters.accountId ?? ''}
-            onChange={(e) => setFilters((f) => ({ ...f, accountId: e.target.value || undefined, page: 1 }))}
-          >
-            <option value="">All accounts</option>
-            {accounts.filter((a) => a.isActive).map((a) => (
-              <option key={a.id} value={a.id}>{a.name}</option>
-            ))}
-          </select>
+      <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4 space-y-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Account</label>
+            <select
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
+              value={filters.accountId ?? ''}
+              onChange={(e) => setFilters((f) => ({ ...f, accountId: e.target.value || undefined, page: 1 }))}
+            >
+              <option value="">All accounts</option>
+              {accounts.filter((a) => a.isActive).map((a) => (
+                <option key={a.id} value={a.id}>{a.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Category</label>
+            <select
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
+              value={filters.categoryId ?? ''}
+              onChange={(e) => setFilters((f) => ({ ...f, categoryId: e.target.value || undefined, page: 1 }))}
+            >
+              <option value="">All categories</option>
+              {categories.filter((c) => c.isActive).map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">From</label>
+            <input
+              type="date"
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
+              value={filters.startDate ?? ''}
+              onChange={(e) => setFilters((f) => ({ ...f, startDate: e.target.value || undefined, page: 1 }))}
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">To</label>
+            <input
+              type="date"
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
+              value={filters.endDate ?? ''}
+              onChange={(e) => setFilters((f) => ({ ...f, endDate: e.target.value || undefined, page: 1 }))}
+            />
+          </div>
         </div>
+
+        {/* Search row */}
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Category</label>
-          <select
-            className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
-            value={filters.categoryId ?? ''}
-            onChange={(e) => setFilters((f) => ({ ...f, categoryId: e.target.value || undefined, page: 1 }))}
-          >
-            <option value="">All categories</option>
-            {categories.filter((c) => c.isActive).map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">From</label>
-          <input
-            type="date"
-            className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
-            value={filters.startDate ?? ''}
-            onChange={(e) => setFilters((f) => ({ ...f, startDate: e.target.value || undefined, page: 1 }))}
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">To</label>
-          <input
-            type="date"
-            className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
-            value={filters.endDate ?? ''}
-            onChange={(e) => setFilters((f) => ({ ...f, endDate: e.target.value || undefined, page: 1 }))}
-          />
+          <label className="block text-xs text-gray-500 mb-1">Search payee / description</label>
+          <div className="relative">
+            <input
+              type="text"
+              className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm pr-8 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
+              placeholder={isOnline ? 'Search transactions…' : 'Search not available offline'}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              disabled={!isOnline}
+              title={!isOnline ? 'Search is not available offline' : undefined}
+            />
+            {searchInput && (
+              <button
+                type="button"
+                onClick={() => setSearchInput('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg leading-none"
+                aria-label="Clear search"
+              >
+                ×
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

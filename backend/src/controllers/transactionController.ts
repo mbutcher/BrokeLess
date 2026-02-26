@@ -17,6 +17,7 @@ class TransactionController {
       startDate: query['startDate'],
       endDate: query['endDate'],
       isTransfer: query['isTransfer'] !== undefined ? query['isTransfer'] === 'true' : undefined,
+      q: query['q']?.trim() || undefined,
       page: query['page'] ? parseInt(query['page'], 10) : 1,
       limit: query['limit'] ? Math.min(parseInt(query['limit'], 10), 100) : 50,
     };

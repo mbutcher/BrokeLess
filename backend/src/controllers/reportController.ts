@@ -5,7 +5,13 @@ const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 import { getDatabase } from '@config/database';
 import { forecastService } from '@services/core/forecastService';
 import { netWorthSnapshotRepository } from '@repositories/netWorthSnapshotRepository';
-import type { SpendingByCategoryItem } from '@typings/core.types';
+import { encryptionService } from '@services/encryption/encryptionService';
+import type { SpendingByCategoryItem, TopPayeeItem } from '@typings/core.types';
+
+interface PayeeRow {
+  payee: string;
+  amount: string | number;
+}
 
 interface MonthlySummaryRow {
   month: string;
@@ -117,6 +123,54 @@ class ReportController {
   takeNetWorthSnapshot = asyncHandler(async (req: Request, res: Response) => {
     const snapshot = await netWorthSnapshotRepository.takeSnapshot(req.user!.id);
     res.status(201).json({ status: 'success', data: { snapshot } });
+  });
+
+  topPayees = asyncHandler(async (req: Request, res: Response) => {
+    const { start, end, type = 'expense' } = req.query as Record<string, string>;
+    const rawLimit = req.query['limit'];
+    const limit = Math.min(Math.max(parseInt(String(rawLimit ?? '10'), 10) || 10, 1), 50);
+
+    if (!start || !ISO_DATE_RE.test(start)) {
+      throw new AppError('start query param is required (YYYY-MM-DD)', 400);
+    }
+    if (!end || !ISO_DATE_RE.test(end)) {
+      throw new AppError('end query param is required (YYYY-MM-DD)', 400);
+    }
+    if (type !== 'expense' && type !== 'income') {
+      throw new AppError('type must be expense or income', 400);
+    }
+
+    const db = getDatabase();
+    const amountFilter = type === 'income' ? db.raw('amount > 0') : db.raw('amount < 0');
+
+    const rows = (await db('transactions')
+      .where({ user_id: req.user!.id, is_transfer: false })
+      .whereNotNull('payee')
+      .where('date', '>=', start)
+      .where('date', '<=', end)
+      .whereRaw(amountFilter)
+      .select('payee', 'amount')) as PayeeRow[];
+
+    // Decrypt and aggregate by payee
+    const totals = new Map<string, number>();
+    for (const row of rows) {
+      const decrypted = encryptionService.decrypt(String(row.payee));
+      const existing = totals.get(decrypted) ?? 0;
+      totals.set(decrypted, existing + Math.abs(Number(row.amount)));
+    }
+
+    const grandTotal = Array.from(totals.values()).reduce((sum, v) => sum + v, 0);
+
+    const payees: TopPayeeItem[] = Array.from(totals.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([payee, totalAmount]) => ({
+        payee,
+        totalAmount,
+        percentage: grandTotal > 0 ? Math.round((totalAmount / grandTotal) * 1000) / 10 : 0,
+      }));
+
+    res.json({ status: 'success', data: { start, end, type, total: grandTotal, payees } });
   });
 }
 

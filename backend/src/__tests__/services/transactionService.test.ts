@@ -7,6 +7,13 @@ import { accountRepository } from '@repositories/accountRepository';
 jest.mock('@repositories/transactionRepository');
 jest.mock('@repositories/transactionLinkRepository');
 jest.mock('@repositories/accountRepository');
+jest.mock('@repositories/transactionSearchRepository', () => ({
+  transactionSearchRepository: {
+    // Plain functions so resetMocks: true doesn't wipe the Promise return
+    index: () => Promise.resolve(),
+    findMatchingIds: () => Promise.resolve([]),
+  },
+}));
 jest.mock('@config/database', () => ({
   getDatabase: () => ({
     transaction: (cb: (trx: unknown) => Promise<unknown>) => cb({}),
@@ -16,6 +23,7 @@ jest.mock('@services/encryption/encryptionService', () => ({
   encryptionService: {
     encrypt: (v: string) => `enc:${v}`,
     decrypt: (v: string) => v.replace('enc:', ''),
+    hash: (v: string) => `hash:${v}`,
   },
 }));
 

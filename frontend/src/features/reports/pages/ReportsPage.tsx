@@ -3,10 +3,12 @@ import { useFormatters } from '@lib/i18n/useFormatters';
 import { Button } from '@components/ui/button';
 import { SpendingPieChart } from '@components/charts/SpendingPieChart';
 import { NetWorthChart } from '@components/charts/NetWorthChart';
+import { TopPayeesBarChart } from '@components/charts/TopPayeesBarChart';
 import {
   useSpendingByCategory,
   useNetWorthHistory,
   useTakeNetWorthSnapshot,
+  useTopPayees,
 } from '@features/core/hooks/useReports';
 import { toLocalISO } from '@lib/budget/budgetViewUtils';
 
@@ -219,13 +221,106 @@ function NetWorthTab() {
   );
 }
 
+// ─── Top Payees Tab ───────────────────────────────────────────────────────────
+
+function TopPayeesTab() {
+  const [period, setPeriod] = useState('this_month');
+  const [type, setType] = useState<'expense' | 'income'>('expense');
+  const [limit, setLimit] = useState(10);
+  const { start, end } = useMemo(() => getPeriodDates(period), [period]);
+  const { data, isLoading } = useTopPayees(start, end, limit, type);
+  const fmt = useFormatters();
+
+  return (
+    <div className="space-y-4">
+      {/* Controls */}
+      <div className="flex flex-wrap items-end gap-3">
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">Period</label>
+          <select
+            value={period}
+            onChange={(e) => setPeriod(e.target.value)}
+            className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white"
+          >
+            <option value="this_month">This month</option>
+            <option value="last_month">Last month</option>
+            <option value="last_3_months">Last 3 months</option>
+            <option value="last_6_months">Last 6 months</option>
+            <option value="this_year">This year</option>
+            <option value="last_year">Last year</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">Type</label>
+          <div className="flex border border-gray-200 rounded-lg overflow-hidden text-sm">
+            <button
+              onClick={() => setType('expense')}
+              className={[
+                'px-3 py-1.5 transition-colors',
+                type === 'expense'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-50',
+              ].join(' ')}
+            >
+              Expenses
+            </button>
+            <button
+              onClick={() => setType('income')}
+              className={[
+                'px-3 py-1.5 transition-colors',
+                type === 'income'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-50',
+              ].join(' ')}
+            >
+              Income
+            </button>
+          </div>
+        </div>
+        <div>
+          <label className="block text-xs text-gray-500 mb-1">Show top</label>
+          <select
+            value={limit}
+            onChange={(e) => setLimit(Number(e.target.value))}
+            className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white"
+          >
+            <option value={5}>5 payees</option>
+            <option value={10}>10 payees</option>
+            <option value={20}>20 payees</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Chart */}
+      {isLoading ? (
+        <div className="h-72 bg-gray-100 animate-pulse rounded-xl" />
+      ) : data ? (
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-medium text-gray-700">
+              Total: {fmt.currency(data.total)}
+            </span>
+            <span className="text-xs text-gray-400">
+              {data.start} – {data.end}
+            </span>
+          </div>
+          <TopPayeesBarChart payees={data.payees} total={data.total} />
+        </div>
+      ) : (
+        <div className="text-center py-16 text-gray-400 text-sm">No data for this period.</div>
+      )}
+    </div>
+  );
+}
+
 // ─── ReportsPage ──────────────────────────────────────────────────────────────
 
-type Tab = 'spending' | 'networth';
+type Tab = 'spending' | 'networth' | 'payees';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'spending', label: 'Spending' },
   { id: 'networth', label: 'Net Worth' },
+  { id: 'payees', label: 'Top Payees' },
 ];
 
 export function ReportsPage() {
@@ -260,6 +355,7 @@ export function ReportsPage() {
       {/* Tab content */}
       {tab === 'spending' && <SpendingTab />}
       {tab === 'networth' && <NetWorthTab />}
+      {tab === 'payees' && <TopPayeesTab />}
     </div>
   );
 }

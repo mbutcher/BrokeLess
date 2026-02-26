@@ -11,5 +11,6 @@ router.get('/forecast', reportController.forecast);
 router.get('/spending-by-category', reportController.spendingByCategory);
 router.get('/net-worth', reportController.netWorthHistory);
 router.post('/net-worth/snapshot', reportController.takeNetWorthSnapshot);
+router.get('/top-payees', reportController.topPayees);
 
 export default router;
