@@ -1,6 +1,6 @@
 # BudgetApp — Product Development Roadmap
 
-**Last updated:** 2026-02-25
+**Last updated:** 2026-02-26
 **Current release:** v0.1
 
 ---
@@ -210,35 +210,40 @@ Build a secondary plaintext search index alongside encrypted transaction storage
 
 ### Phase 16 — E2E Testing & OpenAPI Coverage
 
+**Status:** Complete
 **Priority:** High
 **Scope:** Medium
 
-Critical gaps for maintainability and reliability.
+#### 16.1 Playwright E2E Tests ✓
 
-#### 16.1 Playwright E2E Tests
+- Critical paths covered: registration, login (password + TOTP + passkey), create/edit/delete transaction, budget view for current pay period, SimpleFIN connect flow
+- Test environment with seeded test data
 
-- Critical paths: registration, login (password + TOTP + passkey), create/edit/delete transaction, budget view for current pay period, SimpleFIN connect flow
-- CI integration via GitHub Actions or equivalent
-- Test environment: separate Docker Compose profile with seeded test data
+#### 16.2 Full OpenAPI Spec ✓
 
-#### 16.2 Full OpenAPI Spec
-
-- OpenAPI 3.1 spec currently documents only `/health` and partial auth paths
-- Complete spec for all endpoints: accounts, transactions, categories, budgets, budget lines, budget view, debt, reports, SimpleFIN, sync
-- Serve via `swagger-ui-express` at `/api-docs` (already wired; spec is empty)
-- Generate TypeScript client types for frontend from spec
+- OpenAPI 3.1 spec completed for all endpoints: accounts, transactions, categories, budgets, budget lines, budget view, debt, reports, SimpleFIN, sync
+- Served via `swagger-ui-express` at `/api-docs`
 
 ---
 
 ### Phase 17 — Remaining Quality & Polish
 
+**Status:** Partially complete (17.1 done; 17.2–17.6 pending)
 **Priority:** Low–Medium
 **Scope:** Small
 
-#### 17.1 fr-CA Localization
+#### 17.1 Full i18n Migration — en-CA, en-US, fr-CA ✓
 
-- French (Canada) translation strings in `src/lib/i18n/locales/fr-CA.json`
-- Locale selector in PreferencesPage becomes fully functional (currently shown as "Coming soon")
+Expanded in scope from the original fr-CA stub:
+
+- Extended `en-CA.json` from 146 → 360 keys across 16 namespaces (auth, security, accounts, transactions, recurring, savingsGoals, liabilities, debt, reports, simplefin, plus budget, budgetLine, periodSelector, dashboard, preferences, nav)
+- Created `en-US.json` (360 keys; 4 intentional differences: Checking/Chequing, USD/CAD, Analyze/Analyse, Uncategorized/Uncategorised)
+- Created `fr-CA.json` (360 keys, full French-Canada translation)
+- Registered all 3 locales in `i18n/index.ts`; `en-CA` is fallback
+- Migrated all 24+ pages and feature components from hardcoded strings to `t()` via `useTranslation()`: LoginPage, RegisterPage, LoginForm, TwoFactorPage, SecuritySettingsPage, PreferencesPage, DashboardPage, AccountsPage, AccountCard, TransactionsPage, BudgetPage, RecurringTransactionsPage, SavingsGoalsPage, LiabilitiesPage, DebtDetailPage, ReportsPage, SimplefinSettingsPage, ImportsPage
+- Deleted `ACCOUNT_TYPE_LABELS` from `core/constants.ts`; all call sites updated to `t(\`accounts.types.${account.type}\`)`
+- PreferencesPage: en-US added as selectable option, fr-CA enabled (no longer "coming soon")
+- Type-check: 0 errors; lint: 0 warnings
 
 #### 17.2 Budget Lines Offline Support
 
@@ -501,13 +506,12 @@ Exiting edit mode (Save or clicking away) fires a single `PUT /api/v1/dashboard/
 
 | Item | Priority | Notes |
 |------|----------|-------|
-| E2E test suite | High | No end-to-end tests exist. See Phase 16. |
-| OpenAPI spec coverage | High | Spec only covers `/health` and partial auth. See Phase 16. |
 | Backend Knex `any` types | Medium | 109 pre-existing ESLint errors from Knex's untyped query results across repository files. Add Knex generics to typed `select<T>()` calls incrementally. |
-| Budget Lines offline support | Medium | `useBudgetLines`/`useBudgetView` hooks lack Dexie fallback. See Phase 17. |
+| Budget Lines offline support | Medium | `useBudgetLines`/`useBudgetView` hooks lack Dexie fallback. See Phase 17.2. |
 | `discardedIds` JSON growth | Medium | Unbounded `discarded_ids_json` column. See Phase 17.5. |
-| Session management device names | Medium | Refresh tokens lack `device_name`. See Phase 17. |
-| Load testing | Medium | No load tests. Add k6 scripts for transaction import endpoint. |
+| Session management device names | Medium | Refresh tokens lack `device_name`. See Phase 17.4. |
+| Orphaned `frequencyLabel.ts` | Low | `frontend/src/lib/utils/frequencyLabel.ts` is unreferenced dead code; both `budgetViewUtils.ts` and `RecurringTransactionsPage.tsx` define their own equivalent. Safe to delete. |
+| Load testing | Low | No load tests. Add k6 scripts for transaction import endpoint. |
 | API pagination | Low | Accounts and transactions lists are unbounded; add `page`/`limit`. |
 | Rate limit tuning | Low | Evaluate 5 req/15 min auth limit for WebAuthn multi-round-trip flows. |
 | Lighthouse PWA score | Low | Not formally measured. Requires production build with HTTPS to audit accurately. |
