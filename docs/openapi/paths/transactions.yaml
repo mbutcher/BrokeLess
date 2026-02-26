@@ -1,0 +1,320 @@
+components:
+  schemas:
+    Transaction:
+      type: object
+      required: [id, userId, accountId, amount, date, isTransfer, isCleared, createdAt, updatedAt]
+      properties:
+        id:          { type: string, format: uuid }
+        userId:      { type: string, format: uuid }
+        accountId:   { type: string, format: uuid }
+        amount:      { type: number, description: Negative = expense/debit; positive = income/credit }
+        description: { type: ['string', 'null'], description: Decrypted at rest (AES-256-GCM) }
+        payee:       { type: ['string', 'null'], description: Decrypted at rest (AES-256-GCM) }
+        notes:       { type: ['string', 'null'], description: Decrypted at rest (AES-256-GCM) }
+        date:        { type: string, format: date }
+        categoryId:  { type: ['string', 'null'], format: uuid }
+        isTransfer:  { type: boolean }
+        isCleared:   { type: boolean }
+        createdAt:   { type: string, format: date-time }
+        updatedAt:   { type: string, format: date-time }
+
+    TransferCandidate:
+      type: object
+      properties:
+        transaction: { $ref: '#/components/schemas/Transaction' }
+        account:     { $ref: '#/components/schemas/Account' }
+
+    CreateTransactionRequest:
+      type: object
+      required: [accountId, amount, date]
+      properties:
+        accountId:   { type: string, format: uuid }
+        amount:      { type: number }
+        description: { type: string }
+        payee:       { type: string }
+        notes:       { type: string }
+        date:        { type: string, format: date, example: '2026-02-18' }
+        categoryId:  { type: string, format: uuid }
+
+    UpdateTransactionRequest:
+      type: object
+      properties:
+        accountId:   { type: string, format: uuid }
+        amount:      { type: number }
+        description: { type: ['string', 'null'] }
+        payee:       { type: ['string', 'null'] }
+        notes:       { type: ['string', 'null'] }
+        date:        { type: string, format: date }
+        categoryId:  { type: ['string', 'null'], format: uuid }
+        isCleared:   { type: boolean }
+
+    CreateTransactionResponse:
+      type: object
+      properties:
+        status: { type: string, enum: [success] }
+        data:
+          type: object
+          properties:
+            transaction: { $ref: '#/components/schemas/Transaction' }
+            transferCandidates:
+              type: array
+              items: { $ref: '#/components/schemas/TransferCandidate' }
+              description: Auto-detected potential transfer matches (empty when none found)
+
+    PaginatedTransactions:
+      type: object
+      properties:
+        data:       { type: array, items: { $ref: '#/components/schemas/Transaction' } }
+        total:      { type: integer }
+        page:       { type: integer }
+        limit:      { type: integer }
+        totalPages: { type: integer }
+
+paths:
+  /transactions:
+    get:
+      summary: List transactions
+      description: Returns paginated, filtered transactions. Use `q` for full-text search (payee + description via HMAC token index).
+      tags: [Transactions]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: accountId
+          in: query
+          schema: { type: string, format: uuid }
+        - name: categoryId
+          in: query
+          schema: { type: string, format: uuid }
+        - name: startDate
+          in: query
+          schema: { type: string, format: date }
+        - name: endDate
+          in: query
+          schema: { type: string, format: date }
+        - name: isTransfer
+          in: query
+          schema: { type: boolean }
+        - name: q
+          in: query
+          description: Full-text search query. AND semantics — all words must match.
+          schema: { type: string }
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+      responses:
+        '200':
+          description: Paginated transactions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data: { $ref: '#/components/schemas/PaginatedTransactions' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+
+    post:
+      summary: Create a transaction
+      description: |
+        Creates a transaction and adjusts the account balance.
+        Returns the created transaction plus any auto-detected transfer candidates
+        (opposite-signed transactions on different accounts with matching amounts within ±3 days).
+      tags: [Transactions]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateTransactionRequest' }
+      responses:
+        '201':
+          description: Transaction created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CreateTransactionResponse' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '404':
+          description: Account not found or not owned by user
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /transactions/{id}:
+    get:
+      summary: Get a transaction
+      tags: [Transactions]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Transaction details (fields decrypted)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      transaction: { $ref: '#/components/schemas/Transaction' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+
+    patch:
+      summary: Update a transaction
+      tags: [Transactions]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateTransactionRequest' }
+      responses:
+        '200':
+          description: Updated transaction
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      transaction: { $ref: '#/components/schemas/Transaction' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+    delete:
+      summary: Delete a transaction
+      description: Deletes the transaction, reverses its effect on the account balance, and removes any transfer link.
+      tags: [Transactions]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Transaction deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data: { type: 'null' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+
+  /transactions/{id}/candidates:
+    get:
+      summary: Get transfer candidates
+      description: Returns transactions on other accounts that could be linked as the other side of a transfer.
+      tags: [Transfers]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Transfer candidates
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      candidates:
+                        type: array
+                        items: { $ref: '#/components/schemas/TransferCandidate' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+
+  /transactions/{id}/link:
+    post:
+      summary: Link two transactions as a transfer
+      description: |
+        Links this transaction to another as a transfer pair (equal and opposite amounts).
+        Once linked, both transactions are marked `isTransfer: true` and excluded from spending reports.
+      tags: [Transfers]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [targetTransactionId]
+              properties:
+                targetTransactionId:
+                  type: string
+                  format: uuid
+                linkType:
+                  type: string
+                  enum: [transfer, payment, refund]
+                  default: transfer
+      responses:
+        '200':
+          description: Transactions linked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data: { type: 'null' }
+        '400': { description: Cannot link a transaction to itself }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+        '409': { description: Transaction is already linked }
+        '422': { description: Amounts are not equal and opposite }
+
+    delete:
+      summary: Unlink a transfer
+      description: Removes the transfer link between this transaction and its pair. Both revert to normal transactions.
+      tags: [Transfers]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Transfer unlinked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data: { type: 'null' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+        '409': { description: Transaction is not currently linked }

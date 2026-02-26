@@ -1,0 +1,181 @@
+components:
+  schemas:
+    Account:
+      type: object
+      required: [id, userId, name, type, isAsset, startingBalance, currentBalance, currency, isActive, createdAt, updatedAt]
+      properties:
+        id:              { type: string, format: uuid }
+        userId:          { type: string, format: uuid }
+        name:            { type: string }
+        type:
+          type: string
+          enum: [checking, savings, credit_card, loan, line_of_credit, mortgage, investment, other]
+        isAsset:         { type: boolean }
+        startingBalance: { type: number, description: Starting balance in account currency }
+        currentBalance:  { type: number, description: Running balance maintained by the app }
+        currency:        { type: string, example: USD }
+        color:           { type: ['string', 'null'] }
+        institution:     { type: ['string', 'null'] }
+        annualRate:      { type: ['number', 'null'], description: Decimal fraction e.g. 0.0525 = 5.25% APR }
+        isActive:        { type: boolean }
+        createdAt:       { type: string, format: date-time }
+        updatedAt:       { type: string, format: date-time }
+
+    CreateAccountRequest:
+      type: object
+      required: [name, type, isAsset, startingBalance, currency]
+      properties:
+        name:            { type: string, maxLength: 255 }
+        type:
+          type: string
+          enum: [checking, savings, credit_card, loan, line_of_credit, mortgage, investment, other]
+        isAsset:         { type: boolean }
+        startingBalance: { type: number }
+        currency:        { type: string, example: USD }
+        color:           { type: string, description: Hex color e.g. '#4A90D9' }
+        institution:     { type: string }
+        annualRate:      { type: number, description: Decimal fraction e.g. 0.065 for 6.5% }
+
+    UpdateAccountRequest:
+      type: object
+      properties:
+        name:            { type: string, maxLength: 255 }
+        type:
+          type: string
+          enum: [checking, savings, credit_card, loan, line_of_credit, mortgage, investment, other]
+        isAsset:         { type: boolean }
+        startingBalance: { type: number }
+        currency:        { type: string }
+        color:           { type: ['string', 'null'] }
+        institution:     { type: ['string', 'null'] }
+        isActive:        { type: boolean }
+        annualRate:      { type: ['number', 'null'] }
+
+paths:
+  /accounts:
+    get:
+      summary: List accounts
+      description: Returns all accounts belonging to the authenticated user, ordered by name.
+      tags: [Accounts]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Account list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      accounts:
+                        type: array
+                        items: { $ref: '#/components/schemas/Account' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+
+    post:
+      summary: Create an account
+      tags: [Accounts]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateAccountRequest' }
+      responses:
+        '201':
+          description: Account created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      account: { $ref: '#/components/schemas/Account' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /accounts/{id}:
+    get:
+      summary: Get an account
+      tags: [Accounts]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Account details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      account: { $ref: '#/components/schemas/Account' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+
+    patch:
+      summary: Update an account
+      tags: [Accounts]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateAccountRequest' }
+      responses:
+        '200':
+          description: Updated account
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      account: { $ref: '#/components/schemas/Account' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+    delete:
+      summary: Delete an account
+      description: Deletes the account and all associated transactions. Irreversible.
+      tags: [Accounts]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Account deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data: { type: 'null' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }

@@ -1,0 +1,60 @@
+components:
+  schemas:
+    SyncPayload:
+      type: object
+      description: Full or delta snapshot of all user data for offline-first PWA sync.
+      properties:
+        accounts:
+          type: array
+          items: { $ref: '#/components/schemas/Account' }
+        categories:
+          type: array
+          items: { $ref: '#/components/schemas/Category' }
+        transactions:
+          type: array
+          items: { $ref: '#/components/schemas/Transaction' }
+          description: Sensitive fields (payee/description/notes) are decrypted
+        budgets:
+          type: array
+          items: { $ref: '#/components/schemas/Budget' }
+        budgetCategories:
+          type: array
+          items: { $ref: '#/components/schemas/BudgetCategory' }
+        savingsGoals:
+          type: array
+          items: { $ref: '#/components/schemas/SavingsGoal' }
+        syncedAt:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp — store as cursor for next delta sync
+
+paths:
+  /sync:
+    get:
+      summary: Full or delta data sync
+      description: |
+        Returns a snapshot of all user data for offline use.
+
+        Provide `since` to get only records updated after that timestamp (delta sync).
+        Omit `since` for a full sync.
+
+        The client should store the returned `syncedAt` timestamp and use it as `since`
+        on the next request.
+      tags: [Analytics]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: since
+          in: query
+          description: ISO 8601 timestamp — return only records updated after this time
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Sync payload
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data: { $ref: '#/components/schemas/SyncPayload' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }

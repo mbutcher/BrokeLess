@@ -1,8 +1,10 @@
 import 'dotenv/config';
 import express, { Application } from 'express';
+import swaggerUi from 'swagger-ui-express';
 import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import { buildSwaggerSpec } from './utils/swagger';
 
 // Configuration
 import { env, validateEnv } from './config/env';
@@ -29,6 +31,11 @@ handleUnhandledRejection();
 handleUncaughtException();
 
 const app: Application = express();
+
+// API docs — mounted before helmet so swagger-ui CSS/JS are not blocked by CSP
+const swaggerSpec = buildSwaggerSpec();
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.get('/api-docs.json', (_req, res) => res.json(swaggerSpec));
 
 // Security middleware
 app.use(helmet());

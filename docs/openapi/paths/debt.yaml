@@ -1,0 +1,230 @@
+components:
+  schemas:
+    DebtSchedule:
+      type: object
+      required: [id, userId, accountId, principal, annualRate, termMonths, originationDate, paymentAmount]
+      properties:
+        id:               { type: string, format: uuid }
+        userId:           { type: string, format: uuid }
+        accountId:        { type: string, format: uuid }
+        principal:        { type: number, description: Original loan amount }
+        annualRate:       { type: number, description: Decimal fraction e.g. 0.065 = 6.5% APR }
+        termMonths:       { type: integer }
+        originationDate:  { type: string, format: date }
+        paymentAmount:    { type: number, description: Regular payment amount }
+        createdAt:        { type: string, format: date-time }
+        updatedAt:        { type: string, format: date-time }
+
+    UpsertDebtScheduleRequest:
+      type: object
+      required: [principal, annualRate, termMonths, originationDate, paymentAmount]
+      properties:
+        principal:       { type: number, minimum: 0 }
+        annualRate:      { type: number, minimum: 0, description: Decimal fraction }
+        termMonths:      { type: integer, minimum: 1 }
+        originationDate: { type: string, format: date }
+        paymentAmount:   { type: number, minimum: 0 }
+
+    AmortizationRow:
+      type: object
+      properties:
+        month:     { type: integer }
+        payment:   { type: number }
+        principal: { type: number }
+        interest:  { type: number }
+        balance:   { type: number }
+
+    AmortizationSchedule:
+      type: object
+      properties:
+        schedule:
+          type: array
+          items: { $ref: '#/components/schemas/AmortizationRow' }
+        totalInterest: { type: number }
+        payoffDate:    { type: string, format: date }
+
+    WhatIfResult:
+      type: object
+      properties:
+        originalPayoffDate: { type: string, format: date }
+        newPayoffDate:      { type: string, format: date }
+        monthsSaved:        { type: integer }
+        interestSaved:      { type: number }
+
+    TransactionSplit:
+      type: object
+      properties:
+        id:               { type: string, format: uuid }
+        transactionId:    { type: string, format: uuid }
+        principalAmount:  { type: number }
+        interestAmount:   { type: number }
+        createdAt:        { type: string, format: date-time }
+
+paths:
+  /debt/schedule/{accountId}:
+    get:
+      summary: Get debt schedule for an account
+      tags: [Debts]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Debt schedule
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      schedule:
+                        oneOf:
+                          - $ref: '#/components/schemas/DebtSchedule'
+                          - type: 'null'
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+
+    put:
+      summary: Create or update a debt schedule
+      tags: [Debts]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpsertDebtScheduleRequest' }
+      responses:
+        '200':
+          description: Schedule saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      schedule: { $ref: '#/components/schemas/DebtSchedule' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '404': { description: Account not found }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+    delete:
+      summary: Delete a debt schedule
+      tags: [Debts]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Schedule deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data: { type: 'null' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+
+  /debt/amortization/{accountId}:
+    get:
+      summary: Get full amortization schedule
+      tags: [Debts]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Full amortization schedule
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      amortization: { $ref: '#/components/schemas/AmortizationSchedule' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '404': { description: No debt schedule found for this account }
+
+  /debt/what-if/{accountId}:
+    get:
+      summary: What-if analysis for extra payments
+      description: Shows how an extra monthly payment reduces total interest and payoff date.
+      tags: [Debts]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: extraPayment
+          in: query
+          required: true
+          schema: { type: number, minimum: 0 }
+      responses:
+        '200':
+          description: What-if result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      whatIf: { $ref: '#/components/schemas/WhatIfResult' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '404': { description: No debt schedule found for this account }
+
+  /debt/split/{transactionId}:
+    get:
+      summary: Get interest/principal split for a transaction
+      description: Returns the pre-computed principal and interest split for a debt payment transaction.
+      tags: [Debts]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Transaction split
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      split:
+                        oneOf:
+                          - $ref: '#/components/schemas/TransactionSplit'
+                          - type: 'null'
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }

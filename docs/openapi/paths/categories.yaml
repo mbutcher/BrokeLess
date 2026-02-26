@@ -1,0 +1,161 @@
+components:
+  schemas:
+    Category:
+      type: object
+      required: [id, userId, name, isIncome, isActive, createdAt, updatedAt]
+      properties:
+        id:       { type: string, format: uuid }
+        userId:   { type: string, format: uuid }
+        name:     { type: string }
+        color:    { type: ['string', 'null'] }
+        icon:     { type: ['string', 'null'] }
+        isIncome: { type: boolean }
+        parentId: { type: ['string', 'null'], format: uuid }
+        isActive: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    CreateCategoryRequest:
+      type: object
+      required: [name, isIncome]
+      properties:
+        name:     { type: string, maxLength: 100 }
+        color:    { type: string, description: Hex color }
+        icon:     { type: string, description: Icon identifier }
+        isIncome: { type: boolean }
+        parentId: { type: string, format: uuid }
+
+    UpdateCategoryRequest:
+      type: object
+      properties:
+        name:     { type: string, maxLength: 100 }
+        color:    { type: ['string', 'null'] }
+        icon:     { type: ['string', 'null'] }
+        isActive: { type: boolean }
+
+paths:
+  /categories:
+    get:
+      summary: List categories
+      description: Returns all categories for the authenticated user, including inactive ones.
+      tags: [Categories]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Category list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      categories:
+                        type: array
+                        items: { $ref: '#/components/schemas/Category' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+
+    post:
+      summary: Create a category
+      tags: [Categories]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateCategoryRequest' }
+      responses:
+        '201':
+          description: Category created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      category: { $ref: '#/components/schemas/Category' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /categories/{id}:
+    get:
+      summary: Get a category
+      tags: [Categories]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Category details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      category: { $ref: '#/components/schemas/Category' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+
+    patch:
+      summary: Update a category
+      tags: [Categories]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateCategoryRequest' }
+      responses:
+        '200':
+          description: Updated category
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      category: { $ref: '#/components/schemas/Category' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+
+    delete:
+      summary: Delete a category
+      tags: [Categories]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Category deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data: { type: 'null' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }

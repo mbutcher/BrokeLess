@@ -20,12 +20,11 @@ components:
       required: [id, createdAt]
       properties:
         id:         { type: string, format: uuid }
-        deviceName: { type: string, nullable: true }
+        deviceName: { type: ['string', 'null'] }
         transports:
-          type: array
-          nullable: true
+          type: ['array', 'null']
           items: { type: string, enum: [internal, hybrid, ble, usb, nfc] }
-        lastUsedAt: { type: string, format: date-time, nullable: true }
+        lastUsedAt: { type: ['string', 'null'], format: date-time }
         createdAt:  { type: string, format: date-time }
 
     RegisterRequest:
@@ -111,8 +110,8 @@ paths:
                     properties:
                       user: { $ref: '#/components/schemas/PublicUser' }
         '409': { description: Email already registered (generic message to prevent enumeration) }
-        '422': { $ref: 'openapi.yaml#/components/responses/ValidationError' }
-        '429': { $ref: 'openapi.yaml#/components/responses/RateLimitError' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/RateLimitError' }
 
   /auth/login:
     post:
@@ -139,7 +138,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/LoginResponse' }
         '401': { description: Invalid credentials (generic — does not reveal whether email exists) }
-        '429': { $ref: 'openapi.yaml#/components/responses/RateLimitError' }
+        '429': { $ref: '#/components/responses/RateLimitError' }
 
   /auth/logout:
     post:
@@ -149,7 +148,7 @@ paths:
       security: [{ bearerAuth: [] }]
       responses:
         '200': { description: Logged out }
-        '401': { $ref: 'openapi.yaml#/components/responses/UnauthorizedError' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
 
   /auth/logout-all:
     post:
@@ -159,7 +158,7 @@ paths:
       security: [{ bearerAuth: [] }]
       responses:
         '200': { description: All sessions revoked }
-        '401': { $ref: 'openapi.yaml#/components/responses/UnauthorizedError' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
 
   /auth/refresh:
     post:
@@ -180,7 +179,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/AuthResponse' }
         '401': { description: Refresh token missing, expired, or revoked }
-        '429': { $ref: 'openapi.yaml#/components/responses/RateLimitError' }
+        '429': { $ref: '#/components/responses/RateLimitError' }
 
   /auth/me:
     get:
@@ -199,7 +198,7 @@ paths:
                   data:
                     properties:
                       user: { $ref: '#/components/schemas/PublicUser' }
-        '401': { $ref: 'openapi.yaml#/components/responses/UnauthorizedError' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
 
   /auth/totp/setup:
     post:

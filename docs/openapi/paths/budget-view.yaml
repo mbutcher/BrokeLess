@@ -1,0 +1,160 @@
+components:
+  schemas:
+    Occurrence:
+      type: object
+      properties:
+        budgetLineId:    { type: string, format: uuid }
+        dueDate:         { type: string, format: date }
+        expectedAmount:  { type: number }
+        status:          { type: string, enum: [upcoming, missed] }
+
+    BudgetViewLine:
+      type: object
+      properties:
+        budgetLine:      { $ref: '#/components/schemas/BudgetLine' }
+        proratedAmount:  { type: number, description: Budget line amount normalized to the view window }
+        actualAmount:    { type: number, description: Sum of matching transactions in window }
+        variance:        { type: number, description: proratedAmount minus actualAmount }
+        occurrences:
+          type: array
+          items: { $ref: '#/components/schemas/Occurrence' }
+
+    BudgetView:
+      type: object
+      properties:
+        start:                  { type: string, format: date }
+        end:                    { type: string, format: date }
+        lines:
+          type: array
+          items: { $ref: '#/components/schemas/BudgetViewLine' }
+        totalProratedIncome:    { type: number }
+        totalProratedExpenses:  { type: number }
+        totalActualIncome:      { type: number }
+        totalActualExpenses:    { type: number }
+
+    PayPeriod:
+      type: object
+      properties:
+        start:         { type: string, format: date }
+        end:           { type: string, format: date }
+        budgetLineId:  { type: string, format: uuid }
+        frequency:
+          type: string
+          enum: [weekly, biweekly, semi_monthly, twice_monthly, monthly, every_n_days, annually, one_time]
+
+    UpcomingFixedItem:
+      type: object
+      properties:
+        budgetLineId:  { type: string, format: uuid }
+        name:          { type: string }
+        amount:        { type: number }
+        date:          { type: string, format: date }
+        categoryId:    { type: string, format: uuid }
+        subcategoryId: { type: ['string', 'null'], format: uuid }
+        accountId:     { type: ['string', 'null'], format: uuid }
+        accountName:   { type: ['string', 'null'] }
+
+    UpcomingFlexibleItem:
+      type: object
+      properties:
+        budgetLineId:      { type: string, format: uuid }
+        name:              { type: string }
+        fullPeriodAmount:  { type: number }
+        proratedAmount:    { type: number }
+        frequency:         { type: string }
+        categoryId:        { type: string, format: uuid }
+
+    UpcomingExpensesResponse:
+      type: object
+      properties:
+        start:         { type: string, format: date }
+        end:           { type: string, format: date }
+        fixedItems:
+          type: array
+          items: { $ref: '#/components/schemas/UpcomingFixedItem' }
+        flexibleItems:
+          type: array
+          items: { $ref: '#/components/schemas/UpcomingFlexibleItem' }
+
+paths:
+  /budget-view:
+    get:
+      summary: Get budget view for a date range
+      description: Returns prorated plan vs. actual spend for all active budget lines within the specified window.
+      tags: [Budgets]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: start
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: end
+          in: query
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Budget view
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      view: { $ref: '#/components/schemas/BudgetView' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '422': { description: Missing or invalid date parameters }
+
+  /budget-view/pay-period:
+    get:
+      summary: Get the current pay period
+      description: Returns the current pay period boundaries derived from the anchor income budget line.
+      tags: [Budgets]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Current pay period
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      payPeriod:
+                        oneOf:
+                          - $ref: '#/components/schemas/PayPeriod'
+                          - type: 'null'
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+
+  /budget-view/upcoming:
+    get:
+      summary: Get upcoming fixed and flexible expenses
+      description: Returns fixed expense occurrences and prorated flexible items for the specified window.
+      tags: [Budgets]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: start
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: end
+          in: query
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Upcoming expenses
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data: { $ref: '#/components/schemas/UpcomingExpensesResponse' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }

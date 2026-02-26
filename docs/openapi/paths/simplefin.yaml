@@ -1,0 +1,348 @@
+components:
+  schemas:
+    SimplefinStatus:
+      type: object
+      properties:
+        connected:              { type: boolean }
+        lastSyncAt:             { type: ['string', 'null'], format: date-time }
+        lastSyncStatus:         { type: ['string', 'null'], enum: [success, error, pending] }
+        lastSyncError:          { type: ['string', 'null'] }
+        autoSyncEnabled:        { type: boolean }
+        autoSyncIntervalHours:  { type: integer }
+        autoSyncWindowStart:    { type: integer, description: Hour 0–23 }
+        autoSyncWindowEnd:      { type: integer, description: Hour 0–23 }
+
+    SimplefinAccountMapping:
+      type: object
+      properties:
+        id:                     { type: string, format: uuid }
+        simplefinAccountId:     { type: string }
+        simplefinOrgName:       { type: string }
+        simplefinAccountName:   { type: string }
+        simplefinAccountType:   { type: string }
+        localAccountId:         { type: ['string', 'null'], format: uuid }
+
+    SimplefinPendingReview:
+      type: object
+      properties:
+        id:                       { type: string, format: uuid }
+        simplefinTransactionId:   { type: string }
+        rawData:                  { type: object, description: Decrypted SimpleFIN transaction JSON }
+        candidateTransactionId:   { type: ['string', 'null'], format: uuid }
+        localAccountId:           { type: ['string', 'null'], format: uuid }
+        similarityScore:          { type: number, minimum: 0, maximum: 1 }
+        createdAt:                { type: string, format: date-time }
+
+    SyncResult:
+      type: object
+      properties:
+        imported:          { type: integer }
+        skipped:           { type: integer }
+        pendingReviews:    { type: integer }
+        unmappedAccounts:  { type: integer }
+
+    SimplefinSchedule:
+      type: object
+      properties:
+        autoSyncEnabled:       { type: boolean }
+        autoSyncIntervalHours: { type: integer, minimum: 1, maximum: 168 }
+        autoSyncWindowStart:   { type: integer, minimum: 0, maximum: 23 }
+        autoSyncWindowEnd:     { type: integer, minimum: 0, maximum: 23 }
+
+paths:
+  /simplefin/status:
+    get:
+      summary: Get SimpleFIN connection status
+      tags: [SimpleFIN]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Connection status and sync schedule
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      connection: { $ref: '#/components/schemas/SimplefinStatus' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+
+  /simplefin/connect:
+    post:
+      summary: Connect a SimpleFIN Bridge token
+      description: Exchanges a SimpleFIN setup token for a permanent access URL and stores it encrypted.
+      tags: [SimpleFIN]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [setupToken]
+              properties:
+                setupToken: { type: string, description: SimpleFIN setup token from bridge.simplefin.org }
+      responses:
+        '200':
+          description: Connected
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data: { type: object }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '422': { description: Invalid or expired setup token }
+
+  /simplefin/disconnect:
+    delete:
+      summary: Disconnect SimpleFIN
+      description: Removes the stored access URL and all SimpleFIN account mappings.
+      tags: [SimpleFIN]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Disconnected
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data: { type: 'null' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+
+  /simplefin/sync:
+    post:
+      summary: Trigger a manual sync
+      description: Fetches transactions from SimpleFIN and imports them into BudgetApp.
+      tags: [SimpleFIN]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Sync results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      result: { $ref: '#/components/schemas/SyncResult' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '409': { description: SimpleFIN not connected }
+
+  /simplefin/schedule:
+    get:
+      summary: Get auto-sync schedule
+      tags: [SimpleFIN]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Auto-sync schedule
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      schedule: { $ref: '#/components/schemas/SimplefinSchedule' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+
+    patch:
+      summary: Update auto-sync schedule
+      tags: [SimpleFIN]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SimplefinSchedule' }
+      responses:
+        '200':
+          description: Schedule updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      schedule: { $ref: '#/components/schemas/SimplefinSchedule' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+
+  /simplefin/accounts/unmapped:
+    get:
+      summary: List unmapped SimpleFIN accounts
+      description: Returns SimpleFIN accounts that have not yet been mapped to a local BudgetApp account.
+      tags: [SimpleFIN]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Unmapped accounts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      accounts:
+                        type: array
+                        items: { $ref: '#/components/schemas/SimplefinAccountMapping' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+
+  /simplefin/accounts/{simplefinAccountId}/map:
+    post:
+      summary: Map a SimpleFIN account to a local account
+      description: |
+        Either link to an existing local account (`action: "link"`) or create a new one (`action: "create"`).
+      tags: [SimpleFIN]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: simplefinAccountId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action:
+                  type: string
+                  enum: [link, create]
+                localAccountId:
+                  type: string
+                  format: uuid
+                  description: Required when action=link
+                newAccount:
+                  type: object
+                  description: Required when action=create
+                  properties:
+                    name:     { type: string }
+                    type:     { type: string, enum: [checking, savings, credit_card, loan, line_of_credit, mortgage, investment, other] }
+                    isAsset:  { type: boolean }
+                    currency: { type: string }
+                    color:    { type: string }
+      responses:
+        '200':
+          description: Account mapped
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data: { type: object }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '404': { description: SimpleFIN account mapping not found }
+
+  /simplefin/reviews:
+    get:
+      summary: List pending review items
+      description: Returns SimpleFIN transactions flagged for user review (possible duplicates or mismatches).
+      tags: [SimpleFIN]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+      responses:
+        '200':
+          description: Pending reviews
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      reviews:
+                        type: array
+                        items: { $ref: '#/components/schemas/SimplefinPendingReview' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+
+  /simplefin/reviews/count:
+    get:
+      summary: Get pending review count
+      tags: [SimpleFIN]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Count of pending reviews
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      count: { type: integer }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+
+  /simplefin/reviews/{reviewId}/resolve:
+    post:
+      summary: Resolve a pending review
+      description: |
+        Accept or discard a pending review item.
+        - `accept`: import the SimpleFIN transaction as a new BudgetApp transaction
+        - `discard`: dismiss the review (transaction will not be imported)
+        - `link`: link to an existing BudgetApp transaction
+      tags: [SimpleFIN]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: reviewId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action:
+                  type: string
+                  enum: [accept, discard, link]
+                transactionId:
+                  type: string
+                  format: uuid
+                  description: Required when action=link
+      responses:
+        '200':
+          description: Review resolved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data: { type: object }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }

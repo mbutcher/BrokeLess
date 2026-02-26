@@ -1,0 +1,204 @@
+components:
+  schemas:
+    RecurringTransaction:
+      type: object
+      required: [id, userId, accountId, amount, frequency, anchorDate, nextDueDate, isActive, createdAt, updatedAt]
+      properties:
+        id:                { type: string, format: uuid }
+        userId:            { type: string, format: uuid }
+        accountId:         { type: string, format: uuid }
+        amount:            { type: number }
+        description:       { type: ['string', 'null'] }
+        payee:             { type: ['string', 'null'] }
+        notes:             { type: ['string', 'null'] }
+        categoryId:        { type: ['string', 'null'], format: uuid }
+        frequency:
+          type: string
+          enum: [weekly, biweekly, semi_monthly, monthly, every_n_days, annually]
+        frequencyInterval: { type: ['integer', 'null'], description: Only when frequency=every_n_days }
+        anchorDate:        { type: string, format: date }
+        nextDueDate:       { type: string, format: date }
+        endDate:           { type: ['string', 'null'], format: date }
+        isActive:          { type: boolean }
+        lastGeneratedAt:   { type: ['string', 'null'], format: date-time }
+        createdAt:         { type: string, format: date-time }
+        updatedAt:         { type: string, format: date-time }
+
+    CreateRecurringTransactionRequest:
+      type: object
+      required: [accountId, amount, frequency, anchorDate]
+      properties:
+        accountId:         { type: string, format: uuid }
+        amount:            { type: number }
+        description:       { type: string }
+        payee:             { type: string }
+        notes:             { type: string }
+        categoryId:        { type: string, format: uuid }
+        frequency:         { type: string, enum: [weekly, biweekly, semi_monthly, monthly, every_n_days, annually] }
+        frequencyInterval: { type: integer, description: Required when frequency=every_n_days }
+        anchorDate:        { type: string, format: date }
+        endDate:           { type: string, format: date }
+
+    UpdateRecurringTransactionRequest:
+      type: object
+      properties:
+        accountId:         { type: string, format: uuid }
+        amount:            { type: number }
+        description:       { type: ['string', 'null'] }
+        payee:             { type: ['string', 'null'] }
+        notes:             { type: ['string', 'null'] }
+        categoryId:        { type: ['string', 'null'], format: uuid }
+        frequency:         { type: string, enum: [weekly, biweekly, semi_monthly, monthly, every_n_days, annually] }
+        frequencyInterval: { type: ['integer', 'null'] }
+        anchorDate:        { type: string, format: date }
+        endDate:           { type: ['string', 'null'], format: date }
+        isActive:          { type: boolean }
+
+paths:
+  /recurring-transactions:
+    get:
+      summary: List recurring transactions
+      tags: [Transactions]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Recurring transaction list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      recurringTransactions:
+                        type: array
+                        items: { $ref: '#/components/schemas/RecurringTransaction' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+
+    post:
+      summary: Create a recurring transaction
+      tags: [Transactions]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateRecurringTransactionRequest' }
+      responses:
+        '201':
+          description: Recurring transaction created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      recurringTransaction: { $ref: '#/components/schemas/RecurringTransaction' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /recurring-transactions/{id}:
+    patch:
+      summary: Update a recurring transaction
+      tags: [Transactions]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateRecurringTransactionRequest' }
+      responses:
+        '200':
+          description: Updated recurring transaction
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      recurringTransaction: { $ref: '#/components/schemas/RecurringTransaction' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+
+    delete:
+      summary: Delete a recurring transaction
+      tags: [Transactions]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Recurring transaction deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data: { type: 'null' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+
+  /recurring-transactions/{id}/skip:
+    post:
+      summary: Skip the next occurrence
+      description: Advances the nextDueDate by one frequency period without generating a transaction.
+      tags: [Transactions]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Next occurrence skipped
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      recurringTransaction: { $ref: '#/components/schemas/RecurringTransaction' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+
+  /recurring-transactions/generate:
+    post:
+      summary: Manually trigger recurring transaction generation
+      description: Generates due transactions for all active recurring transactions. Normally runs on a daily cron schedule.
+      tags: [Transactions]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Generation results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      generated: { type: integer }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }

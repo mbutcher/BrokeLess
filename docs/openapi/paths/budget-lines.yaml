@@ -1,0 +1,195 @@
+components:
+  schemas:
+    BudgetLine:
+      type: object
+      required: [id, userId, name, classification, flexibility, categoryId, amount, frequency, anchorDate, isPayPeriodAnchor, isActive, createdAt, updatedAt]
+      properties:
+        id:                 { type: string, format: uuid }
+        userId:             { type: string, format: uuid }
+        name:               { type: string }
+        classification:
+          type: string
+          enum: [income, expense]
+        flexibility:
+          type: string
+          enum: [fixed, flexible]
+        categoryId:         { type: string, format: uuid }
+        subcategoryId:      { type: ['string', 'null'], format: uuid }
+        accountId:          { type: ['string', 'null'], format: uuid }
+        amount:             { type: number, minimum: 0 }
+        frequency:
+          type: string
+          enum: [weekly, biweekly, semi_monthly, twice_monthly, monthly, every_n_days, annually, one_time]
+        frequencyInterval:  { type: ['integer', 'null'], description: Only when frequency=every_n_days }
+        dayOfMonth1:        { type: ['integer', 'null'], description: First day for twice_monthly (1–28 or 31=last) }
+        dayOfMonth2:        { type: ['integer', 'null'], description: Second day for twice_monthly }
+        anchorDate:         { type: string, format: date, description: First/next known occurrence date }
+        isPayPeriodAnchor:  { type: boolean }
+        isActive:           { type: boolean }
+        notes:              { type: ['string', 'null'] }
+        createdAt:          { type: string, format: date-time }
+        updatedAt:          { type: string, format: date-time }
+
+    CreateBudgetLineRequest:
+      type: object
+      required: [name, classification, flexibility, categoryId, amount, frequency, anchorDate]
+      properties:
+        name:               { type: string, maxLength: 255 }
+        classification:     { type: string, enum: [income, expense] }
+        flexibility:        { type: string, enum: [fixed, flexible] }
+        categoryId:         { type: string, format: uuid }
+        subcategoryId:      { type: string, format: uuid }
+        accountId:          { type: string, format: uuid }
+        amount:             { type: number, minimum: 0 }
+        frequency:          { type: string, enum: [weekly, biweekly, semi_monthly, twice_monthly, monthly, every_n_days, annually, one_time] }
+        frequencyInterval:  { type: integer }
+        dayOfMonth1:        { type: integer }
+        dayOfMonth2:        { type: integer }
+        anchorDate:         { type: string, format: date }
+        isPayPeriodAnchor:  { type: boolean }
+        notes:              { type: string }
+
+    UpdateBudgetLineRequest:
+      type: object
+      properties:
+        name:               { type: string }
+        classification:     { type: string, enum: [income, expense] }
+        flexibility:        { type: string, enum: [fixed, flexible] }
+        categoryId:         { type: string, format: uuid }
+        subcategoryId:      { type: ['string', 'null'], format: uuid }
+        accountId:          { type: ['string', 'null'], format: uuid }
+        amount:             { type: number, minimum: 0 }
+        frequency:          { type: string, enum: [weekly, biweekly, semi_monthly, twice_monthly, monthly, every_n_days, annually, one_time] }
+        frequencyInterval:  { type: ['integer', 'null'] }
+        dayOfMonth1:        { type: ['integer', 'null'] }
+        dayOfMonth2:        { type: ['integer', 'null'] }
+        anchorDate:         { type: string, format: date }
+        isPayPeriodAnchor:  { type: boolean }
+        notes:              { type: ['string', 'null'] }
+        isActive:           { type: boolean }
+
+paths:
+  /budget-lines:
+    get:
+      summary: List budget lines
+      tags: [Budgets]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Budget line list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      budgetLines:
+                        type: array
+                        items: { $ref: '#/components/schemas/BudgetLine' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+
+    post:
+      summary: Create a budget line
+      tags: [Budgets]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateBudgetLineRequest' }
+      responses:
+        '201':
+          description: Budget line created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      budgetLine: { $ref: '#/components/schemas/BudgetLine' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /budget-lines/{id}:
+    get:
+      summary: Get a budget line
+      tags: [Budgets]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Budget line details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      budgetLine: { $ref: '#/components/schemas/BudgetLine' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+
+    patch:
+      summary: Update a budget line
+      tags: [Budgets]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateBudgetLineRequest' }
+      responses:
+        '200':
+          description: Updated budget line
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      budgetLine: { $ref: '#/components/schemas/BudgetLine' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }
+
+    delete:
+      summary: Delete a budget line
+      tags: [Budgets]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Budget line deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data: { type: 'null' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '404': { $ref: '#/components/responses/NotFoundError' }

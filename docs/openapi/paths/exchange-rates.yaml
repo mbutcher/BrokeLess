@@ -1,0 +1,44 @@
+components:
+  schemas:
+    ExchangeRate:
+      type: object
+      properties:
+        fromCurrency: { type: string, example: USD }
+        toCurrency:   { type: string, example: EUR }
+        rate:         { type: number, description: Multiplier to convert from → to }
+        fetchedDate:  { type: string, format: date }
+        isStale:      { type: boolean, description: True when rate is older than 24 hours }
+
+paths:
+  /exchange-rates:
+    get:
+      summary: Get exchange rates
+      description: Returns exchange rates for the currencies used in the user's accounts.
+      tags: [Analytics]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: from
+          in: query
+          required: true
+          description: Source currency code
+          schema: { type: string, example: USD }
+        - name: to
+          in: query
+          required: true
+          description: Target currency code
+          schema: { type: string, example: EUR }
+      responses:
+        '200':
+          description: Exchange rate
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      rate: { $ref: '#/components/schemas/ExchangeRate' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '422': { description: Invalid currency code }

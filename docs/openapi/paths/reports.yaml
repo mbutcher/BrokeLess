@@ -1,0 +1,240 @@
+components:
+  schemas:
+    MonthlySummaryItem:
+      type: object
+      properties:
+        month:    { type: string, example: '2026-01', description: YYYY-MM }
+        income:   { type: number }
+        expenses: { type: number }
+        net:      { type: number }
+
+    ForecastMonth:
+      type: object
+      properties:
+        month:      { type: string, description: YYYY-MM }
+        income:     { type: number }
+        expenses:   { type: number }
+        isForecast: { type: boolean, enum: [true] }
+
+    SpendingByCategoryItem:
+      type: object
+      properties:
+        categoryId:   { type: string, format: uuid }
+        categoryName: { type: string }
+        parentId:     { type: ['string', 'null'], format: uuid }
+        color:        { type: ['string', 'null'] }
+        totalAmount:  { type: number }
+        percentage:   { type: number }
+
+    SpendingByCategoryResponse:
+      type: object
+      properties:
+        start:      { type: string, format: date }
+        end:        { type: string, format: date }
+        type:       { type: string, enum: [expense, income] }
+        total:      { type: number }
+        categories:
+          type: array
+          items: { $ref: '#/components/schemas/SpendingByCategoryItem' }
+
+    NetWorthSnapshot:
+      type: object
+      properties:
+        id:               { type: string, format: uuid }
+        userId:           { type: string, format: uuid }
+        snapshotDate:     { type: string, format: date }
+        totalAssets:      { type: number }
+        totalLiabilities: { type: number }
+        netWorth:         { type: number }
+        createdAt:        { type: string, format: date-time }
+
+    TopPayeeItem:
+      type: object
+      properties:
+        payee:       { type: string }
+        totalAmount: { type: number }
+        percentage:  { type: number }
+
+    TopPayeesResponse:
+      type: object
+      properties:
+        start:   { type: string, format: date }
+        end:     { type: string, format: date }
+        type:    { type: string, enum: [expense, income] }
+        total:   { type: number }
+        payees:
+          type: array
+          items: { $ref: '#/components/schemas/TopPayeeItem' }
+
+paths:
+  /reports/monthly-summary:
+    get:
+      summary: Monthly income/expense summary
+      description: Returns aggregated income and expenses by calendar month for the specified range.
+      tags: [Analytics]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: months
+          in: query
+          description: Number of months to include (default 12)
+          schema: { type: integer, minimum: 1, maximum: 60, default: 12 }
+        - name: accountId
+          in: query
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Monthly summaries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      months:
+                        type: array
+                        items: { $ref: '#/components/schemas/MonthlySummaryItem' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+
+  /reports/forecast:
+    get:
+      summary: Budget forecast
+      description: Projects future income and expenses based on active budget lines.
+      tags: [Analytics]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: months
+          in: query
+          description: Number of months to forecast (default 3)
+          schema: { type: integer, minimum: 1, maximum: 24, default: 3 }
+      responses:
+        '200':
+          description: Forecast months
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      forecast:
+                        type: array
+                        items: { $ref: '#/components/schemas/ForecastMonth' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+
+  /reports/spending-by-category:
+    get:
+      summary: Spending breakdown by category
+      tags: [Analytics]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: start
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: end
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: type
+          in: query
+          schema: { type: string, enum: [expense, income], default: expense }
+        - name: accountId
+          in: query
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Category breakdown
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data: { $ref: '#/components/schemas/SpendingByCategoryResponse' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+
+  /reports/net-worth:
+    get:
+      summary: Net worth history
+      description: Returns historical net worth snapshots ordered by date.
+      tags: [Analytics]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: months
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 120, default: 12 }
+      responses:
+        '200':
+          description: Net worth snapshots
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      snapshots:
+                        type: array
+                        items: { $ref: '#/components/schemas/NetWorthSnapshot' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+
+  /reports/net-worth/snapshot:
+    post:
+      summary: Record a net worth snapshot
+      description: Calculates the current net worth from account balances and stores a snapshot.
+      tags: [Analytics]
+      security: [{ bearerAuth: [] }]
+      responses:
+        '201':
+          description: Snapshot recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data:
+                    type: object
+                    properties:
+                      snapshot: { $ref: '#/components/schemas/NetWorthSnapshot' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+
+  /reports/top-payees:
+    get:
+      summary: Top payees by spend
+      description: Returns the highest-spending payees for the given period, decrypted.
+      tags: [Analytics]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: start
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: end
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: type
+          in: query
+          schema: { type: string, enum: [expense, income], default: expense }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50, default: 10 }
+      responses:
+        '200':
+          description: Top payees
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [success] }
+                  data: { $ref: '#/components/schemas/TopPayeesResponse' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
