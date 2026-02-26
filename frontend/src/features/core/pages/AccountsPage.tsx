@@ -1,19 +1,24 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAccounts, useArchiveAccount, useUpdateAccount } from '../hooks/useAccounts';
 import { AccountCard } from '../components/AccountCard';
 import { AccountForm } from '../components/AccountForm';
 import { useExchangeRates } from '../hooks/useExchangeRate';
 import { useAuthStore } from '@features/auth/stores/authStore';
-import { ACCOUNT_TYPE_LABELS } from '../constants';
 import type { Account, AccountType } from '../types';
 
 type SortKey = 'name-asc' | 'name-desc' | 'balance-desc' | 'balance-asc' | 'type' | 'rate-desc' | 'rate-asc';
 type GroupBy = 'all' | 'assets' | 'liabilities';
 
+const ACCOUNT_TYPES: AccountType[] = [
+  'checking', 'savings', 'credit_card', 'loan', 'line_of_credit', 'mortgage', 'investment', 'other',
+];
+
 const selectClass =
   'border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-600 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500';
 
 export function AccountsPage() {
+  const { t } = useTranslation();
   const { data: accounts = [], isLoading } = useAccounts();
   const archiveAccount = useArchiveAccount();
   const updateAccount = useUpdateAccount();
@@ -151,9 +156,9 @@ export function AccountsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Accounts</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('accounts.title')}</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Net worth:{' '}
+            {t('accounts.netWorth')}{' '}
             <span
               className={
                 netWorth >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'
@@ -164,10 +169,10 @@ export function AccountsPage() {
             {hasMixedCurrencies && (
               <span className="ml-1.5 text-xs text-gray-400">
                 {ratesLoading
-                  ? 'converting…'
+                  ? t('accounts.converting')
                   : ratesAreStale
-                  ? '⚠ converted (stale rates)'
-                  : 'converted'}
+                  ? `⚠ ${t('accounts.convertedStale')}`
+                  : t('accounts.converted')}
               </span>
             )}
           </p>
@@ -176,7 +181,7 @@ export function AccountsPage() {
           onClick={() => { setEditing(null); setShowForm(true); }}
           className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700"
         >
-          + Add Account
+          {t('accounts.addAccount')}
         </button>
       </div>
 
@@ -184,7 +189,7 @@ export function AccountsPage() {
       {(showForm || editing) && (
         <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
           <h2 className="text-base font-semibold text-gray-900 mb-4">
-            {editing ? 'Edit Account' : 'New Account'}
+            {editing ? t('accounts.editAccountTitle') : t('accounts.newAccount')}
           </h2>
           <AccountForm
             account={editing ?? undefined}
@@ -202,10 +207,10 @@ export function AccountsPage() {
             onChange={(e) => setTypeFilter(e.target.value as AccountType | 'all')}
             className={selectClass}
           >
-            <option value="all">All Types</option>
-            {(Object.keys(ACCOUNT_TYPE_LABELS) as AccountType[]).map((t) => (
-              <option key={t} value={t}>
-                {ACCOUNT_TYPE_LABELS[t]}
+            <option value="all">{t('accounts.allTypes')}</option>
+            {ACCOUNT_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {t(`accounts.types.${type}`)}
               </option>
             ))}
           </select>
@@ -216,7 +221,7 @@ export function AccountsPage() {
               onChange={(e) => setInstitutionFilter(e.target.value)}
               className={selectClass}
             >
-              <option value="all">All Institutions</option>
+              <option value="all">{t('accounts.allInstitutions')}</option>
               {institutions.map((inst) => (
                 <option key={inst} value={inst}>
                   {inst}
@@ -230,9 +235,9 @@ export function AccountsPage() {
             onChange={(e) => setGroupBy(e.target.value as GroupBy)}
             className={selectClass}
           >
-            <option value="all">Assets &amp; Liabilities</option>
-            <option value="assets">Assets only</option>
-            <option value="liabilities">Liabilities only</option>
+            <option value="all">{t('accounts.assetsAndLiabilities')}</option>
+            <option value="assets">{t('accounts.assetsOnly')}</option>
+            <option value="liabilities">{t('accounts.liabilitiesOnly')}</option>
           </select>
 
           <select
@@ -240,13 +245,13 @@ export function AccountsPage() {
             onChange={(e) => setSortBy(e.target.value as SortKey)}
             className={selectClass}
           >
-            <option value="name-asc">Name A→Z</option>
-            <option value="name-desc">Name Z→A</option>
-            <option value="balance-desc">Balance ↓</option>
-            <option value="balance-asc">Balance ↑</option>
-            <option value="type">Type</option>
-            <option value="rate-desc">Rate ↓</option>
-            <option value="rate-asc">Rate ↑</option>
+            <option value="name-asc">{t('accounts.nameAZ')}</option>
+            <option value="name-desc">{t('accounts.nameZA')}</option>
+            <option value="balance-desc">{t('accounts.balanceDesc')}</option>
+            <option value="balance-asc">{t('accounts.balanceAsc')}</option>
+            <option value="type">{t('common.type', 'Type')}</option>
+            <option value="rate-desc">{t('accounts.rateDesc')}</option>
+            <option value="rate-asc">{t('accounts.rateAsc')}</option>
           </select>
 
           {hasFilters && (
@@ -259,7 +264,7 @@ export function AccountsPage() {
               }}
               className="text-xs text-gray-400 hover:text-gray-600 underline"
             >
-              Reset
+              {t('accounts.reset')}
             </button>
           )}
         </div>
@@ -276,13 +281,13 @@ export function AccountsPage() {
         <>
           {activeAccounts.length === 0 && !showForm && (
             <div className="text-center py-12 text-gray-400">
-              <p className="text-sm">No accounts yet. Add one to get started.</p>
+              <p className="text-sm">{t('accounts.empty')}</p>
             </div>
           )}
 
           {filteredAccounts.length === 0 && activeAccounts.length > 0 && (
             <div className="text-center py-8 text-gray-400">
-              <p className="text-sm">No accounts match the current filters.</p>
+              <p className="text-sm">{t('accounts.noMatch')}</p>
             </div>
           )}
 
@@ -300,7 +305,7 @@ export function AccountsPage() {
           {archivedAccounts.length > 0 && (
             <details className="mt-6">
               <summary className="text-sm text-gray-400 cursor-pointer hover:text-gray-600">
-                {archivedAccounts.length} archived account
+                {archivedAccounts.length} {t('accounts.archived').toLowerCase()}
                 {archivedAccounts.length !== 1 ? 's' : ''}
               </summary>
               <div className="space-y-3 mt-3">

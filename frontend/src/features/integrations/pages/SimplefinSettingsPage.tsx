@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { CheckCircle2, AlertCircle, Loader2, RefreshCw, Unplug } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
@@ -28,6 +29,7 @@ function formatHour(h: number): string {
 }
 
 export function SimplefinSettingsPage() {
+  const { t } = useTranslation();
   const { data: connection, isLoading } = useSimplefinStatus();
   const { data: schedule } = useSimplefinSchedule();
   const connectMutation = useConnectSimplefin();
@@ -73,7 +75,7 @@ export function SimplefinSettingsPage() {
       await connectMutation.mutateAsync(setupToken.trim());
       setSetupToken('');
     } catch (err) {
-      setConnectError(err instanceof Error ? err.message : 'Connection failed');
+      setConnectError(err instanceof Error ? err.message : t('simplefin.connectionFailed'));
     }
   }
 
@@ -101,10 +103,8 @@ export function SimplefinSettingsPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">SimpleFIN Integration</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Automatically import transactions from your bank accounts.
-        </p>
+        <h1 className="text-2xl font-bold text-gray-900">{t('simplefin.title')}</h1>
+        <p className="text-sm text-gray-500 mt-1">{t('simplefin.subtitle')}</p>
       </div>
 
       {/* ─── Setup Instructions ─────────────────────────────────────────────── */}
@@ -113,25 +113,22 @@ export function SimplefinSettingsPage() {
       {/* ─── Connection Status ───────────────────────────────────────────────── */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Connection</CardTitle>
+          <CardTitle className="text-base">{t('simplefin.connection')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {!isConnected ? (
             <form onSubmit={handleConnect} className="space-y-3">
               <div className="space-y-1">
-                <Label htmlFor="setup-token">Setup token</Label>
+                <Label htmlFor="setup-token">{t('simplefin.setupToken')}</Label>
                 <Input
                   id="setup-token"
                   type="password"
-                  placeholder="Paste your SimpleFIN setup token here…"
+                  placeholder={t('simplefin.tokenPlaceholder')}
                   value={setupToken}
                   onChange={(e) => setSetupToken(e.target.value)}
                   required
                 />
-                <p className="text-xs text-gray-500">
-                  Paste the setup token from SimpleFIN Bridge. BudgetApp will exchange it for a
-                  permanent access URL that is stored encrypted.
-                </p>
+                <p className="text-xs text-gray-500">{t('simplefin.tokenHelp')}</p>
               </div>
               {connectError && (
                 <Alert variant="destructive">
@@ -141,7 +138,7 @@ export function SimplefinSettingsPage() {
               )}
               <Button type="submit" disabled={connectMutation.isPending || !setupToken.trim()}>
                 {connectMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Connect
+                {t('simplefin.connect')}
               </Button>
             </form>
           ) : (
@@ -149,7 +146,7 @@ export function SimplefinSettingsPage() {
               <div className="flex items-center gap-3">
                 <CheckCircle2 className="h-5 w-5 text-green-500" />
                 <div>
-                  <p className="font-medium text-sm text-gray-900">Connected to SimpleFIN</p>
+                  <p className="font-medium text-sm text-gray-900">{t('simplefin.connected')}</p>
                   {connection?.lastSyncAt && (
                     <p className="text-xs text-gray-500">
                       Last synced:{' '}
@@ -198,7 +195,7 @@ export function SimplefinSettingsPage() {
                   ) : (
                     <RefreshCw className="mr-2 h-4 w-4" />
                   )}
-                  Sync Now
+                  {t('simplefin.syncNow')}
                 </Button>
 
                 {!confirmDisconnect ? (
@@ -207,11 +204,11 @@ export function SimplefinSettingsPage() {
                     onClick={() => setConfirmDisconnect(true)}
                   >
                     <Unplug className="mr-2 h-4 w-4" />
-                    Disconnect
+                    {t('simplefin.disconnect')}
                   </Button>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Are you sure?</span>
+                    <span className="text-sm text-gray-600">{t('simplefin.disconnectConfirm')}</span>
                     <Button
                       variant="destructive"
                       size="sm"
@@ -221,14 +218,14 @@ export function SimplefinSettingsPage() {
                       }}
                       disabled={disconnectMutation.isPending}
                     >
-                      Yes, disconnect
+                      {t('simplefin.disconnectYes')}
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setConfirmDisconnect(false)}
                     >
-                      Cancel
+                      {t('simplefin.cancel')}
                     </Button>
                   </div>
                 )}
@@ -242,7 +239,7 @@ export function SimplefinSettingsPage() {
       {isConnected && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Sync Schedule</CardTitle>
+            <CardTitle className="text-base">{t('simplefin.syncSchedule')}</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSaveSchedule} className="space-y-5">
@@ -258,7 +255,7 @@ export function SimplefinSettingsPage() {
                   }
                 />
                 <Label htmlFor="auto-sync-enabled" className="font-medium">
-                  Enable automatic sync
+                  {t('simplefin.enableAutoSync')}
                 </Label>
               </div>
 
@@ -266,7 +263,7 @@ export function SimplefinSettingsPage() {
                 <>
                   {/* Interval */}
                   <div className="space-y-1">
-                    <Label htmlFor="sync-interval">Sync every</Label>
+                    <Label htmlFor="sync-interval">{t('simplefin.syncEvery')}</Label>
                     <select
                       id="sync-interval"
                       className="block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
@@ -280,7 +277,7 @@ export function SimplefinSettingsPage() {
                     >
                       {INTERVAL_OPTIONS.map((h) => (
                         <option key={h} value={h}>
-                          {h === 1 ? '1 hour' : `${h} hours`}
+                          {h === 1 ? t('simplefin.hour1') : t('simplefin.hoursN', { count: h })}
                         </option>
                       ))}
                     </select>
@@ -288,7 +285,7 @@ export function SimplefinSettingsPage() {
 
                   {/* Time window */}
                   <div className="space-y-1">
-                    <Label>Only sync between</Label>
+                    <Label>{t('simplefin.onlySyncBetween')}</Label>
                     <div className="flex items-center gap-2">
                       <select
                         className="block rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
@@ -306,7 +303,7 @@ export function SimplefinSettingsPage() {
                           </option>
                         ))}
                       </select>
-                      <span className="text-sm text-gray-500">and</span>
+                      <span className="text-sm text-gray-500">{t('simplefin.and')}</span>
                       <select
                         className="block rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                         value={scheduleForm.autoSyncWindowEnd}
@@ -324,10 +321,7 @@ export function SimplefinSettingsPage() {
                         ))}
                       </select>
                     </div>
-                    <p className="text-xs text-gray-500">
-                      Restricting the sync window ensures 2FA prompts from your banks only arrive
-                      when you&apos;re available to respond.
-                    </p>
+                    <p className="text-xs text-gray-500">{t('simplefin.syncWindowNote')}</p>
                   </div>
                 </>
               )}
@@ -336,7 +330,7 @@ export function SimplefinSettingsPage() {
                 {updateScheduleMutation.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                Save schedule
+                {t('simplefin.saveSchedule')}
               </Button>
             </form>
           </CardContent>

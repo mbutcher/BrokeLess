@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAccounts } from '@features/core/hooks/useAccounts';
 import { useTransactions } from '@features/core/hooks/useTransactions';
 import { useMonthlySummary, useForecast } from '@features/core/hooks/useReports';
@@ -61,6 +62,7 @@ function TransactionRow({ tx }: { tx: Transaction }) {
 // ─── Budget snapshot widget ────────────────────────────────────────────────────
 
 function BudgetSnapshot() {
+  const { t } = useTranslation();
   const today = new Date();
   const { start, end } = monthWindow(today.getFullYear(), today.getMonth() + 1);
   const startStr = toISODate(start);
@@ -74,16 +76,16 @@ function BudgetSnapshot() {
   }
 
   if (isError) {
-    const msg = isOfflineError(error) ? 'Not available offline.' : 'Could not load budget.';
+    const msg = isOfflineError(error) ? t('dashboard.budgetNotOffline') : t('dashboard.budgetError');
     return <p className="text-sm text-gray-400 py-6 text-center">{msg}</p>;
   }
 
   if (!view || view.lines.length === 0) {
     return (
       <p className="text-sm text-gray-400 py-6 text-center">
-        No budget lines yet.{' '}
+        {t('dashboard.noBudgetLines')}{' '}
         <Link to="/budget" className="text-blue-600 hover:underline">
-          Set up your budget
+          {t('dashboard.setupBudget')}
         </Link>
       </p>
     );
@@ -107,7 +109,7 @@ function BudgetSnapshot() {
       {/* Planned vs actual bar */}
       <div>
         <div className="flex items-center justify-between mb-1 text-sm">
-          <span className="text-gray-600">Expenses</span>
+          <span className="text-gray-600">{t('dashboard.budgetExpenses')}</span>
           <span className={overBudget ? 'font-semibold text-red-600' : 'text-gray-600'}>
             {fmt(view.totalActualExpenses)} / {fmt(view.totalProratedExpenses)}
           </span>
@@ -119,19 +121,21 @@ function BudgetSnapshot() {
           />
         </div>
         <p className={`text-xs mt-1 ${remaining < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-          {remaining >= 0 ? `${fmt(remaining)} remaining` : `${fmt(Math.abs(remaining))} over budget`}
+          {remaining >= 0
+            ? `${fmt(remaining)} ${t('dashboard.budgetRemaining')}`
+            : `${fmt(Math.abs(remaining))} ${t('dashboard.budgetOverBudget')}`}
         </p>
       </div>
 
       {/* Over-budget lines */}
       {overBudgetLines.length > 0 && (
         <div className="space-y-1">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Over budget</p>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{t('dashboard.overBudgetHeader')}</p>
           {overBudgetLines.map((l) => (
             <div key={l.budgetLine.id} className="flex items-center justify-between text-sm">
               <span className="text-gray-700 truncate">{l.budgetLine.name}</span>
               <span className="text-red-600 font-medium ml-2 shrink-0">
-                {fmt(Math.abs(l.variance))} over
+                {fmt(Math.abs(l.variance))} {t('dashboard.overSuffix')}
               </span>
             </div>
           ))}
@@ -170,6 +174,7 @@ function GoalMiniCard({ goal }: { goal: SavingsGoal }) {
 // ─── Dashboard ─────────────────────────────────────────────────────────────────
 
 export function DashboardPage() {
+  const { t } = useTranslation();
   const [showForecast, setShowForecast] = useState(false);
 
   const { data: accounts = [], isLoading: accountsLoading } = useAccounts();
@@ -199,24 +204,24 @@ export function DashboardPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
-      <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+      <h1 className="text-2xl font-bold text-gray-900">{t('dashboard.title')}</h1>
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <SummaryCard
-          label="Net Worth"
+          label={t('dashboard.netWorth')}
           value={fmt(netWorth)}
           valueColor={netWorth >= 0 ? 'text-gray-900' : 'text-red-600'}
           isLoading={accountsLoading}
         />
         <SummaryCard
-          label="Income This Month"
+          label={t('dashboard.incomeThisMonth')}
           value={currentMonth ? fmt(currentMonth.income) : fmt(0)}
           valueColor="text-green-600"
           isLoading={summaryLoading}
         />
         <SummaryCard
-          label="Expenses This Month"
+          label={t('dashboard.expensesThisMonth')}
           value={currentMonth ? fmt(currentMonth.expenses) : fmt(0)}
           isLoading={summaryLoading}
         />
@@ -226,9 +231,9 @@ export function DashboardPage() {
       {activeAccounts.length > 0 && (
         <section>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold text-gray-900">Accounts</h2>
+            <h2 className="text-base font-semibold text-gray-900">{t('dashboard.accounts')}</h2>
             <Link to="/accounts" className="text-sm text-blue-600 hover:underline">
-              View all
+              {t('dashboard.viewAll')}
             </Link>
           </div>
           <div className="flex gap-3 overflow-x-auto pb-1">
@@ -244,7 +249,7 @@ export function DashboardPage() {
       {/* Monthly chart */}
       <section className="bg-white rounded-xl border border-gray-200 p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-gray-900">Income vs Expenses</h2>
+          <h2 className="text-base font-semibold text-gray-900">{t('dashboard.incomeVsExpenses')}</h2>
           <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
             <input
               type="checkbox"
@@ -252,7 +257,7 @@ export function DashboardPage() {
               onChange={(e) => setShowForecast(e.target.checked)}
               className="rounded"
             />
-            Show forecast
+            {t('dashboard.showForecast')}
           </label>
         </div>
         {summaryLoading ? (
@@ -261,7 +266,7 @@ export function DashboardPage() {
           <MonthlyChart data={chartData} />
         )}
         {showForecast && (
-          <p className="mt-2 text-xs text-gray-400">Dimmed bars = projected based on last 6 months median.</p>
+          <p className="mt-2 text-xs text-gray-400">{t('dashboard.forecastNote')}</p>
         )}
       </section>
 
@@ -275,9 +280,9 @@ export function DashboardPage() {
         {/* Recent transactions */}
         <section className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold text-gray-900">Recent Transactions</h2>
+            <h2 className="text-base font-semibold text-gray-900">{t('dashboard.recentTransactions')}</h2>
             <Link to="/transactions" className="text-sm text-blue-600 hover:underline">
-              View all
+              {t('dashboard.viewAll')}
             </Link>
           </div>
           {txLoading ? (
@@ -287,7 +292,7 @@ export function DashboardPage() {
               ))}
             </div>
           ) : recentTransactions.length === 0 ? (
-            <p className="text-sm text-gray-400 py-6 text-center">No transactions yet.</p>
+            <p className="text-sm text-gray-400 py-6 text-center">{t('dashboard.noTransactions')}</p>
           ) : (
             <div>
               {recentTransactions.map((tx) => (
@@ -300,9 +305,9 @@ export function DashboardPage() {
         {/* Budget snapshot */}
         <section className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold text-gray-900">Budget This Month</h2>
+            <h2 className="text-base font-semibold text-gray-900">{t('dashboard.budgetThisMonth')}</h2>
             <Link to="/budget" className="text-sm text-blue-600 hover:underline">
-              View budget
+              {t('dashboard.viewBudget')}
             </Link>
           </div>
           <BudgetSnapshot />
@@ -313,9 +318,9 @@ export function DashboardPage() {
       {topGoals.length > 0 && (
         <section className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold text-gray-900">Savings Goals</h2>
+            <h2 className="text-base font-semibold text-gray-900">{t('dashboard.savingsGoals')}</h2>
             <Link to="/savings-goals" className="text-sm text-blue-600 hover:underline">
-              View all
+              {t('dashboard.viewAll')}
             </Link>
           </div>
           <div className="space-y-4">

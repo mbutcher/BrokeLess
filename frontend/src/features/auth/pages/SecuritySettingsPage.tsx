@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { LogOut, LogOutIcon, Shield, Fingerprint } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { authApi } from '../api/authApi';
 import { useAuthStore } from '../stores/authStore';
 import { useTotpSetup } from '../hooks/useTotpSetup';
@@ -16,6 +17,7 @@ import { getApiErrorMessage } from '@lib/api/errors';
 
 
 export function SecuritySettingsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user, clearAuth } = useAuthStore();
@@ -45,7 +47,7 @@ export function SecuritySettingsPage() {
       <div className="mx-auto max-w-2xl space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Security Settings</h1>
+            <h1 className="text-2xl font-bold">{t('security.title')}</h1>
             <p className="text-sm text-muted-foreground">{user?.email}</p>
           </div>
           <Button
@@ -56,7 +58,7 @@ export function SecuritySettingsPage() {
             onClick={() => logoutMutation.mutate()}
           >
             <LogOut className="h-4 w-4" />
-            Sign out
+            {t('security.signOut')}
           </Button>
         </div>
 
@@ -66,15 +68,13 @@ export function SecuritySettingsPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Shield className="h-5 w-5 text-muted-foreground" />
-                <CardTitle className="text-base">Authenticator App</CardTitle>
+                <CardTitle className="text-base">{t('security.totp')}</CardTitle>
               </div>
               <Badge variant={user?.totpEnabled ? 'default' : 'secondary'}>
-                {user?.totpEnabled ? 'Enabled' : 'Disabled'}
+                {user?.totpEnabled ? t('security.enabled') : t('security.disabled')}
               </Badge>
             </div>
-            <CardDescription>
-              Use a time-based one-time password (TOTP) app for two-factor authentication.
-            </CardDescription>
+            <CardDescription>{t('security.totpDesc')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {disableError && (
@@ -92,7 +92,7 @@ export function SecuritySettingsPage() {
                       size="sm"
                       onClick={() => setShowTotpSetup(true)}
                     >
-                      Reconfigure
+                      {t('security.reconfigure')}
                     </Button>
                     <Button
                       variant="destructive"
@@ -100,7 +100,7 @@ export function SecuritySettingsPage() {
                       isLoading={isDisabling}
                       onClick={disableTotp}
                     >
-                      Disable
+                      {t('security.disable')}
                     </Button>
                   </div>
                 ) : (
@@ -118,12 +118,9 @@ export function SecuritySettingsPage() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <Fingerprint className="h-5 w-5 text-muted-foreground" />
-              <CardTitle className="text-base">Passkeys</CardTitle>
+              <CardTitle className="text-base">{t('security.passkeys')}</CardTitle>
             </div>
-            <CardDescription>
-              Passkeys let you sign in with your fingerprint, face ID, or security key — no password
-              needed.
-            </CardDescription>
+            <CardDescription>{t('security.passkeysDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
             <PasskeySetup />
@@ -135,18 +132,16 @@ export function SecuritySettingsPage() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <LogOutIcon className="h-5 w-5 text-muted-foreground" />
-              <CardTitle className="text-base">Sessions</CardTitle>
+              <CardTitle className="text-base">{t('security.sessions')}</CardTitle>
             </div>
-            <CardDescription>Manage your active login sessions.</CardDescription>
+            <CardDescription>{t('security.sessionsDesc')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <Separator />
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium">Sign out everywhere</p>
-                <p className="text-xs text-muted-foreground">
-                  Revokes all refresh tokens across all devices.
-                </p>
+                <p className="text-sm font-medium">{t('security.signOutEverywhere')}</p>
+                <p className="text-xs text-muted-foreground">{t('security.signOutEverywhereDesc')}</p>
               </div>
               <Button
                 variant="destructive"
@@ -154,7 +149,7 @@ export function SecuritySettingsPage() {
                 isLoading={logoutAllMutation.isPending}
                 onClick={() => logoutAllMutation.mutate()}
               >
-                Sign out all
+                {t('security.signOutAll')}
               </Button>
             </div>
           </CardContent>

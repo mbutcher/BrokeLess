@@ -165,7 +165,7 @@
     "empty": "No accounts yet. Add one to get started.",
     "noMatch": "No accounts match the current filters.",
     "types": {
-      "checking": "Chequing",
+      "checking": "Checking",
       "savings": "Savings",
       "credit_card": "Credit Card",
       "loan": "Loan",
@@ -205,7 +205,7 @@
     "subtitle": "Manage your account preferences.",
     "defaultCurrency": "Default Currency",
     "defaultCurrencyDesc": "Used as the default currency when creating new accounts.",
-    "currencyPlaceholder": "CAD",
+    "currencyPlaceholder": "USD",
     "currencyHelper": "3-letter ISO currency code (e.g. CAD, USD, EUR)",
     "language": "Language",
     "languageDesc": "Choose your preferred display language.",
@@ -234,7 +234,7 @@
   },
   "transactions": {
     "title": "Transactions",
-    "uncategorised": "Uncategorised",
+    "uncategorised": "Uncategorized",
     "addTransaction": "+ Add Transaction",
     "editTransaction": "Edit Transaction",
     "newTransaction": "New Transaction",
@@ -340,7 +340,7 @@
   },
   "reports": {
     "title": "Reports",
-    "subtitle": "Analyse your spending and net worth over time.",
+    "subtitle": "Analyze your spending and net worth over time.",
     "spending": "Spending",
     "netWorth": "Net Worth",
     "topPayees": "Top Payees",

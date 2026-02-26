@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAccounts } from '../hooks/useAccounts';
 import { useWhatIf, useDebtSchedules } from '../hooks/useDebt';
-import { ACCOUNT_TYPE_LABELS } from '../constants';
 import type { Account } from '../types';
 
 const LIABILITY_TYPES: Account['type'][] = ['credit_card', 'loan', 'line_of_credit', 'mortgage'];
@@ -62,6 +62,7 @@ function WhatIfRow({ accountId, hasSchedule }: { accountId: string; hasSchedule?
 // ─── Single liability row ─────────────────────────────────────────────────────
 
 function LiabilityRow({ account, hasSchedule }: { account: Account; hasSchedule?: boolean }) {
+  const { t } = useTranslation();
   const absBalance = Math.abs(account.currentBalance);
   const isNegativeBalance = account.currentBalance < 0;
   const monthlyInterest =
@@ -79,7 +80,7 @@ function LiabilityRow({ account, hasSchedule }: { account: Account; hasSchedule?
           <div className="min-w-0">
             <p className="font-medium text-gray-900 truncate">{account.name}</p>
             <p className="text-sm text-gray-500">
-              {ACCOUNT_TYPE_LABELS[account.type]}
+              {t(`accounts.types.${account.type}`)}
               {account.institution && ` · ${account.institution}`}
             </p>
             {account.annualRate != null ? (
@@ -129,6 +130,7 @@ function LiabilityRow({ account, hasSchedule }: { account: Account; hasSchedule?
 // ─── LiabilitiesPage ──────────────────────────────────────────────────────────
 
 export function LiabilitiesPage() {
+  const { t } = useTranslation();
   const { data: accounts = [], isLoading } = useAccounts();
   const [sortBy, setSortBy] = useState<SortKey>('rate-desc');
 
@@ -184,10 +186,8 @@ export function LiabilitiesPage() {
     <div className="max-w-2xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Liabilities</h1>
-        <p className="text-sm text-gray-500 mt-0.5">
-          Ranked by highest interest rate first (avalanche method).
-        </p>
+        <h1 className="text-2xl font-bold text-gray-900">{t('liabilities.title')}</h1>
+        <p className="text-sm text-gray-500 mt-0.5">{t('liabilities.subtitle')}</p>
       </div>
 
       {isLoading ? (
@@ -198,10 +198,10 @@ export function LiabilitiesPage() {
         </div>
       ) : liabilities.length === 0 ? (
         <div className="text-center py-12 text-gray-400">
-          <p className="text-sm">No active liability accounts found.</p>
+          <p className="text-sm">{t('liabilities.empty')}</p>
           <p className="text-xs mt-1">
             <Link to="/accounts" className="text-blue-600 hover:underline">
-              Add an account
+              {t('liabilities.addAccount')}
             </Link>{' '}
             of type Credit Card, Loan, Line of Credit, or Mortgage.
           </p>
@@ -211,35 +211,37 @@ export function LiabilitiesPage() {
           {/* Summary */}
           <div className="grid grid-cols-2 gap-3 mb-5">
             <div className="bg-white border border-gray-200 rounded-xl p-4">
-              <p className="text-xs text-gray-500 mb-1">Total Outstanding</p>
+              <p className="text-xs text-gray-500 mb-1">{t('liabilities.totalOutstanding')}</p>
               <p className="text-xl font-bold text-gray-900 tabular-nums">
                 ${totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </div>
             <div className="bg-white border border-gray-200 rounded-xl p-4">
-              <p className="text-xs text-gray-500 mb-1">Est. Monthly Interest</p>
+              <p className="text-xs text-gray-500 mb-1">{t('liabilities.estMonthlyInterest')}</p>
               <p className="text-xl font-bold text-orange-500 tabular-nums">
                 ~${totalMonthlyInterest.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
               {liabilities.some((a) => a.annualRate == null) && (
-                <p className="text-xs text-gray-400 mt-0.5">Some accounts have no rate set</p>
+                <p className="text-xs text-gray-400 mt-0.5">{t('liabilities.noRateWarning')}</p>
               )}
             </div>
           </div>
 
           {/* Sort control */}
           <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-gray-500">{liabilities.length} account{liabilities.length !== 1 ? 's' : ''}</p>
+            <p className="text-sm text-gray-500">
+              {liabilities.length} account{liabilities.length !== 1 ? 's' : ''}
+            </p>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortKey)}
               className={selectClass}
             >
-              <option value="rate-desc">Rate ↓ (Avalanche)</option>
-              <option value="rate-asc">Rate ↑</option>
-              <option value="balance-desc">Balance ↓</option>
-              <option value="balance-asc">Balance ↑</option>
-              <option value="interest-desc">Monthly Interest ↓</option>
+              <option value="rate-desc">{t('liabilities.rateDesc')}</option>
+              <option value="rate-asc">{t('liabilities.rateAsc')}</option>
+              <option value="balance-desc">{t('liabilities.balanceDesc')}</option>
+              <option value="balance-asc">{t('liabilities.balanceAsc')}</option>
+              <option value="interest-desc">{t('liabilities.interestDesc')}</option>
             </select>
           </div>
 
@@ -250,9 +252,7 @@ export function LiabilitiesPage() {
             ))}
           </div>
 
-          <p className="mt-6 text-xs text-gray-400 text-center">
-            Paying off highest-rate debt first minimizes total interest paid (debt avalanche method).
-          </p>
+          <p className="mt-6 text-xs text-gray-400 text-center">{t('liabilities.avalancheNote')}</p>
         </>
       )}
     </div>

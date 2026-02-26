@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
 import { useAccounts } from '../hooks/useAccounts';
 import {
   useSavingsGoals,
@@ -34,6 +35,7 @@ function GoalForm({
   onSuccess: () => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation();
   const { data: accounts = [] } = useAccounts();
   const createGoal = useCreateSavingsGoal();
   const updateGoal = useUpdateSavingsGoal(goal?.id ?? '');
@@ -76,12 +78,14 @@ function GoalForm({
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {!goal && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Account</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {t('savingsGoals.account')}
+          </label>
           <select
             {...register('accountId')}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
           >
-            <option value="">Select account…</option>
+            <option value="">{t('savingsGoals.accountPlaceholder')}</option>
             {accounts
               .filter((a) => a.isActive && a.isAsset)
               .map((a) => (
@@ -95,19 +99,23 @@ function GoalForm({
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Goal Name</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {t('savingsGoals.goalName')}
+        </label>
         <input
           {...register('name')}
           type="text"
           className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-          placeholder="e.g. Emergency Fund"
+          placeholder={t('savingsGoals.goalNamePlaceholder')}
         />
         {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>}
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Target Amount ($)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {t('savingsGoals.targetAmount')}
+          </label>
           <input
             {...register('targetAmount', { valueAsNumber: true })}
             type="number"
@@ -119,7 +127,9 @@ function GoalForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Target Date (optional)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {t('savingsGoals.targetDate')}
+          </label>
           <input
             {...register('targetDate')}
             type="date"
@@ -134,14 +144,18 @@ function GoalForm({
           disabled={isPending}
           className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
         >
-          {isPending ? 'Saving…' : goal ? 'Save Changes' : 'Create Goal'}
+          {isPending
+            ? t('savingsGoals.saving')
+            : goal
+            ? t('savingsGoals.saveChanges')
+            : t('savingsGoals.create')}
         </button>
         <button
           type="button"
           onClick={onCancel}
           className="border border-gray-300 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
         >
-          Cancel
+          {t('savingsGoals.cancel')}
         </button>
       </div>
     </form>
@@ -151,6 +165,7 @@ function GoalForm({
 // ─── GoalCard ─────────────────────────────────────────────────────────────────
 
 function GoalCard({ goal, onEdit }: { goal: SavingsGoal; onEdit: (goal: SavingsGoal) => void }) {
+  const { t } = useTranslation();
   const { data: progress } = useSavingsGoalProgress(goal.id);
   const deleteGoal = useDeleteSavingsGoal();
 
@@ -171,13 +186,13 @@ function GoalCard({ goal, onEdit }: { goal: SavingsGoal; onEdit: (goal: SavingsG
         </div>
         <div className="flex gap-2 text-xs">
           <button onClick={() => onEdit(goal)} className="text-blue-600 hover:underline">
-            Edit
+            {t('savingsGoals.editBtn')}
           </button>
           <button
             onClick={() => deleteGoal.mutate(goal.id)}
             className="text-red-500 hover:underline"
           >
-            Delete
+            {t('savingsGoals.deleteBtn')}
           </button>
         </div>
       </div>
@@ -197,12 +212,14 @@ function GoalCard({ goal, onEdit }: { goal: SavingsGoal; onEdit: (goal: SavingsG
 
       {progress?.projectedDate && pct < 100 && (
         <p className="mt-1 text-xs text-gray-400">
-          Projected completion: {progress.projectedDate}
+          {t('savingsGoals.projectedCompletion')} {progress.projectedDate}
         </p>
       )}
       {progress?.daysToGoal !== null && progress?.daysToGoal !== undefined && progress.daysToGoal >= 0 && (
         <p className="mt-0.5 text-xs text-gray-400">
-          {progress.daysToGoal === 0 ? 'Due today!' : `${progress.daysToGoal} days remaining`}
+          {progress.daysToGoal === 0
+            ? t('savingsGoals.dueToday')
+            : t('savingsGoals.daysRemaining', { count: progress.daysToGoal })}
         </p>
       )}
     </div>
@@ -212,6 +229,7 @@ function GoalCard({ goal, onEdit }: { goal: SavingsGoal; onEdit: (goal: SavingsG
 // ─── SavingsGoalsPage ─────────────────────────────────────────────────────────
 
 export function SavingsGoalsPage() {
+  const { t } = useTranslation();
   const { data: goals = [], isLoading } = useSavingsGoals();
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<SavingsGoal | null>(null);
@@ -219,19 +237,19 @@ export function SavingsGoalsPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Savings Goals</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('savingsGoals.title')}</h1>
         <button
           onClick={() => { setEditing(null); setShowForm(true); }}
           className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700"
         >
-          + New Goal
+          {t('savingsGoals.add')}
         </button>
       </div>
 
       {(showForm || editing) && (
         <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
           <h2 className="text-base font-semibold text-gray-900 mb-4">
-            {editing ? 'Edit Goal' : 'New Goal'}
+            {editing ? t('savingsGoals.edit') : t('savingsGoals.new')}
           </h2>
           <GoalForm
             goal={editing ?? undefined}
@@ -249,7 +267,7 @@ export function SavingsGoalsPage() {
         </div>
       ) : goals.length === 0 && !showForm ? (
         <div className="text-center py-12 text-gray-400">
-          <p className="text-sm">No savings goals yet. Create one to get started.</p>
+          <p className="text-sm">{t('savingsGoals.empty')}</p>
         </div>
       ) : (
         <div className="space-y-4">

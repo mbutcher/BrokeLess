@@ -16,13 +16,14 @@ import {
   useSyncNow,
 } from '../hooks/useSimplefin';
 import type { SimplefinAccountMapping, SimplefinPendingReview, MapAccountAction } from '../types';
+import { useTranslation } from 'react-i18next';
 import type { AccountType } from '@features/core/types';
-import { ACCOUNT_TYPE_LABELS } from '@features/core/constants';
 import { detectAccountType } from '../utils/detectAccountType';
 
 // ─── Account Mapping Section ──────────────────────────────────────────────────
 
 function AccountMappingCard({ mapping }: { mapping: SimplefinAccountMapping }) {
+  const { t } = useTranslation();
   const { data: accounts = [] } = useAccounts();
   const mapAccount = useMapAccount();
 
@@ -152,9 +153,9 @@ function AccountMappingCard({ mapping }: { mapping: SimplefinAccountMapping }) {
                   value={newType}
                   onChange={(e) => setNewType(e.target.value as AccountType)}
                 >
-                  {ACCOUNT_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {ACCOUNT_TYPE_LABELS[t]}
+                  {ACCOUNT_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {t(`accounts.types.${type}`)}
                     </option>
                   ))}
                 </select>

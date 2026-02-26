@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { registerSchema, type RegisterFormData } from '../schemas';
 import { useRegister } from '../hooks/useRegister';
 import { Button } from '@components/ui/button';
@@ -13,6 +14,7 @@ import { getApiErrorMessage } from '@lib/api/errors';
 
 
 function PasswordStrengthBar({ password }: { password: string }) {
+  const { t } = useTranslation();
   const len = password.length;
   const hasUpper = /[A-Z]/.test(password);
   const hasLower = /[a-z]/.test(password);
@@ -26,7 +28,14 @@ function PasswordStrengthBar({ password }: { password: string }) {
     (hasNumber ? 1 : 0) +
     (hasSpecial ? 1 : 0);
 
-  const labels = ['', 'Weak', 'Fair', 'Good', 'Strong', 'Very strong'];
+  const labels = [
+    '',
+    t('auth.passwordWeak'),
+    t('auth.passwordFair'),
+    t('auth.passwordGood'),
+    t('auth.passwordStrong'),
+    t('auth.passwordVeryStrong'),
+  ];
   const colors = ['', 'bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-green-500', 'bg-green-600'];
 
   if (!password) return null;
@@ -47,6 +56,7 @@ function PasswordStrengthBar({ password }: { password: string }) {
 }
 
 export function RegisterForm() {
+  const { t } = useTranslation();
   const register_ = useRegister();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -78,7 +88,7 @@ export function RegisterForm() {
       )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-        <FormField label="Email address" htmlFor="email" error={errors.email?.message}>
+        <FormField label={t('auth.email')} htmlFor="email" error={errors.email?.message}>
           <Input
             id="email"
             type="email"
@@ -88,13 +98,13 @@ export function RegisterForm() {
           />
         </FormField>
 
-        <FormField label="Password" htmlFor="password" error={errors.password?.message}>
+        <FormField label={t('auth.password')} htmlFor="password" error={errors.password?.message}>
           <div className="relative">
             <Input
               id="password"
               type={showPassword ? 'text' : 'password'}
               autoComplete="new-password"
-              placeholder="Minimum 12 characters"
+              placeholder={t('auth.passwordPlaceholder')}
               className="pr-10"
               {...register('password')}
             />
@@ -111,7 +121,7 @@ export function RegisterForm() {
         </FormField>
 
         <FormField
-          label="Confirm password"
+          label={t('auth.confirmPassword')}
           htmlFor="confirmPassword"
           error={errors.confirmPassword?.message}
         >
@@ -120,7 +130,7 @@ export function RegisterForm() {
               id="confirmPassword"
               type={showConfirm ? 'text' : 'password'}
               autoComplete="new-password"
-              placeholder="Re-enter your password"
+              placeholder={t('auth.confirmPasswordPlaceholder')}
               className="pr-10"
               {...register('confirmPassword')}
             />
@@ -136,14 +146,14 @@ export function RegisterForm() {
         </FormField>
 
         <Button type="submit" className="w-full" isLoading={register_.isPending}>
-          Create account
+          {t('auth.createAccountBtn')}
         </Button>
       </form>
 
       <p className="text-center text-sm text-muted-foreground">
-        Already have an account?{' '}
+        {t('auth.haveAccount')}{' '}
         <Link to="/login" className="font-medium text-primary hover:underline">
-          Sign in
+          {t('auth.signIn')}
         </Link>
       </p>
     </div>

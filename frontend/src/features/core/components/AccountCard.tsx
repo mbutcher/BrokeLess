@@ -1,10 +1,10 @@
 import { Pencil, Archive, RotateCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@lib/utils';
 import { useAuthStore } from '@features/auth/stores/authStore';
 import { useFormatters } from '@lib/i18n/useFormatters';
 import { useExchangeRate } from '../hooks/useExchangeRate';
-import { ACCOUNT_TYPE_LABELS } from '../constants';
 import type { Account } from '../types';
 
 interface AccountCardProps {
@@ -15,6 +15,7 @@ interface AccountCardProps {
 }
 
 export function AccountCard({ account, onEdit, onArchive, className }: AccountCardProps) {
+  const { t } = useTranslation();
   const defaultCurrency = useAuthStore((s) => s.user?.defaultCurrency ?? 'CAD');
   const { currency: formatCurrency } = useFormatters();
   const showConversion = account.currency.toUpperCase() !== defaultCurrency.toUpperCase();
@@ -42,7 +43,7 @@ export function AccountCard({ account, onEdit, onArchive, className }: AccountCa
           <div className="min-w-0">
             <p className="font-medium text-gray-900 truncate">{account.name}</p>
             <p className="text-sm text-gray-500">
-              {ACCOUNT_TYPE_LABELS[account.type]}
+              {t(`accounts.types.${account.type}`)}
               {account.institution && ` · ${account.institution}`}
             </p>
             {account.annualRate != null && (
@@ -61,7 +62,7 @@ export function AccountCard({ account, onEdit, onArchive, className }: AccountCa
                     type="button"
                     onClick={(e) => { e.stopPropagation(); onEdit(); }}
                     className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-                    title="Edit account"
+                    title={t('accounts.editAccount')}
                   >
                     <Pencil size={14} />
                   </button>
@@ -71,7 +72,7 @@ export function AccountCard({ account, onEdit, onArchive, className }: AccountCa
                     type="button"
                     onClick={(e) => { e.stopPropagation(); onArchive(); }}
                     className="p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                    title="Archive account"
+                    title={t('accounts.archiveAccount')}
                   >
                     <Archive size={14} />
                   </button>
@@ -95,7 +96,7 @@ export function AccountCard({ account, onEdit, onArchive, className }: AccountCa
               {!account.isActive && (
                 <div className="flex items-center gap-1.5 justify-end mt-0.5">
                   <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
-                    Archived
+                    {t('accounts.archived')}
                   </span>
                   {onArchive && (
                     <button
@@ -104,7 +105,7 @@ export function AccountCard({ account, onEdit, onArchive, className }: AccountCa
                       className="text-xs text-blue-600 hover:underline flex items-center gap-0.5"
                     >
                       <RotateCcw size={10} />
-                      Restore
+                      {t('accounts.restore')}
                     </button>
                   )}
                 </div>
@@ -115,7 +116,7 @@ export function AccountCard({ account, onEdit, onArchive, className }: AccountCa
                   className="text-xs text-blue-600 hover:underline mt-0.5 block"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  Debt detail
+                  {t('accounts.debtDetail')}
                 </Link>
               )}
             </div>

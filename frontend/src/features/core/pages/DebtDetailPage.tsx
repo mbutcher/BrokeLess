@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
 import { useAccounts } from '../hooks/useAccounts';
 import {
   useDebtSchedule,
@@ -35,6 +36,7 @@ function DebtScheduleForm({
   defaultValues?: Partial<ScheduleFormValues>;
   onSuccess: () => void;
 }) {
+  const { t } = useTranslation();
   const upsert = useUpsertDebtSchedule(accountId);
 
   const {
@@ -69,7 +71,9 @@ function DebtScheduleForm({
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Original Principal ($)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {t('debt.originalPrincipal')}
+          </label>
           <input
             {...register('principal', { valueAsNumber: true })}
             type="number"
@@ -80,7 +84,9 @@ function DebtScheduleForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Annual Rate (%)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {t('debt.annualRateField')}
+          </label>
           <input
             {...register('annualRatePct', { valueAsNumber: true })}
             type="number"
@@ -93,7 +99,9 @@ function DebtScheduleForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Term (months)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {t('debt.termMonths')}
+          </label>
           <input
             {...register('termMonths', { valueAsNumber: true })}
             type="number"
@@ -105,7 +113,9 @@ function DebtScheduleForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Payment ($)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {t('debt.monthlyPaymentField')}
+          </label>
           <input
             {...register('paymentAmount', { valueAsNumber: true })}
             type="number"
@@ -117,7 +127,9 @@ function DebtScheduleForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Origination Date</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {t('debt.originationDate')}
+          </label>
           <input
             {...register('originationDate')}
             type="date"
@@ -133,7 +145,7 @@ function DebtScheduleForm({
           disabled={upsert.isPending}
           className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
         >
-          {upsert.isPending ? 'Saving…' : 'Save Schedule'}
+          {upsert.isPending ? t('debt.saving') : t('debt.saveSchedule')}
         </button>
       </div>
     </form>
@@ -244,6 +256,7 @@ function ExtraPaymentCalculator({ accountId }: { accountId: string }) {
 // ─── DebtDetailPage ───────────────────────────────────────────────────────────
 
 export function DebtDetailPage() {
+  const { t } = useTranslation();
   const { accountId } = useParams<{ accountId: string }>();
   const { data: accounts = [] } = useAccounts();
   const { data: schedule, isLoading, isError, error } = useDebtSchedule(accountId!);
@@ -261,30 +274,32 @@ export function DebtDetailPage() {
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
       <div>
         <Link to="/accounts" className="text-sm text-blue-600 hover:underline">
-          ← Back to Accounts
+          {t('debt.backToAccounts')}
         </Link>
         <h1 className="mt-2 text-2xl font-bold text-gray-900">
-          {account ? `Debt Detail — ${account.name}` : 'Debt Detail'}
+          {account
+            ? t('debt.titleWithAccount', { name: account.name })
+            : t('debt.title')}
         </h1>
       </div>
 
       {/* Schedule form */}
       <section className="bg-white rounded-xl border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-gray-900">Loan Schedule</h2>
+          <h2 className="text-base font-semibold text-gray-900">{t('debt.loanSchedule')}</h2>
           {hasSchedule && !editing && (
             <div className="flex gap-2">
               <button
                 onClick={() => setEditing(true)}
                 className="text-sm text-blue-600 hover:underline"
               >
-                Edit
+                {t('debt.edit')}
               </button>
               <button
                 onClick={() => deleteSchedule.mutate()}
                 className="text-sm text-red-500 hover:underline"
               >
-                Remove
+                {t('debt.remove')}
               </button>
             </div>
           )}
@@ -295,23 +310,23 @@ export function DebtDetailPage() {
         ) : hasSchedule && !editing ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
             <div>
-              <p className="text-gray-500">Principal</p>
+              <p className="text-gray-500">{t('debt.principal')}</p>
               <p className="font-medium">${schedule.principal.toFixed(2)}</p>
             </div>
             <div>
-              <p className="text-gray-500">Annual Rate</p>
+              <p className="text-gray-500">{t('debt.annualRate')}</p>
               <p className="font-medium">{(schedule.annualRate * 100).toFixed(3)}%</p>
             </div>
             <div>
-              <p className="text-gray-500">Term</p>
+              <p className="text-gray-500">{t('debt.term')}</p>
               <p className="font-medium">{schedule.termMonths} months</p>
             </div>
             <div>
-              <p className="text-gray-500">Monthly Payment</p>
+              <p className="text-gray-500">{t('debt.monthlyPayment')}</p>
               <p className="font-medium">${schedule.paymentAmount.toFixed(2)}</p>
             </div>
             <div>
-              <p className="text-gray-500">Origination</p>
+              <p className="text-gray-500">{t('debt.origination')}</p>
               <p className="font-medium">{schedule.originationDate}</p>
             </div>
           </div>
@@ -336,7 +351,7 @@ export function DebtDetailPage() {
         )}
         {scheduleNotFound && !editing && (
           <div>
-            <p className="text-sm text-gray-400 mb-4">No debt schedule configured for this account yet.</p>
+            <p className="text-sm text-gray-400 mb-4">{t('debt.noSchedule')}</p>
             <DebtScheduleForm accountId={accountId!} onSuccess={() => setEditing(false)} />
           </div>
         )}
@@ -345,7 +360,7 @@ export function DebtDetailPage() {
       {/* Amortization table */}
       {hasSchedule && (
         <section className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Amortization Schedule</h2>
+          <h2 className="text-base font-semibold text-gray-900 mb-4">{t('debt.amortization')}</h2>
           <AmortizationTable accountId={accountId!} />
         </section>
       )}
@@ -353,10 +368,8 @@ export function DebtDetailPage() {
       {/* What-if calculator */}
       {hasSchedule && (
         <section className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-2">What-If Calculator</h2>
-          <p className="text-sm text-gray-500 mb-4">
-            Enter an extra monthly payment to see how much sooner you'd pay off the loan.
-          </p>
+          <h2 className="text-base font-semibold text-gray-900 mb-2">{t('debt.whatIf')}</h2>
+          <p className="text-sm text-gray-500 mb-4">{t('debt.whatIfDesc')}</p>
           <ExtraPaymentCalculator accountId={accountId!} />
         </section>
       )}

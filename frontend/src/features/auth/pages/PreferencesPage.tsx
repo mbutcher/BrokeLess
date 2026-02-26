@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Globe, Clock, Calendar, MapPin, AlignLeft } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { authApi } from '../api/authApi';
 import { useAuthStore } from '../stores/authStore';
 import type { UpdateProfileInput } from '../types';
@@ -61,6 +62,7 @@ function PrefSection({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function PreferencesPage() {
+  const { t } = useTranslation();
   const { user, updateUser } = useAuthStore();
   const [saved, setSaved] = useState(false);
 
@@ -109,8 +111,8 @@ export function PreferencesPage() {
     <div className="min-h-screen bg-muted/40 p-4">
       <div className="mx-auto max-w-2xl space-y-6">
         <div>
-          <h1 className="text-2xl font-bold">Preferences</h1>
-          <p className="text-sm text-muted-foreground">Manage your account preferences.</p>
+          <h1 className="text-2xl font-bold">{t('preferences.title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('preferences.subtitle')}</p>
         </div>
 
         {/* Status alerts */}
@@ -121,15 +123,15 @@ export function PreferencesPage() {
         )}
         {saved && (
           <Alert className="border-green-200 bg-green-50">
-            <AlertDescription className="text-green-800">Preferences saved.</AlertDescription>
+            <AlertDescription className="text-green-800">{t('preferences.saved')}</AlertDescription>
           </Alert>
         )}
 
         {/* Language */}
         <PrefSection
           icon={Globe}
-          title="Language"
-          description="Choose your preferred display language."
+          title={t('preferences.language')}
+          description={t('preferences.languageDesc')}
         >
           <select
             value={locale}
@@ -139,18 +141,17 @@ export function PreferencesPage() {
             }}
             className={inputClass}
           >
-            <option value="en-CA">English (Canada)</option>
-            <option value="fr-CA" disabled>
-              Français (Canada) — Coming soon
-            </option>
+            <option value="en-CA">{t('preferences.enCA')}</option>
+            <option value="en-US">{t('preferences.enUS')}</option>
+            <option value="fr-CA">{t('preferences.frCA')}</option>
           </select>
         </PrefSection>
 
         {/* Currency */}
         <PrefSection
           icon={AlignLeft}
-          title="Default Currency"
-          description="Used as the default currency when creating new accounts."
+          title={t('preferences.defaultCurrency')}
+          description={t('preferences.defaultCurrencyDesc')}
         >
           <div className="flex items-center gap-3">
             <input
@@ -163,19 +164,17 @@ export function PreferencesPage() {
               maxLength={3}
               style={{ textTransform: 'uppercase' }}
               className="w-24 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="CAD"
+              placeholder={t('preferences.currencyPlaceholder')}
             />
-            <span className="text-sm text-muted-foreground">
-              3-letter ISO currency code (e.g. CAD, USD, EUR)
-            </span>
+            <span className="text-sm text-muted-foreground">{t('preferences.currencyHelper')}</span>
           </div>
         </PrefSection>
 
         {/* Date Format */}
         <PrefSection
           icon={Calendar}
-          title="Date Format"
-          description="How dates are displayed throughout the app."
+          title={t('preferences.dateFormat')}
+          description={t('preferences.dateFormatDesc')}
         >
           <select
             value={dateFormat}
@@ -185,17 +184,17 @@ export function PreferencesPage() {
             }}
             className={inputClass}
           >
-            <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-            <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-            <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+            <option value="DD/MM/YYYY">{t('preferences.ddmmyyyy')}</option>
+            <option value="MM/DD/YYYY">{t('preferences.mmddyyyy')}</option>
+            <option value="YYYY-MM-DD">{t('preferences.yyyymmdd')}</option>
           </select>
         </PrefSection>
 
         {/* Time Format */}
         <PrefSection
           icon={Clock}
-          title="Time Format"
-          description="Choose 12-hour or 24-hour clock display."
+          title={t('preferences.timeFormat')}
+          description={t('preferences.timeFormatDesc')}
         >
           <div className="flex items-center gap-4">
             {(['12h', '24h'] as const).map((fmt) => (
@@ -211,7 +210,7 @@ export function PreferencesPage() {
                   }}
                   className="accent-blue-600"
                 />
-                {fmt === '12h' ? '12-hour' : '24-hour'}
+                {fmt === '12h' ? t('preferences.12h') : t('preferences.24h')}
               </label>
             ))}
           </div>
@@ -220,8 +219,8 @@ export function PreferencesPage() {
         {/* Timezone */}
         <PrefSection
           icon={MapPin}
-          title="Timezone"
-          description="Dates and times will be displayed in this timezone."
+          title={t('preferences.timezone')}
+          description={t('preferences.timezoneDesc')}
         >
           <select
             value={timezone}
@@ -246,8 +245,8 @@ export function PreferencesPage() {
         {/* Start of Week */}
         <PrefSection
           icon={Calendar}
-          title="Start of Week"
-          description="The first day of the week in calendar views."
+          title={t('preferences.weekStart')}
+          description={t('preferences.weekStartDesc')}
         >
           <select
             value={weekStart}
@@ -257,9 +256,9 @@ export function PreferencesPage() {
             }}
             className={inputClass}
           >
-            <option value="sunday">Sunday</option>
-            <option value="monday">Monday</option>
-            <option value="saturday">Saturday</option>
+            <option value="sunday">{t('preferences.sunday')}</option>
+            <option value="monday">{t('preferences.monday')}</option>
+            <option value="saturday">{t('preferences.saturday')}</option>
           </select>
         </PrefSection>
 
@@ -269,7 +268,7 @@ export function PreferencesPage() {
           disabled={updateProfile.isPending || currency.trim().length !== 3}
           isLoading={updateProfile.isPending}
         >
-          Save
+          {t('preferences.save')}
         </Button>
       </div>
     </div>

@@ -2,6 +2,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'react-router-dom';
 import { Fingerprint } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { loginSchema, type LoginFormData } from '../schemas';
 import { useLogin } from '../hooks/useLogin';
 import { useWebAuthnAuthenticate } from '../hooks/useWebAuthn';
@@ -13,6 +14,7 @@ import { Separator } from '@components/ui/separator';
 import { getApiErrorMessage } from '@lib/api/errors';
 
 export function LoginForm() {
+  const { t } = useTranslation();
   const login = useLogin();
   const webAuthn = useWebAuthnAuthenticate();
 
@@ -40,7 +42,7 @@ export function LoginForm() {
       )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
-        <FormField label="Email address" htmlFor="email" error={errors.email?.message}>
+        <FormField label={t('auth.email')} htmlFor="email" error={errors.email?.message}>
           <Input
             id="email"
             type="email"
@@ -50,7 +52,7 @@ export function LoginForm() {
           />
         </FormField>
 
-        <FormField label="Password" htmlFor="password" error={errors.password?.message}>
+        <FormField label={t('auth.password')} htmlFor="password" error={errors.password?.message}>
           <Input
             id="password"
             type="password"
@@ -61,7 +63,7 @@ export function LoginForm() {
         </FormField>
 
         <Button type="submit" className="w-full" isLoading={login.isPending}>
-          Sign in
+          {t('auth.signIn')}
         </Button>
       </form>
 
@@ -80,13 +82,13 @@ export function LoginForm() {
         onClick={webAuthn.authenticate}
       >
         <Fingerprint className="h-4 w-4" />
-        Sign in with Passkey
+        {t('auth.signInWithPasskey')}
       </Button>
 
       <p className="text-center text-sm text-muted-foreground">
-        Don&apos;t have an account?{' '}
+        {t('auth.noAccount')}{' '}
         <Link to="/register" className="font-medium text-primary hover:underline">
-          Create one
+          {t('auth.createOne')}
         </Link>
       </p>
     </div>

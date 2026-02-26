@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Plus, WifiOff } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@components/ui/button';
 import { PeriodSelector, type ViewMode } from '../components/PeriodSelector';
 import { getDefaultPeriod } from '@lib/budget/budgetViewUtils';
@@ -12,6 +13,7 @@ import { isOfflineError } from '@lib/db/offlineHelpers';
 import type { BudgetViewLine, Category } from '../types';
 
 export function BudgetPage() {
+  const { t } = useTranslation();
   const defaultPeriod = getDefaultPeriod();
   const [start, setStart] = useState(defaultPeriod.start);
   const [end, setEnd] = useState(defaultPeriod.end);
@@ -42,14 +44,12 @@ export function BudgetPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">My Budget</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Plan your income and expenses across any time window.
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('budget.title')}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{t('budget.subtitle')}</p>
         </div>
         <Button onClick={() => setDialogOpen(true)} className="flex items-center gap-2">
           <Plus className="h-4 w-4" />
-          Add Budget Line
+          {t('budget.addLine')}
         </Button>
       </div>
 
@@ -84,15 +84,15 @@ export function BudgetPage() {
       {isError && isOfflineError(error) && (
         <div className="flex flex-col items-center justify-center py-16 text-gray-400 gap-3">
           <WifiOff className="h-8 w-8" />
-          <p className="text-sm">Budget View is not available offline.</p>
-          <p className="text-xs text-gray-400">Your budget lines are still available below when connection returns.</p>
+          <p className="text-sm">{t('budget.offlineError')}</p>
+          <p className="text-xs text-gray-400">{t('budget.offlineInfo')}</p>
         </div>
       )}
 
       {/* Server error while stale data is still visible */}
       {isError && !isOfflineError(error) && view !== undefined && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-          Could not refresh the budget view. Showing last loaded data.
+          {t('budget.staleDataWarning')}
         </div>
       )}
 
@@ -103,13 +103,11 @@ export function BudgetPage() {
             <Plus className="h-8 w-8 text-blue-400" />
           </div>
           <div>
-            <h3 className="text-base font-semibold text-gray-900">No budget lines yet</h3>
-            <p className="text-sm text-gray-500 mt-1">
-              Add your first budget line to start planning your income and expenses.
-            </p>
+            <h3 className="text-base font-semibold text-gray-900">{t('budget.emptyTitle')}</h3>
+            <p className="text-sm text-gray-500 mt-1">{t('budget.emptyDescription')}</p>
           </div>
           <Button onClick={() => setDialogOpen(true)}>
-            Add your first Budget Line
+            {t('budget.addFirstLine')}
           </Button>
         </div>
       )}
@@ -121,7 +119,7 @@ export function BudgetPage() {
           {expenseGroups.length > 0 && (
             <section>
               <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3 px-1">
-                Expenses
+                {t('budget.expenses')}
               </h2>
               {expenseGroups.map((group) => (
                 <BudgetLineGroup
@@ -138,7 +136,7 @@ export function BudgetPage() {
           {incomeGroups.length > 0 && (
             <section>
               <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-3 px-1">
-                Income
+                {t('budget.income')}
               </h2>
               {incomeGroups.map((group) => (
                 <BudgetLineGroup
@@ -191,4 +189,3 @@ function groupByCategory(lines: BudgetViewLine[], allCategories: Category[]): Gr
 
   return Array.from(groups.values());
 }
-

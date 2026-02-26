@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Plus, Pencil, SkipForward, Pause, Play, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@components/ui/button';
 import { useFormatters } from '@lib/i18n/useFormatters';
 import { useAccounts } from '../hooks/useAccounts';
@@ -12,22 +13,10 @@ import {
 import { RecurringTransactionDialog } from '../components/RecurringTransactionDialog';
 import type { RecurringTransaction, RecurringFrequency } from '../types';
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function frequencyLabel(freq: RecurringFrequency, interval: number | null): string {
-  switch (freq) {
-    case 'weekly': return 'Weekly';
-    case 'biweekly': return 'Biweekly';
-    case 'semi_monthly': return 'Twice monthly';
-    case 'monthly': return 'Monthly';
-    case 'annually': return 'Annually';
-    case 'every_n_days': return interval ? `Every ${interval} days` : 'Every N days';
-  }
-}
-
 // ─── RecurringTransactionsPage ────────────────────────────────────────────────
 
 export function RecurringTransactionsPage() {
+  const { t } = useTranslation();
   const fmt = useFormatters();
   const { data: records = [], isLoading } = useRecurringTransactions();
   const { data: accounts = [] } = useAccounts();
@@ -74,14 +63,12 @@ export function RecurringTransactionsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Recurring Transactions</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            Automatically generated transactions on a schedule.
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('recurring.title')}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{t('recurring.subtitle')}</p>
         </div>
         <Button onClick={openCreate}>
           <Plus className="h-4 w-4 mr-1.5" />
-          Add Recurring
+          {t('recurring.add')}
         </Button>
       </div>
 
@@ -93,12 +80,12 @@ export function RecurringTransactionsPage() {
         </div>
       ) : records.length === 0 ? (
         <div className="text-center py-16 border border-dashed border-gray-200 rounded-xl">
-          <p className="text-gray-400 text-sm">No recurring transactions yet.</p>
+          <p className="text-gray-400 text-sm">{t('recurring.empty')}</p>
           <button
             onClick={openCreate}
             className="mt-2 text-sm text-blue-600 hover:underline"
           >
-            Create your first one
+            {t('recurring.createFirst')}
           </button>
         </div>
       ) : (
@@ -107,26 +94,26 @@ export function RecurringTransactionsPage() {
           {active.length > 0 && (
             <section>
               <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
-                Active ({active.length})
+                {t('recurring.active')} ({active.length})
               </h2>
               <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-b border-gray-100">
                     <tr>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                        Payee / Description
+                        {t('recurring.payee')}
                       </th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">
-                        Account
+                        {t('recurring.account')}
                       </th>
                       <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                        Amount
+                        {t('recurring.amount')}
                       </th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">
-                        Frequency
+                        {t('recurring.frequency')}
                       </th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">
-                        Next Due
+                        {t('recurring.nextDue')}
                       </th>
                       <th className="px-4 py-3" />
                     </tr>
@@ -154,7 +141,7 @@ export function RecurringTransactionsPage() {
           {paused.length > 0 && (
             <section>
               <h2 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
-                Paused ({paused.length})
+                {t('recurring.paused')} ({paused.length})
               </h2>
               <div className="bg-white rounded-xl border border-gray-200 overflow-hidden opacity-70">
                 <table className="w-full text-sm">
@@ -189,9 +176,9 @@ export function RecurringTransactionsPage() {
       {/* Skip confirmation */}
       {confirmSkip && (
         <ConfirmModal
-          title="Skip next occurrence?"
-          message="The next scheduled occurrence will be skipped. This cannot be undone."
-          confirmLabel="Skip"
+          title={t('recurring.skipTitle')}
+          message={t('recurring.skipDesc')}
+          confirmLabel={t('recurring.skip')}
           onConfirm={() => handleSkip(confirmSkip)}
           onCancel={() => setConfirmSkip(null)}
           isPending={skipRecurring.isPending}
@@ -201,9 +188,9 @@ export function RecurringTransactionsPage() {
       {/* Delete confirmation */}
       {confirmDelete && (
         <ConfirmModal
-          title="Delete recurring transaction?"
-          message="This recurring transaction will be removed. Past generated transactions are not affected."
-          confirmLabel="Delete"
+          title={t('recurring.deleteTitle')}
+          message={t('recurring.deleteDesc')}
+          confirmLabel={t('recurring.delete')}
           confirmVariant="destructive"
           onConfirm={() => handleDelete(confirmDelete)}
           onCancel={() => setConfirmDelete(null)}
@@ -235,13 +222,28 @@ function RecurringRow({
   onSkip,
   onDelete,
 }: RecurringRowProps) {
+  const { t } = useTranslation();
   const isExpense = record.amount < 0;
+
+  function frequencyLabel(freq: RecurringFrequency, interval: number | null): string {
+    switch (freq) {
+      case 'weekly': return t('recurring.weekly');
+      case 'biweekly': return t('recurring.biweekly');
+      case 'semi_monthly': return t('recurring.twiceMonthly');
+      case 'monthly': return t('recurring.monthly');
+      case 'annually': return t('recurring.annually');
+      case 'every_n_days':
+        return interval
+          ? t('recurring.everyNDays', { count: interval })
+          : t('recurring.everyNDaysDefault');
+    }
+  }
 
   return (
     <tr className="hover:bg-gray-50/50 transition-colors">
       <td className="px-4 py-3">
         <p className="font-medium text-gray-900 truncate max-w-[200px]">
-          {record.payee ?? record.description ?? <span className="text-gray-400 italic">No label</span>}
+          {record.payee ?? record.description ?? <span className="text-gray-400 italic">—</span>}
         </p>
         {record.payee && record.description && (
           <p className="text-xs text-gray-400 truncate max-w-[200px]">{record.description}</p>
@@ -262,24 +264,24 @@ function RecurringRow({
       <td className="px-4 py-3">
         <div className="flex items-center justify-end gap-1">
           <ActionButton
-            title="Edit"
+            title={t('recurring.edit')}
             onClick={onEdit}
             icon={<Pencil className="h-3.5 w-3.5" />}
           />
           {record.isActive && (
             <ActionButton
-              title="Skip next occurrence"
+              title={t('recurring.skip')}
               onClick={onSkip}
               icon={<SkipForward className="h-3.5 w-3.5" />}
             />
           )}
           <ActionButton
-            title={record.isActive ? 'Pause' : 'Resume'}
+            title={record.isActive ? t('recurring.pause') : t('recurring.resume')}
             onClick={onToggle}
             icon={record.isActive ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
           />
           <ActionButton
-            title="Delete"
+            title={t('recurring.delete')}
             onClick={onDelete}
             icon={<Trash2 className="h-3.5 w-3.5" />}
             className="text-red-400 hover:text-red-600 hover:bg-red-50"
@@ -331,6 +333,7 @@ function ConfirmModal({
   onCancel: () => void;
   isPending: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onCancel} />
@@ -347,7 +350,7 @@ function ConfirmModal({
             {confirmLabel}
           </Button>
           <Button variant="outline" onClick={onCancel} className="flex-1">
-            Cancel
+            {t('recurring.cancel')}
           </Button>
         </div>
       </div>
