@@ -1,7 +1,7 @@
 # BudgetApp — Product Development Roadmap
 
-**Last updated:** 2026-02-27
-**Current release:** v0.1
+**Last updated:** 2026-02-26
+**Current release:** v0.2
 
 ---
 
@@ -146,10 +146,11 @@ BudgetApp is a secure, self-hosted personal budgeting application designed for d
 
 ---
 
-## v0.2 — Planned
+## v0.2 — Complete
 
 ### Phase 13 — Top Payees & Recurring Transactions
 
+**Status:** Deferred to v0.3
 **Priority:** High
 **Scope:** Medium
 
@@ -176,6 +177,7 @@ BudgetApp is a secure, self-hosted personal budgeting application designed for d
 
 ### Phase 14 — Full-Text Transaction Search
 
+**Status:** Complete
 **Priority:** Medium
 **Scope:** Medium
 
@@ -190,6 +192,7 @@ Build a secondary plaintext search index alongside encrypted transaction storage
 
 ### Phase 15 — Export & Attachments
 
+**Status:** Deferred to v0.3
 **Priority:** Medium
 **Scope:** Medium
 
@@ -228,7 +231,7 @@ Build a secondary plaintext search index alongside encrypted transaction storage
 
 ### Phase 17 — Remaining Quality & Polish
 
-**Status:** Partially complete (17.1 done; 17.2–17.6 pending)
+**Status:** Partially complete (17.1, 17.2, 17.4, 17.5 done; 17.3 and 17.6 deferred to v0.3)
 **Priority:** Low–Medium
 **Scope:** Small
 
@@ -245,30 +248,30 @@ Expanded in scope from the original fr-CA stub:
 - PreferencesPage: en-US added as selectable option, fr-CA enabled (no longer "coming soon")
 - Type-check: 0 errors; lint: 0 warnings
 
-#### 17.2 Budget Lines Offline Support
+#### 17.2 Budget Lines Offline Support ✓
 
-- `useBudgetLines` and `useBudgetView` hooks lack Dexie fallback; budget view cannot be served offline
-- Add `LocalBudgetLine` to Dexie schema; extend `syncEngine.pull()` to include budget lines delta
-- Show last-cached budget view with an "offline" indicator
+- Added `budgetViewCache` Dexie table (version 5 migration); `readCache`/`writeCache` helpers
+- `useBudgetView`, `usePayPeriod`, and `useUpcomingExpenses` now fall back to Dexie cache on `isOfflineError`
+- Cache keys scoped to query parameters; last-cached data served with no page changes needed
 
-#### 17.3 Savings Goal ↔ Budget Line Link
+#### 17.3 Savings Goal ↔ Budget Line Link — Deferred to v0.3
 
 - Add `recurring_contribution_budget_line_id` FK on `savings_goals`
 - Budget Line contributions automatically tracked against goal progress
 - `savings_goals` table exists; FK can be added non-breakingly
 
-#### 17.4 Session Device Names
+#### 17.4 Session Device Names ✓
 
-- Populate `device_name` on refresh tokens from User-Agent header at login time
-- Session management UI shows device name alongside creation timestamp
+- `device_name` populated from User-Agent header at login; `last_used_at` stamped on token rotation
+- Session list shows device name and "Last used" timestamp (falls back to "Signed in" date)
 
-#### 17.5 discardedIds Pruning (SimpleFIN)
+#### 17.5 discardedIds Pruning (SimpleFIN) ✓
 
-- `discarded_ids_json` TEXT column on `simplefin_connections` grows without bound
-- Migrate to a separate `simplefin_discarded_ids` table (FK to connection + `simplefin_transaction_id`)
-- Prune entries older than 90 days on each sync
+- Migrated from `discarded_ids_json` TEXT column to normalized `simplefin_discarded_ids` table (migration 20260227004)
+- `simplefinRepository` methods: `addDiscardedId`, `getDiscardedIds`, `pruneDiscardedIds` (90-day TTL)
+- Fire-and-forget prune on each sync via `void pruneDiscardedIds().catch(logger.warn)`
 
-#### 17.6 Production Deployment Guide
+#### 17.6 Production Deployment Guide — Deferred to v0.3
 
 - Step-by-step Unraid Community Application template documentation
 - Docker Compose prod profile validation with HTTPS/TLS via Let's Encrypt or reverse proxy
@@ -363,6 +366,7 @@ mcp/
 
 ### Phase 19 — Editable Dashboard
 
+**Status:** Complete
 **Priority:** High
 **Scope:** Large
 
@@ -505,6 +509,7 @@ Exiting edit mode (Save or clicking away) fires a single `PUT /api/v1/dashboard/
 
 ### Phase 20 — Settings Consolidation & User Avatar Menu
 
+**Status:** Complete
 **Priority:** Medium
 **Scope:** Medium
 
@@ -573,10 +578,14 @@ Consolidate all authentication and access management onto one page:
 | ~~`discardedIds` JSON growth~~ | ~~Medium~~ | ~~Normalized `simplefin_discarded_ids` table with 90-day pruning implemented (migration 20260227004, `simplefinRepository` methods, fire-and-forget in sync)~~ ✓ |
 | ~~Session management device names~~ | ~~Medium~~ | ~~Device name populated from UA on login; `last_used_at` stamped on token rotation; session list shows "Last used" date~~ ✓ |
 | ~~Orphaned `frequencyLabel.ts`~~ | ~~Low~~ | ~~Deleted~~ ✓ |
-| Load testing | Low | No load tests. Add k6 scripts for transaction import endpoint. |
-| API pagination | Low | Accounts and transactions lists are unbounded; add `page`/`limit`. |
-| Rate limit tuning | Low | Evaluate 5 req/15 min auth limit for WebAuthn multi-round-trip flows. |
-| Lighthouse PWA score | Low | Not formally measured. Requires production build with HTTPS to audit accurately. |
+| ~~Load testing~~ | ~~Low~~ | ~~k6 scripts in `load-tests/`: auth, transactions (create/update/delete + paginated list), reports; thresholds enforced per run~~ ✓ |
+| ~~API pagination~~ | ~~Low~~ | ~~Backend transaction pagination was already implemented; added prev/next pagination UI to `TransactionList` with i18n keys in all 3 locales~~ ✓ |
+| ~~Rate limit tuning~~ | ~~Low~~ | ~~Added `webauthnRateLimiter` (15 req/15 min) for WebAuthn authenticate endpoints, separate from `authRateLimiter` (5 req/15 min) for password login~~ ✓ |
+| ~~Lighthouse PWA score~~ | ~~Low~~ | ~~`frontend/.lighthouserc.json` added with score thresholds; run with `npx lhci autorun` against `npm run preview` output (requires HTTPS for full PWA audit)~~ ✓ |
+
+---
+
+> **v0.2 is complete.** Items not addressed in this release — Phase 13 (Top Payees & Recurring Transactions), Phase 15 (Export & Attachments), Phase 17.3 (Savings Goal ↔ Budget Line Link), and Phase 17.6 (Production Deployment Guide) — have been carried forward to the [v0.3 roadmap](./product-roadmap-v0.3.md).
 
 ---
 

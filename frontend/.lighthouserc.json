@@ -1,0 +1,28 @@
+{
+  "ci": {
+    "collect": {
+      "url": ["http://localhost:4173/"],
+      "numberOfRuns": 3,
+      "settings": {
+        "preset": "desktop",
+        "skipAudits": ["uses-http2"]
+      }
+    },
+    "assert": {
+      "assertions": {
+        "categories:performance":    ["warn",  { "minScore": 0.85 }],
+        "categories:accessibility":  ["error", { "minScore": 0.90 }],
+        "categories:best-practices": ["warn",  { "minScore": 0.90 }],
+        "categories:seo":            ["warn",  { "minScore": 0.80 }],
+        "categories:pwa":            ["warn",  { "minScore": 0.85 }],
+        "installable-manifest":      ["warn",  { "minScore": 1 }],
+        "service-worker":            ["warn",  { "minScore": 1 }],
+        "offline-start-url":         ["warn",  { "minScore": 1 }],
+        "is-on-https":               ["off",   { "minScore": 1 }]
+      }
+    },
+    "upload": {
+      "target": "temporary-public-storage"
+    }
+  }
+}

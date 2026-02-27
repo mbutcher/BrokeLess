@@ -171,9 +171,12 @@
     "noneSubcategory": "None",
     "weekly": "Weekly",
     "biweekly": "Biweekly",
+    "semiMonthly": "1st & 15th",
     "twiceMonthly": "Twice monthly",
+    "twiceMonthlyFull": "{{d1}} & {{d2}} of month",
     "monthly": "Monthly",
     "annually": "Annually",
+    "everyNDaysFull": "Every {{count}} days",
     "oneTime": "One time",
     "anchorDateHelp": "The date of the first/next known occurrence. Occurrences are computed from this date.",
     "payPeriodAnchor": "Use this income line to define my pay period",
@@ -326,7 +329,11 @@
     "filterTo": "To",
     "searchPlaceholder": "Search payee / description",
     "searchPlaceholderShort": "Search transactions…",
-    "searchOffline": "Search not available offline"
+    "searchOffline": "Search not available offline",
+    "showing": "Showing {{count}} of {{total}}",
+    "page": "Page {{page}} of {{totalPages}}",
+    "prevPage": "Previous",
+    "nextPage": "Next"
   },
   "recurring": {
     "title": "Recurring Transactions",

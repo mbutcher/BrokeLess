@@ -73,25 +73,3 @@ export function toISODate(d: Date): string {
   return d.toISOString().substring(0, 10);
 }
 
-/** Human-readable label for a frequency. */
-export function frequencyLabel(
-  frequency: BudgetLineFrequency,
-  interval?: number | null,
-  dayOfMonth1?: number | null,
-  dayOfMonth2?: number | null,
-): string {
-  switch (frequency) {
-    case 'weekly':        return 'Weekly';
-    case 'biweekly':      return 'Biweekly';
-    case 'semi_monthly':  return '1st & 15th';
-    case 'twice_monthly': {
-      const d1Label = dayOfMonth1 === 31 ? 'last' : String(dayOfMonth1 ?? '?');
-      const d2Label = dayOfMonth2 === 31 ? 'last' : String(dayOfMonth2 ?? '?');
-      return `${d1Label} & ${d2Label} of month`;
-    }
-    case 'monthly':       return 'Monthly';
-    case 'annually':      return 'Annually';
-    case 'every_n_days':  return interval ? `Every ${interval} days` : 'Every N days';
-    case 'one_time':      return 'One time';
-  }
-}

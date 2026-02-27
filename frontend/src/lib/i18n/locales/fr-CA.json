@@ -171,9 +171,12 @@
     "noneSubcategory": "Aucune",
     "weekly": "Hebdomadaire",
     "biweekly": "Bihebdomadaire",
+    "semiMonthly": "1er & 15",
     "twiceMonthly": "Deux fois par mois",
+    "twiceMonthlyFull": "{{d1}} & {{d2}} du mois",
     "monthly": "Mensuel",
     "annually": "Annuel",
+    "everyNDaysFull": "Tous les {{count}} jours",
     "oneTime": "Ponctuel",
     "anchorDateHelp": "La date de la première/prochaine occurrence connue. Les occurrences sont calculées à partir de cette date.",
     "payPeriodAnchor": "Utiliser cette ligne de revenu pour définir ma période de paie",
@@ -326,7 +329,11 @@
     "filterTo": "Au",
     "searchPlaceholder": "Rechercher bénéficiaire / description",
     "searchPlaceholderShort": "Rechercher des transactions…",
-    "searchOffline": "Recherche non disponible hors ligne"
+    "searchOffline": "Recherche non disponible hors ligne",
+    "showing": "Affichage de {{count}} sur {{total}}",
+    "page": "Page {{page}} sur {{totalPages}}",
+    "prevPage": "Précédent",
+    "nextPage": "Suivant"
   },
   "recurring": {
     "title": "Transactions récurrentes",

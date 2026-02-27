@@ -134,6 +134,7 @@ export function TransactionsPage() {
       <TransactionList
         filters={filters}
         onEdit={(tx) => { setEditing(tx); setShowForm(false); }}
+        onPageChange={(page) => setFilters((f) => ({ ...f, page }))}
       />
 
       {pendingLink && (

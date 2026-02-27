@@ -37,6 +37,23 @@ export const refreshRateLimiter = rateLimit({
 });
 
 /**
+ * Rate limiter for WebAuthn authenticate endpoints (options + verify).
+ * More lenient than the login limiter because a single authentication flow
+ * requires two sequential requests, and a household with multiple passkey
+ * devices may make several attempts in quick succession.
+ * 15 requests per 15 minutes per IP address.
+ */
+export const webauthnRateLimiter = rateLimit({
+  windowMs: env.rateLimit.loginWindowMs,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (_req, _res, next) => {
+    next(new TooManyRequestsError('Too many WebAuthn attempts. Please try again later.'));
+  },
+});
+
+/**
  * General API rate limiter for all other endpoints.
  * 100 requests per 15 minutes per IP address.
  */

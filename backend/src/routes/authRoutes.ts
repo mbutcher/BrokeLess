@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authController } from '@controllers/authController';
 import { authenticate, authenticateTwoFactor } from '@middleware/authenticate';
-import { authRateLimiter, refreshRateLimiter } from '@middleware/rateLimiter';
+import { authRateLimiter, refreshRateLimiter, webauthnRateLimiter } from '@middleware/rateLimiter';
 import { validateRequest } from '@middleware/validateRequest';
 import {
   registerSchema,
@@ -69,12 +69,12 @@ router.post(
 );
 router.post(
   '/webauthn/authenticate/options',
-  authRateLimiter,
+  webauthnRateLimiter,
   authController.webAuthnAuthenticateOptions
 );
 router.post(
   '/webauthn/authenticate/verify',
-  authRateLimiter,
+  webauthnRateLimiter,
   validateRequest(challengeTokenSchema),
   authController.webAuthnAuthenticateVerify
 );
