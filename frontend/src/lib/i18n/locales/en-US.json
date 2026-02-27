@@ -18,6 +18,7 @@
   },
   "common": {
     "save": "Save",
+    "saving": "Saving…",
     "cancel": "Cancel",
     "delete": "Delete",
     "restore": "Restore",
@@ -223,7 +224,29 @@
     "budgetRemaining": "remaining",
     "budgetOverBudget": "over budget",
     "overBudgetHeader": "Over budget",
-    "overSuffix": "over"
+    "overSuffix": "over",
+    "noAccounts": "No accounts to display.",
+    "vsPrevPeriod": "vs last period",
+    "noWarnings": "No warnings — you're all good.",
+    "warningsTitle": "Warnings",
+    "hints": "Hints & Suggestions",
+    "noHints": "No suggestions right now.",
+    "editDashboard": "Edit Dashboard",
+    "resetDefaults": "Reset to defaults",
+    "accountFilter": "Account Filter",
+    "accountFilterHint": "Uncheck accounts to hide them from dashboard widgets.",
+    "widgets": {
+      "title": "Widgets",
+      "warnings": "Warnings",
+      "netWorth": "Net Worth",
+      "accountBalances": "Account Balances",
+      "budgetSnapshot": "Budget Snapshot",
+      "upcomingExpenses": "Upcoming Expenses",
+      "monthlyChart": "Monthly Chart",
+      "savingsGoals": "Savings Goals",
+      "recentTransactions": "Recent Transactions",
+      "hints": "Hints & Suggestions"
+    }
   },
   "preferences": {
     "title": "Preferences",

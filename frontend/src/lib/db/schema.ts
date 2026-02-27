@@ -19,6 +19,7 @@ import type {
   SavingsGoal,
   RecurringTransaction,
 } from '@features/core/types';
+import type { DashboardConfig } from '@features/dashboard/types/dashboard';
 
 // Local entity types alias the frontend API types directly.
 // The Dexie layer stores/retrieves these shapes; crypto.ts handles
@@ -70,3 +71,9 @@ export interface SyncMeta {
   /** ISO 8601 timestamp of the last successful pull, or null for never. */
   lastSyncAt: string | null;
 }
+
+/** Locally cached copy of the user's dashboard config. */
+export type LocalDashboardConfig = DashboardConfig & {
+  /** Always 'singleton' — one row per IndexedDB database. */
+  id: 'singleton';
+};

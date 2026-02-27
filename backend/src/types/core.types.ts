@@ -690,3 +690,46 @@ export interface ExchangeRate {
   /** True when rate is older than 24 hours */
   isStale: boolean;
 }
+
+// ─── Dashboard Config ─────────────────────────────────────────────────────────
+
+export type WidgetId =
+  | 'warnings'
+  | 'net-worth'
+  | 'account-balances'
+  | 'budget-snapshot'
+  | 'upcoming-expenses'
+  | 'monthly-chart'
+  | 'savings-goals'
+  | 'recent-transactions'
+  | 'hints';
+
+export interface GridLayoutItem {
+  i: WidgetId;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export interface DashboardLayouts {
+  xs: GridLayoutItem[];
+  sm: GridLayoutItem[];
+  lg: GridLayoutItem[];
+  xl: GridLayoutItem[];
+}
+
+export interface DashboardConfig {
+  userId: string;
+  widgetVisibility: Record<WidgetId, boolean>;
+  excludedAccountIds: string[];
+  layouts: DashboardLayouts;
+  updatedAt: Date;
+}
+
+export interface DashboardHint {
+  id: string;
+  type: string;
+  message: string;
+  linkTo?: string;
+}

@@ -8,6 +8,7 @@ import type {
   LocalBudgetLine,
   LocalSavingsGoal,
   LocalRecurringTransaction,
+  LocalDashboardConfig,
   PendingMutation,
   SyncMeta,
 } from './schema';
@@ -21,6 +22,7 @@ class BudgetDB extends Dexie {
   budgetLines!: Table<LocalBudgetLine, string>;
   savingsGoals!: Table<LocalSavingsGoal, string>;
   recurringTransactions!: Table<LocalRecurringTransaction, string>;
+  dashboardConfig!: Table<LocalDashboardConfig, string>;
   pendingMutations!: Table<PendingMutation, string>;
   syncMeta!: Table<SyncMeta, string>;
 
@@ -46,6 +48,10 @@ class BudgetDB extends Dexie {
     this.version(3).stores({
       recurringTransactions: 'id, userId, nextDueDate, isActive',
     });
+
+    this.version(4).stores({
+      dashboardConfig: 'id',
+    });
   }
 }
 
@@ -59,6 +65,7 @@ export type {
   LocalBudgetLine,
   LocalSavingsGoal,
   LocalRecurringTransaction,
+  LocalDashboardConfig,
   PendingMutation,
   SyncMeta,
 };

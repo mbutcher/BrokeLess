@@ -18,6 +18,7 @@
   },
   "common": {
     "save": "Enregistrer",
+    "saving": "Enregistrement…",
     "cancel": "Annuler",
     "delete": "Supprimer",
     "restore": "Restaurer",
@@ -223,7 +224,29 @@
     "budgetRemaining": "restant",
     "budgetOverBudget": "de dépassement",
     "overBudgetHeader": "Dépassement",
-    "overSuffix": "de dépassement"
+    "overSuffix": "de dépassement",
+    "noAccounts": "Aucun compte à afficher.",
+    "vsPrevPeriod": "vs période précédente",
+    "noWarnings": "Aucun avertissement — tout va bien.",
+    "warningsTitle": "Avertissements",
+    "hints": "Conseils et suggestions",
+    "noHints": "Aucune suggestion pour l'instant.",
+    "editDashboard": "Modifier le tableau de bord",
+    "resetDefaults": "Réinitialiser",
+    "accountFilter": "Filtre de comptes",
+    "accountFilterHint": "Décochez les comptes pour les masquer dans les widgets.",
+    "widgets": {
+      "title": "Widgets",
+      "warnings": "Avertissements",
+      "netWorth": "Valeur nette",
+      "accountBalances": "Soldes des comptes",
+      "budgetSnapshot": "Aperçu du budget",
+      "upcomingExpenses": "Dépenses à venir",
+      "monthlyChart": "Graphique mensuel",
+      "savingsGoals": "Objectifs d'épargne",
+      "recentTransactions": "Transactions récentes",
+      "hints": "Conseils et suggestions"
+    }
   },
   "preferences": {
     "title": "Préférences",
