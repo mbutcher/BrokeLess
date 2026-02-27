@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate } from '@middleware/authenticate';
+import { authenticateAny } from '@middleware/authenticate';
 import { validateRequest } from '@middleware/validateRequest';
 import { recurringTransactionController } from '@controllers/recurringTransactionController';
 import {
@@ -9,7 +9,7 @@ import {
 
 const router = Router();
 
-router.use(authenticate);
+router.use(authenticateAny);
 
 router.get('/', recurringTransactionController.list);
 router.post(

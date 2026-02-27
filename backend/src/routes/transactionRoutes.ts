@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { transactionController } from '@controllers/transactionController';
-import { authenticate } from '@middleware/authenticate';
+import { authenticateAny, requireScope } from '@middleware/authenticate';
 import { validateRequest } from '@middleware/validateRequest';
 import {
   createTransactionSchema,
@@ -10,11 +10,16 @@ import {
 
 const router = Router();
 
-router.use(authenticate);
+router.use(authenticateAny);
 
-router.get('/', transactionController.list);
-router.post('/', validateRequest(createTransactionSchema), transactionController.create);
-router.get('/:id', transactionController.get);
+router.get('/', requireScope('transactions:read'), transactionController.list);
+router.post(
+  '/',
+  requireScope('transactions:write'),
+  validateRequest(createTransactionSchema),
+  transactionController.create
+);
+router.get('/:id', requireScope('transactions:read'), transactionController.get);
 router.patch('/:id', validateRequest(updateTransactionSchema), transactionController.update);
 router.delete('/:id', transactionController.delete);
 

@@ -38,43 +38,50 @@ class SyncController {
 
     const db = getDatabase();
 
-    const [accountRows, categoryRows, txRows, budgetRows, budgetCategoryRows, budgetLineRows, goalRows] =
-      await Promise.all([
-        since
-          ? db('accounts').where({ user_id: userId }).where('updated_at', '>=', since)
-          : db('accounts').where({ user_id: userId }),
+    const [
+      accountRows,
+      categoryRows,
+      txRows,
+      budgetRows,
+      budgetCategoryRows,
+      budgetLineRows,
+      goalRows,
+    ] = await Promise.all([
+      since
+        ? db('accounts').where({ user_id: userId }).where('updated_at', '>=', since)
+        : db('accounts').where({ user_id: userId }),
 
-        since
-          ? db('categories').where({ user_id: userId }).where('updated_at', '>=', since)
-          : db('categories').where({ user_id: userId }),
+      since
+        ? db('categories').where({ user_id: userId }).where('updated_at', '>=', since)
+        : db('categories').where({ user_id: userId }),
 
-        since
-          ? db('transactions').where({ user_id: userId }).where('updated_at', '>=', since)
-          : db('transactions').where({ user_id: userId }),
+      since
+        ? db('transactions').where({ user_id: userId }).where('updated_at', '>=', since)
+        : db('transactions').where({ user_id: userId }),
 
-        since
-          ? db('budgets').where({ user_id: userId }).where('updated_at', '>=', since)
-          : db('budgets').where({ user_id: userId }),
+      since
+        ? db('budgets').where({ user_id: userId }).where('updated_at', '>=', since)
+        : db('budgets').where({ user_id: userId }),
 
-        since
-          ? db('budget_categories as bc')
-              .join('budgets as b', 'bc.budget_id', 'b.id')
-              .where('b.user_id', userId)
-              .where('bc.updated_at', '>=', since)
-              .select('bc.*')
-          : db('budget_categories as bc')
-              .join('budgets as b', 'bc.budget_id', 'b.id')
-              .where('b.user_id', userId)
-              .select('bc.*'),
+      since
+        ? db('budget_categories as bc')
+            .join('budgets as b', 'bc.budget_id', 'b.id')
+            .where('b.user_id', userId)
+            .where('bc.updated_at', '>=', since)
+            .select('bc.*')
+        : db('budget_categories as bc')
+            .join('budgets as b', 'bc.budget_id', 'b.id')
+            .where('b.user_id', userId)
+            .select('bc.*'),
 
-        since
-          ? db('budget_lines').where({ user_id: userId }).where('updated_at', '>=', since)
-          : db('budget_lines').where({ user_id: userId }),
+      since
+        ? db('budget_lines').where({ user_id: userId }).where('updated_at', '>=', since)
+        : db('budget_lines').where({ user_id: userId }),
 
-        since
-          ? db('savings_goals').where({ user_id: userId }).where('updated_at', '>=', since)
-          : db('savings_goals').where({ user_id: userId }),
-      ]);
+      since
+        ? db('savings_goals').where({ user_id: userId }).where('updated_at', '>=', since)
+        : db('savings_goals').where({ user_id: userId }),
+    ]);
 
     const accounts: Account[] = (accountRows as Record<string, unknown>[]).map((r) => ({
       id: String(r['id']),

@@ -12,21 +12,20 @@ type YamlDoc = Record<string, unknown>;
  */
 export function buildSwaggerSpec(): YamlDoc {
   const docsDir = path.resolve(__dirname, '../../../docs/openapi');
-  const base = yaml.load(
-    fs.readFileSync(path.join(docsDir, 'openapi.yaml'), 'utf8')
-  ) as YamlDoc;
+  const base = yaml.load(fs.readFileSync(path.join(docsDir, 'openapi.yaml'), 'utf8')) as YamlDoc;
 
   if (!base['paths']) base['paths'] = {};
   if (!base['components']) base['components'] = {};
   const baseComponents = base['components'] as ComponentsSection;
 
   const pathsDir = path.join(docsDir, 'paths');
-  const files = fs.readdirSync(pathsDir).filter((f) => f.endsWith('.yaml')).sort();
+  const files = fs
+    .readdirSync(pathsDir)
+    .filter((f) => f.endsWith('.yaml'))
+    .sort();
 
   for (const file of files) {
-    const partial = yaml.load(
-      fs.readFileSync(path.join(pathsDir, file), 'utf8')
-    ) as YamlDoc | null;
+    const partial = yaml.load(fs.readFileSync(path.join(pathsDir, file), 'utf8')) as YamlDoc | null;
     if (!partial) continue;
 
     // Merge paths

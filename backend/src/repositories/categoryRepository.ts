@@ -23,8 +23,8 @@ class CategoryRepository {
   }
 
   async findById(id: string, userId: string): Promise<Category | null> {
-    const row = await this.db('categories').where({ id, user_id: userId }).first();
-    return row ? rowToCategory(row) : null;
+    const row: unknown = await this.db('categories').where({ id, user_id: userId }).first();
+    return row ? rowToCategory(row as Record<string, unknown>) : null;
   }
 
   async findAllForUser(userId: string): Promise<Category[]> {
@@ -58,7 +58,7 @@ class CategoryRepository {
       is_income: data.isIncome,
       parent_id: data.parentId ?? null,
     });
-    const row = await this.db('categories').where({ id }).first();
+    const row: unknown = await this.db('categories').where({ id }).first();
     return rowToCategory(row as Record<string, unknown>);
   }
 

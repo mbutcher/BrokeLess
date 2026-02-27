@@ -26,7 +26,7 @@ const consoleFormat = winston.format.combine(
   winston.format.colorize(),
   winston.format.timestamp({ format: 'HH:mm:ss' }),
   winston.format.printf(({ timestamp, level, message, ...metadata }) => {
-    let msg = `${timestamp} [${level}]: ${message}`;
+    let msg = `${String(timestamp)} [${String(level)}]: ${String(message)}`;
     if (Object.keys(metadata).length > 0) {
       msg += ` ${JSON.stringify(metadata)}`;
     }
@@ -76,14 +76,15 @@ const sensitiveFields = [
   'db_password',
 ];
 
-logger.on('data', (info) => {
+logger.on('data', (info: unknown) => {
   // Redact sensitive fields recursively
-  const redactObject = (obj: any): any => {
+  const redactObject = (obj: unknown): unknown => {
     if (typeof obj !== 'object' || obj === null) {
       return obj;
     }
 
-    const redacted = { ...obj };
+    const record = obj as Record<string, unknown>;
+    const redacted: Record<string, unknown> = { ...record };
     Object.keys(redacted).forEach((key) => {
       const lowerKey = key.toLowerCase();
       if (sensitiveFields.some((field) => lowerKey.includes(field))) {
@@ -108,27 +109,27 @@ export const httpLogStream = {
 // Utility functions for structured logging
 export const loggers = {
   // Log database queries (use sparingly to avoid performance issues)
-  query: (query: string, params?: any): void => {
+  query: (query: string, params?: unknown): void => {
     logger.debug('Database Query', { query, params });
   },
 
   // Log API requests
-  request: (method: string, url: string, metadata?: any): void => {
+  request: (method: string, url: string, metadata?: Record<string, unknown>): void => {
     logger.info('API Request', { method, url, ...metadata });
   },
 
   // Log authentication events
-  auth: (event: string, userId?: string, metadata?: any): void => {
+  auth: (event: string, userId?: string, metadata?: Record<string, unknown>): void => {
     logger.info('Auth Event', { event, userId, ...metadata });
   },
 
   // Log security events
-  security: (event: string, metadata?: any): void => {
+  security: (event: string, metadata?: Record<string, unknown>): void => {
     logger.warn('Security Event', { event, ...metadata });
   },
 
   // Log errors with context
-  error: (error: Error, context?: any): void => {
+  error: (error: Error, context?: Record<string, unknown>): void => {
     logger.error('Error', {
       message: error.message,
       stack: error.stack,
@@ -137,7 +138,11 @@ export const loggers = {
   },
 
   // Log performance metrics
-  performance: (operation: string, durationMs: number, metadata?: any): void => {
+  performance: (
+    operation: string,
+    durationMs: number,
+    metadata?: Record<string, unknown>
+  ): void => {
     logger.debug('Performance', { operation, durationMs, ...metadata });
   },
 };

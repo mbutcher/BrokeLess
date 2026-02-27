@@ -69,7 +69,27 @@
     "sessionsSignedIn": "Signed in",
     "signOutEverywhere": "Sign out everywhere",
     "signOutEverywhereDesc": "Revokes all refresh tokens across all devices.",
-    "signOutAll": "Sign out all"
+    "signOutAll": "Sign out all",
+    "apiKeys": {
+      "title": "API Keys",
+      "description": "Long-lived keys for programmatic access. Use these with the MCP server or scripts.",
+      "empty": "No API keys yet.",
+      "create": "Create API Key",
+      "revoke": "Revoke",
+      "label": "Label",
+      "labelPlaceholder": "e.g. Claude MCP",
+      "scopes": "Scopes",
+      "expiresAt": "Expires (optional)",
+      "lastUsed": "Last used",
+      "neverUsed": "Never used",
+      "expires": "Expires",
+      "noExpiry": "No expiry",
+      "copyKey": "Copy key",
+      "copied": "Copied!",
+      "oneTimeWarning": "Copy this key now — it won't be shown again.",
+      "createSuccess": "API key created",
+      "revokeSuccess": "API key revoked"
+    }
   },
   "budget": {
     "title": "My Budget",

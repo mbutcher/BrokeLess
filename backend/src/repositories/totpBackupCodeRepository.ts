@@ -24,7 +24,7 @@ class TotpBackupCodeRepository {
   }
 
   async findUnusedByUserAndHash(userId: string, codeHash: string): Promise<TotpBackupCode | null> {
-    const row = await this.db('totp_backup_codes')
+    const row: unknown = await this.db('totp_backup_codes')
       .where({ user_id: userId, code_hash: codeHash, is_used: false })
       .first();
     return row ? rowToBackupCode(row as Record<string, unknown>) : null;

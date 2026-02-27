@@ -138,18 +138,18 @@ describe('transactionService.linkTransactions', () => {
   const TX_B = 'tx-b';
 
   it('throws 400 when linking a transaction to itself', async () => {
-    await expect(
-      transactionService.linkTransactions(USER_ID, TX_A, TX_A)
-    ).rejects.toMatchObject({ statusCode: 400 });
+    await expect(transactionService.linkTransactions(USER_ID, TX_A, TX_A)).rejects.toMatchObject({
+      statusCode: 400,
+    });
   });
 
   it('throws 422 when amounts are not equal and opposite', async () => {
     mockTxRepo.findById
       .mockResolvedValueOnce({ ...mockTx, id: TX_A, amount: -100 })
       .mockResolvedValueOnce({ ...mockTx, id: TX_B, amount: 50 }); // not 100
-    await expect(
-      transactionService.linkTransactions(USER_ID, TX_A, TX_B)
-    ).rejects.toMatchObject({ statusCode: 422 });
+    await expect(transactionService.linkTransactions(USER_ID, TX_A, TX_B)).rejects.toMatchObject({
+      statusCode: 422,
+    });
   });
 
   it('throws 409 when transaction is already linked', async () => {
@@ -163,9 +163,9 @@ describe('transactionService.linkTransactions', () => {
       linkType: 'transfer',
       createdAt: new Date(),
     });
-    await expect(
-      transactionService.linkTransactions(USER_ID, TX_A, TX_B)
-    ).rejects.toMatchObject({ statusCode: 409 });
+    await expect(transactionService.linkTransactions(USER_ID, TX_A, TX_B)).rejects.toMatchObject({
+      statusCode: 409,
+    });
   });
 });
 

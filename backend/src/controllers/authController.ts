@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { authService } from '@services/auth/authService';
 import { totpService } from '@services/auth/totpService';
 import { webauthnService } from '@services/auth/webauthnService';
+import { apiKeyService } from '@services/auth/apiKeyService';
 import { asyncHandler, UnauthorizedError } from '@middleware/errorHandler';
 import { passkeyRepository } from '@repositories/passkeyRepository';
 
@@ -89,6 +90,7 @@ class AuthController {
   });
 
   updateProfile = asyncHandler(async (req: Request, res: Response) => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     const user = await authService.updateProfile(req.user!.id, req.body);
     res.status(200).json({ status: 'success', data: { user } });
   });
@@ -206,6 +208,7 @@ class AuthController {
   listSessions = asyncHandler(async (req: Request, res: Response) => {
     const userId = req.user!.id;
     // Read the refresh token cookie to identify the current session
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const rawRefreshToken: string | undefined = req.cookies[REFRESH_COOKIE_NAME];
     let currentTokenHash: string | null = null;
     if (rawRefreshToken) {
@@ -226,6 +229,33 @@ class AuthController {
       return;
     }
     res.json({ status: 'success', data: null });
+  });
+
+  // ─── API Key management ────────────────────────────────────────────────────
+
+  createApiKey = asyncHandler(async (req: Request, res: Response) => {
+    const { label, scopes, expiresAt } = req.body as {
+      label: string;
+      scopes: string[];
+      expiresAt?: string;
+    };
+    const result = await apiKeyService.create(req.user!.id, {
+      label,
+      scopes,
+      expiresAt: expiresAt ? new Date(expiresAt) : null,
+    });
+    res.status(201).json({ status: 'success', data: result });
+  });
+
+  listApiKeys = asyncHandler(async (req: Request, res: Response) => {
+    const apiKeys = await apiKeyService.list(req.user!.id);
+    res.status(200).json({ status: 'success', data: { apiKeys } });
+  });
+
+  deleteApiKey = asyncHandler(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    await apiKeyService.delete(req.user!.id, id!);
+    res.status(200).json({ status: 'success', data: null });
   });
 }
 

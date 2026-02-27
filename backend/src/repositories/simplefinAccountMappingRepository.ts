@@ -25,10 +25,10 @@ class SimplefinAccountMappingRepository {
     userId: string,
     simplefinAccountId: string
   ): Promise<SimplefinAccountMapping | null> {
-    const row = await this.db('simplefin_account_mappings')
+    const row: unknown = await this.db('simplefin_account_mappings')
       .where({ user_id: userId, simplefin_account_id: simplefinAccountId })
       .first();
-    return row ? rowToMapping(row) : null;
+    return row ? rowToMapping(row as Record<string, unknown>) : null;
   }
 
   async findAllByUser(userId: string): Promise<SimplefinAccountMapping[]> {
@@ -80,7 +80,7 @@ class SimplefinAccountMappingRepository {
       simplefin_account_type: data.simplefinAccountType,
       local_account_id: data.localAccountId ?? null,
     });
-    const created = await this.db('simplefin_account_mappings').where({ id }).first();
+    const created: unknown = await this.db('simplefin_account_mappings').where({ id }).first();
     return rowToMapping(created as Record<string, unknown>);
   }
 

@@ -160,8 +160,8 @@ describe('debtService.getSplitForTransaction', () => {
   it('throws 404 when transaction not found for user', async () => {
     mockTxRepo.findById.mockResolvedValue(null);
 
-    await expect(
-      debtService.getSplitForTransaction(USER_ID, 'tx-999')
-    ).rejects.toMatchObject({ statusCode: 404 });
+    await expect(debtService.getSplitForTransaction(USER_ID, 'tx-999')).rejects.toMatchObject({
+      statusCode: 404,
+    });
   });
 });

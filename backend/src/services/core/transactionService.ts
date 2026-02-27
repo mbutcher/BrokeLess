@@ -126,12 +126,7 @@ class TransactionService {
     }
 
     // Fire-and-forget: index plaintext payee + description for full-text search
-    indexTransaction(
-      createdTx!.id,
-      userId,
-      input.payee ?? null,
-      input.description ?? null
-    );
+    indexTransaction(createdTx!.id, userId, input.payee ?? null, input.description ?? null);
 
     // Candidate detection is outside the DB transaction — it's a read-only suggestion
     const candidateRows = await transactionRepository.findTransferCandidates(createdTx!);

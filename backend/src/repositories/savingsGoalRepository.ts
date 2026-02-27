@@ -33,8 +33,10 @@ class SavingsGoalRepository {
   }
 
   async findById(userId: string, goalId: string): Promise<SavingsGoal | null> {
-    const row = await this.db('savings_goals').where({ id: goalId, user_id: userId }).first();
-    return row ? rowToGoal(row) : null;
+    const row: unknown = await this.db('savings_goals')
+      .where({ id: goalId, user_id: userId })
+      .first();
+    return row ? rowToGoal(row as Record<string, unknown>) : null;
   }
 
   async create(data: CreateSavingsGoalData): Promise<SavingsGoal> {
@@ -48,7 +50,7 @@ class SavingsGoalRepository {
       target_amount: data.targetAmount,
       target_date: data.targetDate ?? null,
     });
-    const row = await this.db('savings_goals').where({ id }).first();
+    const row: unknown = await this.db('savings_goals').where({ id }).first();
     return rowToGoal(row as Record<string, unknown>);
   }
 

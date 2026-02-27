@@ -40,8 +40,8 @@ class TransactionRepository {
   }
 
   async findById(id: string, userId: string): Promise<Transaction | null> {
-    const row = await this.db('transactions').where({ id, user_id: userId }).first();
-    return row ? rowToTransaction(row) : null;
+    const row: unknown = await this.db('transactions').where({ id, user_id: userId }).first();
+    return row ? rowToTransaction(row as Record<string, unknown>) : null;
   }
 
   async findAll(
@@ -97,7 +97,7 @@ class TransactionRepository {
       category_id: data.categoryId ?? null,
       simplefin_transaction_id: data.simplefinTransactionId ?? null,
     });
-    const row = await db('transactions').where({ id }).first();
+    const row: unknown = await db('transactions').where({ id }).first();
     return rowToTransaction(row as Record<string, unknown>);
   }
 
@@ -106,10 +106,10 @@ class TransactionRepository {
     userId: string,
     simplefinTransactionId: string
   ): Promise<Transaction | null> {
-    const row = await this.db('transactions')
+    const row: unknown = await this.db('transactions')
       .where({ user_id: userId, simplefin_transaction_id: simplefinTransactionId })
       .first();
-    return row ? rowToTransaction(row) : null;
+    return row ? rowToTransaction(row as Record<string, unknown>) : null;
   }
 
   /**
@@ -153,8 +153,8 @@ class TransactionRepository {
       await db('transactions').where({ id, user_id: userId }).update(updates);
     }
 
-    const row = await db('transactions').where({ id, user_id: userId }).first();
-    return row ? rowToTransaction(row) : null;
+    const row: unknown = await db('transactions').where({ id, user_id: userId }).first();
+    return row ? rowToTransaction(row as Record<string, unknown>) : null;
   }
 
   async delete(id: string, userId: string, trx?: Knex.Transaction): Promise<void> {

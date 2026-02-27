@@ -33,12 +33,14 @@ class RefreshTokenRepository {
       ip_address: data.ipAddress,
       expires_at: data.expiresAt,
     });
-    const row = await this.db('refresh_tokens').where({ token_hash: data.tokenHash }).first();
+    const row: unknown = await this.db('refresh_tokens')
+      .where({ token_hash: data.tokenHash })
+      .first();
     return rowToRefreshToken(row as Record<string, unknown>);
   }
 
   async findByTokenHash(tokenHash: string): Promise<RefreshToken | null> {
-    const row = await this.db('refresh_tokens').where({ token_hash: tokenHash }).first();
+    const row: unknown = await this.db('refresh_tokens').where({ token_hash: tokenHash }).first();
     return row ? rowToRefreshToken(row as Record<string, unknown>) : null;
   }
 

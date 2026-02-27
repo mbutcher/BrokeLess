@@ -11,19 +11,30 @@ import type {
 } from '@typings/core.types';
 
 /** Convert a BudgetLine frequency + amount to a monthly contribution in dollars. */
-function toMonthlyAmount(amount: number, frequency: BudgetLineFrequency, frequencyInterval: number | null): number {
+function toMonthlyAmount(
+  amount: number,
+  frequency: BudgetLineFrequency,
+  frequencyInterval: number | null
+): number {
   switch (frequency) {
-    case 'weekly':       return amount * (52 / 12);
-    case 'biweekly':     return amount * (26 / 12);
-    case 'semi_monthly': return amount * 2;
-    case 'twice_monthly':return amount * 2;
-    case 'monthly':      return amount;
-    case 'annually':     return amount / 12;
+    case 'weekly':
+      return amount * (52 / 12);
+    case 'biweekly':
+      return amount * (26 / 12);
+    case 'semi_monthly':
+      return amount * 2;
+    case 'twice_monthly':
+      return amount * 2;
+    case 'monthly':
+      return amount;
+    case 'annually':
+      return amount / 12;
     case 'every_n_days': {
       const interval = frequencyInterval ?? 30;
       return amount * (365 / interval / 12);
     }
-    case 'one_time':     return 0;
+    case 'one_time':
+      return 0;
   }
 }
 

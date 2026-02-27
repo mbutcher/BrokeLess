@@ -34,12 +34,14 @@ class DebtController {
   });
 
   whatIfExtraPayment = asyncHandler(async (req: Request, res: Response) => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const { error, value } = whatIfQuerySchema.validate(req.query);
     if (error) throw new AppError(error.details[0]?.message ?? 'Invalid query', 400);
 
     const result = await debtService.whatIfExtraPayment(
       req.user!.id,
       req.params['accountId']!,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       value.extraMonthly as number
     );
     res.json({ status: 'success', data: result });

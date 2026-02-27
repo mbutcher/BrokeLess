@@ -55,8 +55,8 @@ class BudgetLineRepository {
   }
 
   async findById(id: string, userId: string): Promise<BudgetLine | null> {
-    const row = await this.db('budget_lines').where({ id, user_id: userId }).first();
-    return row ? rowToBudgetLine(row) : null;
+    const row: unknown = await this.db('budget_lines').where({ id, user_id: userId }).first();
+    return row ? rowToBudgetLine(row as Record<string, unknown>) : null;
   }
 
   async findAllForUser(userId: string): Promise<BudgetLine[]> {
@@ -68,10 +68,10 @@ class BudgetLineRepository {
   }
 
   async findPayPeriodAnchor(userId: string): Promise<BudgetLine | null> {
-    const row = await this.db('budget_lines')
+    const row: unknown = await this.db('budget_lines')
       .where({ user_id: userId, is_pay_period_anchor: true, is_active: true })
       .first();
-    return row ? rowToBudgetLine(row) : null;
+    return row ? rowToBudgetLine(row as Record<string, unknown>) : null;
   }
 
   async create(data: CreateBudgetLineData, trx?: Knex.Transaction): Promise<BudgetLine> {
@@ -95,7 +95,7 @@ class BudgetLineRepository {
       is_pay_period_anchor: data.isPayPeriodAnchor ?? false,
       notes: data.notes ?? null,
     });
-    const row = await q('budget_lines').where({ id }).first();
+    const row: unknown = await q('budget_lines').where({ id }).first();
     return rowToBudgetLine(row as Record<string, unknown>);
   }
 

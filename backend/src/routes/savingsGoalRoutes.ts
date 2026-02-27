@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { savingsGoalController } from '@controllers/savingsGoalController';
-import { authenticate } from '@middleware/authenticate';
+import { authenticateAny } from '@middleware/authenticate';
 import { validateRequest } from '@middleware/validateRequest';
 import { createSavingsGoalSchema, updateSavingsGoalSchema } from '@validators/coreValidators';
 
 const router = Router();
 
-router.use(authenticate);
+router.use(authenticateAny);
 
 router.get('/', savingsGoalController.list);
 router.post('/', validateRequest(createSavingsGoalSchema), savingsGoalController.create);

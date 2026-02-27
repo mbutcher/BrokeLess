@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate } from '@middleware/authenticate';
+import { authenticateAny } from '@middleware/authenticate';
 import { validateRequest } from '@middleware/validateRequest';
 import { budgetLineController } from '@controllers/budgetLineController';
 import { createBudgetLineSchema, updateBudgetLineSchema } from '@validators/coreValidators';
@@ -7,7 +7,7 @@ import { createBudgetLineSchema, updateBudgetLineSchema } from '@validators/core
 const router = Router();
 
 // All budget-line routes require authentication
-router.use(authenticate);
+router.use(authenticateAny);
 
 // ─── Budget Lines ─────────────────────────────────────────────────────────────
 router.get('/', budgetLineController.list);

@@ -11,6 +11,7 @@ import {
   backupCodeSchema,
   webAuthnDeviceNameSchema,
   challengeTokenSchema,
+  createApiKeySchema,
 } from '@validators/authValidators';
 import { updateProfileSchema } from '@validators/coreValidators';
 
@@ -79,5 +80,15 @@ router.delete('/passkeys/:id', authenticate, authController.deletePasskey);
 // ─── Session management ───────────────────────────────────────────────────────
 router.get('/sessions', authenticate, authController.listSessions);
 router.delete('/sessions/:id', authenticate, authController.revokeSession);
+
+// ─── API key management (JWT-only — not accessible via API key) ───────────────
+router.get('/api-keys', authenticate, authController.listApiKeys);
+router.post(
+  '/api-keys',
+  authenticate,
+  validateRequest(createApiKeySchema),
+  authController.createApiKey
+);
+router.delete('/api-keys/:id', authenticate, authController.deleteApiKey);
 
 export default router;

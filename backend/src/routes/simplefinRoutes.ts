@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { simplefinController } from '@controllers/simplefinController';
-import { authenticate } from '@middleware/authenticate';
+import { authenticateAny, requireScope } from '@middleware/authenticate';
 import { validateRequest } from '@middleware/validateRequest';
 import {
   connectSimplefinSchema,
@@ -11,18 +11,18 @@ import {
 
 const router = Router();
 
-router.use(authenticate);
+router.use(authenticateAny);
 
 // ─── Connection ──────────────────────────────────────────────────────────────
-router.get('/status', simplefinController.getStatus);
+router.get('/status', requireScope('simplefin:read'), simplefinController.getStatus);
 router.post('/connect', validateRequest(connectSimplefinSchema), simplefinController.connect);
 router.delete('/disconnect', simplefinController.disconnect);
 
 // ─── Sync ────────────────────────────────────────────────────────────────────
-router.post('/sync', simplefinController.sync);
+router.post('/sync', requireScope('simplefin:write'), simplefinController.sync);
 
 // ─── Schedule ────────────────────────────────────────────────────────────────
-router.get('/schedule', simplefinController.getSchedule);
+router.get('/schedule', requireScope('simplefin:read'), simplefinController.getSchedule);
 router.patch(
   '/schedule',
   validateRequest(updateSimplefinScheduleSchema),
@@ -30,7 +30,11 @@ router.patch(
 );
 
 // ─── Account Mapping ─────────────────────────────────────────────────────────
-router.get('/accounts/unmapped', simplefinController.getUnmappedAccounts);
+router.get(
+  '/accounts/unmapped',
+  requireScope('simplefin:read'),
+  simplefinController.getUnmappedAccounts
+);
 router.post(
   '/accounts/:simplefinAccountId/map',
   validateRequest(mapAccountSchema),
@@ -38,8 +42,12 @@ router.post(
 );
 
 // ─── Pending Reviews ─────────────────────────────────────────────────────────
-router.get('/reviews', simplefinController.getPendingReviews);
-router.get('/reviews/count', simplefinController.getPendingReviewCount);
+router.get('/reviews', requireScope('simplefin:read'), simplefinController.getPendingReviews);
+router.get(
+  '/reviews/count',
+  requireScope('simplefin:read'),
+  simplefinController.getPendingReviewCount
+);
 router.post(
   '/reviews/:reviewId/resolve',
   validateRequest(resolveReviewSchema),

@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import { debtController } from '@controllers/debtController';
-import { authenticate } from '@middleware/authenticate';
+import { authenticateAny } from '@middleware/authenticate';
 import { validateRequest } from '@middleware/validateRequest';
 import { upsertDebtScheduleSchema } from '@validators/coreValidators';
 
 const router = Router();
 
-router.use(authenticate);
+router.use(authenticateAny);
 
 // Debt schedule CRUD (keyed by accountId)
 router.get('/schedule/:accountId', debtController.getSchedule);

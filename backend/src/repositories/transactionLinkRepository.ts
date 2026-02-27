@@ -29,19 +29,19 @@ class TransactionLinkRepository {
       to_transaction_id: toId,
       link_type: linkType,
     });
-    const row = await db('transaction_links').where({ id }).first();
-    return rowToLink(row);
+    const row: unknown = await db('transaction_links').where({ id }).first();
+    return rowToLink(row as Record<string, unknown>);
   }
 
   /**
    * Find the link record for a transaction, matching either side.
    */
   async findByTransactionId(txId: string): Promise<TransactionLink | null> {
-    const row = await this.db('transaction_links')
+    const row: unknown = await this.db('transaction_links')
       .where('from_transaction_id', txId)
       .orWhere('to_transaction_id', txId)
       .first();
-    return row ? rowToLink(row) : null;
+    return row ? rowToLink(row as Record<string, unknown>) : null;
   }
 
   /**

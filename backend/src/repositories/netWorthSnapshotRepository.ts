@@ -58,7 +58,7 @@ class NetWorthSnapshotRepository {
       net_worth: netWorth,
     });
 
-    const row = await this.db('net_worth_snapshots').where({ id }).first();
+    const row: unknown = await this.db('net_worth_snapshots').where({ id }).first();
     return rowToSnapshot(row as Record<string, unknown>);
   }
 
@@ -75,7 +75,7 @@ class NetWorthSnapshotRepository {
 
   /** Return the most recent snapshot for a user (or null if none exists). */
   async findLatest(userId: string): Promise<NetWorthSnapshot | null> {
-    const row = await this.db('net_worth_snapshots')
+    const row: unknown = await this.db('net_worth_snapshots')
       .where({ user_id: userId })
       .orderBy('snapshot_date', 'desc')
       .first();

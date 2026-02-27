@@ -41,7 +41,7 @@ class SimplefinScheduler {
       }
 
       logger.info('SimpleFIN scheduler: triggering sync', { userId: conn.userId });
-      void simplefinService.sync(conn.userId).catch((err) => {
+      void simplefinService.sync(conn.userId).catch((err: unknown) => {
         logger.error('SimpleFIN scheduler: sync failed', { userId: conn.userId, err });
       });
     }

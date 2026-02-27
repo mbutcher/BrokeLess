@@ -276,10 +276,11 @@ Expanded in scope from the original fr-CA stub:
 
 ---
 
-### Phase 18 — MCP Server (Agent Access)
+### Phase 18 — MCP Server (Agent Access) ✅ Complete
 
 **Priority:** Medium
 **Scope:** Medium
+**Completed:** 2026-02-26
 
 Expose BudgetApp as an [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) server so that a personal AI agent (Claude, etc.) can query and update financial data through natural language — e.g., "How much did I spend on groceries last month?", "Add a $45 transaction to Whole Foods from my checking account", "What's my net worth today?"
 

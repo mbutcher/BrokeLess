@@ -24,17 +24,17 @@ class SimplefinRepository {
   }
 
   async findConnectionByUser(userId: string): Promise<SimplefinConnection | null> {
-    const row = await this.db('simplefin_connections').where({ user_id: userId }).first();
-    return row ? rowToConnection(row) : null;
+    const row: unknown = await this.db('simplefin_connections').where({ user_id: userId }).first();
+    return row ? rowToConnection(row as Record<string, unknown>) : null;
   }
 
   /** Find encrypted access URL for internal use by the service layer only */
   async findAccessUrl(userId: string): Promise<string | null> {
-    const row = await this.db('simplefin_connections')
+    const row: unknown = await this.db('simplefin_connections')
       .where({ user_id: userId })
       .select('access_url_encrypted')
       .first();
-    return row ? (row['access_url_encrypted'] as string) : null;
+    return row ? ((row as Record<string, unknown>)['access_url_encrypted'] as string) : null;
   }
 
   async upsertConnection(userId: string, accessUrlEncrypted: string): Promise<SimplefinConnection> {
@@ -54,7 +54,7 @@ class SimplefinRepository {
       user_id: userId,
       access_url_encrypted: accessUrlEncrypted,
     });
-    const created = await this.db('simplefin_connections').where({ id }).first();
+    const created: unknown = await this.db('simplefin_connections').where({ id }).first();
     return rowToConnection(created as Record<string, unknown>);
   }
 

@@ -113,9 +113,9 @@ describe('budgetService.deleteBudget', () => {
 describe('budgetService.getBudgetProgress', () => {
   it('throws 404 when not found', async () => {
     mockRepo.findById.mockResolvedValue(null);
-    await expect(
-      budgetService.getBudgetProgress(USER_ID, BUDGET_ID)
-    ).rejects.toMatchObject({ statusCode: 404 });
+    await expect(budgetService.getBudgetProgress(USER_ID, BUDGET_ID)).rejects.toMatchObject({
+      statusCode: 404,
+    });
   });
 
   it('returns aggregated totals', async () => {
@@ -134,7 +134,12 @@ describe('budgetService.getBudgetProgress', () => {
     mockRepo.findById.mockResolvedValue(mockBudget);
     mockRepo.getBudgetProgress.mockResolvedValue([
       { category: mockCategory, allocated: 500, spent: 300, remaining: 200 },
-      { category: { ...mockCategory, id: 'cat-2', name: 'Dining' }, allocated: 200, spent: 250, remaining: -50 },
+      {
+        category: { ...mockCategory, id: 'cat-2', name: 'Dining' },
+        allocated: 200,
+        spent: 250,
+        remaining: -50,
+      },
     ]);
     const result = await budgetService.getBudgetProgress(USER_ID, BUDGET_ID);
     expect(result.totalAllocated).toBe(700);

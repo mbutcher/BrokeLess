@@ -32,7 +32,7 @@ class PasskeyRepository {
   }
 
   async findByCredentialId(credentialId: string): Promise<Passkey | null> {
-    const row = await this.db('passkeys').where({ credential_id: credentialId }).first();
+    const row: unknown = await this.db('passkeys').where({ credential_id: credentialId }).first();
     return row ? rowToPasskey(row as Record<string, unknown>) : null;
   }
 
@@ -59,7 +59,9 @@ class PasskeyRepository {
       device_name: data.deviceName,
       transports: data.transports ? JSON.stringify(data.transports) : null,
     });
-    const row = await this.db('passkeys').where({ credential_id: data.credentialId }).first();
+    const row: unknown = await this.db('passkeys')
+      .where({ credential_id: data.credentialId })
+      .first();
     return rowToPasskey(row as Record<string, unknown>);
   }
 

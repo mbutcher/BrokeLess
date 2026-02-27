@@ -33,10 +33,10 @@ class DebtRepository {
   }
 
   async findByUserAndAccount(userId: string, accountId: string): Promise<DebtSchedule | null> {
-    const row = await this.db('debt_schedules')
+    const row: unknown = await this.db('debt_schedules')
       .where({ user_id: userId, account_id: accountId })
       .first();
-    return row ? rowToSchedule(row) : null;
+    return row ? rowToSchedule(row as Record<string, unknown>) : null;
   }
 
   async findAllByUser(userId: string): Promise<DebtSchedule[]> {
@@ -74,7 +74,7 @@ class DebtRepository {
       origination_date: data.originationDate,
       payment_amount: data.paymentAmount,
     });
-    const created = await this.db('debt_schedules').where({ id }).first();
+    const created: unknown = await this.db('debt_schedules').where({ id }).first();
     return rowToSchedule(created as Record<string, unknown>);
   }
 
@@ -94,15 +94,15 @@ class DebtRepository {
       principal_amount: data.principalAmount,
       interest_amount: data.interestAmount,
     });
-    const row = await this.db('transaction_splits').where({ id }).first();
+    const row: unknown = await this.db('transaction_splits').where({ id }).first();
     return rowToSplit(row as Record<string, unknown>);
   }
 
   async findSplitByTransaction(transactionId: string): Promise<TransactionSplit | null> {
-    const row = await this.db('transaction_splits')
+    const row: unknown = await this.db('transaction_splits')
       .where({ transaction_id: transactionId })
       .first();
-    return row ? rowToSplit(row) : null;
+    return row ? rowToSplit(row as Record<string, unknown>) : null;
   }
 }
 

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { LogOut, LogOutIcon, Shield, Fingerprint, Monitor } from 'lucide-react';
+import { LogOut, LogOutIcon, Shield, Fingerprint, Monitor, Key, Copy, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { authApi } from '../api/authApi';
+import type { ApiKey, CreateApiKeyResult } from '../types';
 import { useAuthStore } from '../stores/authStore';
 import { useTotpSetup } from '../hooks/useTotpSetup';
 import { TotpSetup } from '../components/TotpSetup';
@@ -13,7 +14,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp
 import { Badge } from '@components/ui/badge';
 import { Alert, AlertDescription } from '@components/ui/alert';
 import { Separator } from '@components/ui/separator';
+import { Input } from '@components/ui/input';
+import { Label } from '@components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@components/ui/dialog';
 import { getApiErrorMessage } from '@lib/api/errors';
+
+const VALID_SCOPES: Array<{ value: string; label: string }> = [
+  { value: 'accounts:read', label: 'accounts:read' },
+  { value: 'transactions:read', label: 'transactions:read' },
+  { value: 'transactions:write', label: 'transactions:write' },
+  { value: 'budget:read', label: 'budget:read' },
+  { value: 'reports:read', label: 'reports:read' },
+  { value: 'simplefin:read', label: 'simplefin:read' },
+  { value: 'simplefin:write', label: 'simplefin:write' },
+];
 
 
 export function SecuritySettingsPage() {
@@ -23,6 +44,14 @@ export function SecuritySettingsPage() {
   const { user, clearAuth } = useAuthStore();
   const [showTotpSetup, setShowTotpSetup] = useState(false);
   const { disable: disableTotp, isDisabling, disableError } = useTotpSetup();
+
+  // ─── API Key state ────────────────────────────────────────────────────────
+  const [apiKeyDialogOpen, setApiKeyDialogOpen] = useState(false);
+  const [newKeyLabel, setNewKeyLabel] = useState('');
+  const [newKeyScopes, setNewKeyScopes] = useState<string[]>([]);
+  const [newKeyExpiresAt, setNewKeyExpiresAt] = useState('');
+  const [createdKeyResult, setCreatedKeyResult] = useState<CreateApiKeyResult | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const logoutMutation = useMutation({
     mutationFn: () => authApi.logout(),
@@ -46,6 +75,57 @@ export function SecuritySettingsPage() {
     queryKey: ['auth-sessions'],
     queryFn: () => authApi.listSessions().then((r) => r.data.data.sessions),
   });
+
+  const { data: apiKeysData, isLoading: apiKeysLoading } = useQuery({
+    queryKey: ['auth-api-keys'],
+    queryFn: () => authApi.listApiKeys().then((r) => r.data.data.apiKeys),
+  });
+
+  const createApiKeyMutation = useMutation({
+    mutationFn: (data: { label: string; scopes: string[]; expiresAt?: string }) =>
+      authApi.createApiKey(data).then((r) => r.data.data),
+    onSuccess: (result) => {
+      setCreatedKeyResult(result);
+      void queryClient.invalidateQueries({ queryKey: ['auth-api-keys'] });
+    },
+  });
+
+  const deleteApiKeyMutation = useMutation({
+    mutationFn: (id: string) => authApi.deleteApiKey(id),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['auth-api-keys'] }),
+  });
+
+  function handleScopeToggle(scope: string) {
+    setNewKeyScopes((prev) =>
+      prev.includes(scope) ? prev.filter((s) => s !== scope) : [...prev, scope]
+    );
+  }
+
+  function handleCreateApiKey() {
+    if (!newKeyLabel || newKeyScopes.length === 0) return;
+    createApiKeyMutation.mutate({
+      label: newKeyLabel,
+      scopes: newKeyScopes,
+      expiresAt: newKeyExpiresAt || undefined,
+    });
+  }
+
+  function handleDialogClose() {
+    setApiKeyDialogOpen(false);
+    setNewKeyLabel('');
+    setNewKeyScopes([]);
+    setNewKeyExpiresAt('');
+    setCreatedKeyResult(null);
+    setCopied(false);
+  }
+
+  async function handleCopyKey(rawKey: string) {
+    await navigator.clipboard.writeText(rawKey);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  const apiKeys: ApiKey[] = apiKeysData ?? [];
 
   const revokeSessionMutation = useMutation({
     mutationFn: (sessionId: string) => authApi.revokeSession(sessionId),
@@ -136,6 +216,154 @@ export function SecuritySettingsPage() {
           </CardHeader>
           <CardContent>
             <PasskeySetup />
+          </CardContent>
+        </Card>
+
+        {/* API Keys */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Key className="h-5 w-5 text-muted-foreground" />
+                <CardTitle className="text-base">{t('security.apiKeys.title')}</CardTitle>
+              </div>
+              <Dialog open={apiKeyDialogOpen} onOpenChange={(open) => { if (!open) handleDialogClose(); else setApiKeyDialogOpen(true); }}>
+                <DialogTrigger>
+                  <Button size="sm" variant="outline">{t('security.apiKeys.create')}</Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  {createdKeyResult ? (
+                    <>
+                      <DialogHeader>
+                        <DialogTitle>{t('security.apiKeys.createSuccess')}</DialogTitle>
+                        <DialogDescription>{t('security.apiKeys.oneTimeWarning')}</DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 rounded-md border bg-muted px-3 py-2">
+                          <code className="flex-1 text-xs break-all">{createdKeyResult.rawKey}</code>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => void handleCopyKey(createdKeyResult.rawKey)}
+                          >
+                            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button onClick={handleDialogClose}>Done</Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <DialogHeader>
+                        <DialogTitle>{t('security.apiKeys.create')}</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="api-key-label">{t('security.apiKeys.label')}</Label>
+                          <Input
+                            id="api-key-label"
+                            placeholder={t('security.apiKeys.labelPlaceholder')}
+                            value={newKeyLabel}
+                            onChange={(e) => setNewKeyLabel(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>{t('security.apiKeys.scopes')}</Label>
+                          <div className="grid grid-cols-1 gap-2">
+                            {VALID_SCOPES.map((scope) => (
+                              <label key={scope.value} className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  className="h-4 w-4 rounded border-input accent-primary"
+                                  checked={newKeyScopes.includes(scope.value)}
+                                  onChange={() => handleScopeToggle(scope.value)}
+                                />
+                                <span className="text-sm font-mono">{scope.label}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="api-key-expires">{t('security.apiKeys.expiresAt')}</Label>
+                          <Input
+                            id="api-key-expires"
+                            type="date"
+                            value={newKeyExpiresAt}
+                            onChange={(e) => setNewKeyExpiresAt(e.target.value)}
+                          />
+                        </div>
+                        {createApiKeyMutation.isError && (
+                          <Alert variant="destructive">
+                            <AlertDescription>
+                              {getApiErrorMessage(createApiKeyMutation.error)}
+                            </AlertDescription>
+                          </Alert>
+                        )}
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={handleDialogClose}>Cancel</Button>
+                        <Button
+                          onClick={handleCreateApiKey}
+                          disabled={!newKeyLabel || newKeyScopes.length === 0}
+                          isLoading={createApiKeyMutation.isPending}
+                        >
+                          {t('security.apiKeys.create')}
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </DialogContent>
+              </Dialog>
+            </div>
+            <CardDescription>{t('security.apiKeys.description')}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {apiKeysLoading ? (
+              <div className="space-y-2">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <div key={i} className="h-12 bg-muted animate-pulse rounded-md" />
+                ))}
+              </div>
+            ) : apiKeys.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t('security.apiKeys.empty')}</p>
+            ) : (
+              apiKeys.map((key) => (
+                <div
+                  key={key.id}
+                  className="flex items-center justify-between rounded-lg border px-3 py-2"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{key.label}</p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {key.scopes.map((scope) => (
+                        <Badge key={scope} variant="secondary" className="text-xs">
+                          {scope}
+                        </Badge>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {key.lastUsedAt
+                        ? `${t('security.apiKeys.lastUsed')} ${new Date(key.lastUsedAt).toLocaleDateString()}`
+                        : t('security.apiKeys.neverUsed')}
+                      {key.expiresAt && (
+                        <> · {t('security.apiKeys.expires')} {new Date(key.expiresAt).toLocaleDateString()}</>
+                      )}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive flex-shrink-0 ml-2"
+                    isLoading={deleteApiKeyMutation.isPending}
+                    onClick={() => deleteApiKeyMutation.mutate(key.id)}
+                  >
+                    {t('security.apiKeys.revoke')}
+                  </Button>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
 

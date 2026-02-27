@@ -28,8 +28,8 @@ class AccountRepository {
   }
 
   async findById(id: string, userId: string): Promise<Account | null> {
-    const row = await this.db('accounts').where({ id, user_id: userId }).first();
-    return row ? rowToAccount(row) : null;
+    const row: unknown = await this.db('accounts').where({ id, user_id: userId }).first();
+    return row ? rowToAccount(row as Record<string, unknown>) : null;
   }
 
   async findAllForUser(userId: string, activeOnly = true): Promise<Account[]> {
@@ -54,7 +54,7 @@ class AccountRepository {
       institution: data.institution ?? null,
       annual_rate: data.annualRate ?? null,
     });
-    const row = await this.db('accounts').where({ id }).first();
+    const row: unknown = await this.db('accounts').where({ id }).first();
     return rowToAccount(row as Record<string, unknown>);
   }
 

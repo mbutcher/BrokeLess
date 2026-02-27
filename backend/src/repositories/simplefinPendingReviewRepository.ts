@@ -39,17 +39,17 @@ class SimplefinPendingReviewRepository {
     userId: string,
     simplefinTransactionId: string
   ): Promise<SimplefinPendingReview | null> {
-    const row = await this.db('simplefin_pending_reviews')
+    const row: unknown = await this.db('simplefin_pending_reviews')
       .where({ user_id: userId, simplefin_transaction_id: simplefinTransactionId })
       .first();
-    return row ? rowToReview(row) : null;
+    return row ? rowToReview(row as Record<string, unknown>) : null;
   }
 
   async findById(userId: string, reviewId: string): Promise<SimplefinPendingReview | null> {
-    const row = await this.db('simplefin_pending_reviews')
+    const row: unknown = await this.db('simplefin_pending_reviews')
       .where({ id: reviewId, user_id: userId })
       .first();
-    return row ? rowToReview(row) : null;
+    return row ? rowToReview(row as Record<string, unknown>) : null;
   }
 
   async create(data: {
@@ -73,7 +73,7 @@ class SimplefinPendingReviewRepository {
       similarity_score: data.similarityScore,
     });
 
-    const row = await this.db('simplefin_pending_reviews').where({ id }).first();
+    const row: unknown = await this.db('simplefin_pending_reviews').where({ id }).first();
     return rowToReview(row as Record<string, unknown>);
   }
 

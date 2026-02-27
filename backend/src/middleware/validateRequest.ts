@@ -13,7 +13,9 @@ import { ValidationError } from './errorHandler';
 export const validateRequest =
   (schema: Joi.ObjectSchema, target: 'body' | 'query' = 'body') =>
   (req: Request, _res: Response, next: NextFunction): void => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const source = target === 'query' ? req.query : req.body;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const { error, value } = schema.validate(source, {
       abortEarly: false, // collect all errors, not just the first
       stripUnknown: true, // remove fields not in schema
@@ -29,6 +31,7 @@ export const validateRequest =
       // Write coerced values back so controllers see e.g. boolean true instead of string 'true'
       Object.assign(req.query, value);
     } else {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       req.body = value;
     }
     next();

@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import { authenticate } from '@middleware/authenticate';
+import { authenticateAny } from '@middleware/authenticate';
 import { exchangeRateController } from '@controllers/exchangeRateController';
 
 const router = Router();
 
 // All exchange rate endpoints require authentication
-router.get('/', authenticate, exchangeRateController.getRate);
+router.get('/', authenticateAny, exchangeRateController.getRate);
 
 export default router;

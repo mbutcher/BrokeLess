@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import { reportController } from '@controllers/reportController';
-import { authenticate } from '@middleware/authenticate';
+import { authenticateAny, requireScope } from '@middleware/authenticate';
 
 const router = Router();
 
-router.use(authenticate);
+router.use(authenticateAny);
+router.use(requireScope('reports:read'));
 
 router.get('/monthly-summary', reportController.monthlySummary);
 router.get('/forecast', reportController.forecast);

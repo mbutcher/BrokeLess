@@ -1,6 +1,6 @@
 # Database Schema Reference
 
-**Last updated:** 2026-02-24
+**Last updated:** 2026-02-26
 **Database:** MariaDB 11 (InnoDB)
 **Migration tool:** Knex.js
 
@@ -15,20 +15,21 @@ All primary keys are UUIDs generated via `UUID()`. All tables include `created_a
 2. [refresh_tokens](#refresh_tokens)
 3. [passkeys](#passkeys)
 4. [totp_backup_codes](#totp_backup_codes)
-5. [accounts](#accounts)
-6. [categories](#categories)
-7. [transactions](#transactions)
-8. [transaction_links](#transaction_links)
-9. [budgets](#budgets) *(legacy — no longer used by UI)*
-10. [budget_categories](#budget_categories) *(legacy — no longer used by UI)*
-11. [debt_schedules](#debt_schedules)
-12. [transaction_splits](#transaction_splits)
-13. [savings_goals](#savings_goals)
-14. [simplefin_connections](#simplefin_connections)
-15. [simplefin_account_mappings](#simplefin_account_mappings)
-16. [simplefin_pending_reviews](#simplefin_pending_reviews)
-17. [exchange_rates](#exchange_rates)
-18. [budget_lines](#budget_lines)
+5. [api_keys](#api_keys)
+6. [accounts](#accounts)
+7. [categories](#categories)
+8. [transactions](#transactions)
+9. [transaction_links](#transaction_links)
+10. [budgets](#budgets) *(legacy — no longer used by UI)*
+11. [budget_categories](#budget_categories) *(legacy — no longer used by UI)*
+12. [debt_schedules](#debt_schedules)
+13. [transaction_splits](#transaction_splits)
+14. [savings_goals](#savings_goals)
+15. [simplefin_connections](#simplefin_connections)
+16. [simplefin_account_mappings](#simplefin_account_mappings)
+17. [simplefin_pending_reviews](#simplefin_pending_reviews)
+18. [exchange_rates](#exchange_rates)
+19. [budget_lines](#budget_lines)
 
 ### IndexedDB Tables (Client-Side, Dexie)
 19. [IndexedDB Schema](#indexeddb-schema)
@@ -121,6 +122,34 @@ One-time use TOTP recovery codes. Created in migration `20260217004`.
 | `created_at` | TIMESTAMP | No | `NOW()` | |
 
 **Indexes:** `user_id`
+
+---
+
+### `api_keys`
+
+Long-lived credentials for programmatic access (e.g. MCP server). Created in migration `20260228001`.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | CHAR(36) | No | — | Primary key (UUID) |
+| `user_id` | CHAR(36) | No | — | FK → `users.id` ON DELETE CASCADE |
+| `label` | VARCHAR(255) | No | — | Human-readable name (e.g. "Home server MCP") |
+| `key_hash` | CHAR(64) | No | — | SHA-256 hex digest of the raw API key; raw key is never stored |
+| `scopes` | JSON | No | — | Array of granted scope strings (e.g. `["accounts:read","transactions:read"]`) |
+| `last_used_at` | DATETIME | Yes | `NULL` | Updated (fire-and-forget) on each successful authentication |
+| `expires_at` | DATETIME | Yes | `NULL` | Optional expiry; `NULL` = no expiry |
+| `created_at` | DATETIME | No | `NOW()` | |
+| `updated_at` | DATETIME | No | `NOW()` | Auto-updated |
+
+**Indexes:** `user_id`, `key_hash` UNIQUE
+
+**Valid scopes:** `accounts:read`, `transactions:read`, `transactions:write`, `budget:read`, `reports:read`, `simplefin:read`, `simplefin:write`
+
+**Notes:**
+- Raw key (`ba64url`, 32 random bytes → 43 chars) is returned **once** at creation and never persisted
+- `write` scope implies read for the same resource (enforced in `requireScope` middleware)
+- JWT-authenticated requests bypass scope checks entirely (full access)
+- `touchLastUsed` is fire-and-forget — a failed update does not block the request
 
 ---
 

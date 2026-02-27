@@ -67,3 +67,17 @@ export interface TotpSetupData {
   qrCodeDataUrl: string;
   otpauthUrl: string;
 }
+
+export interface ApiKey {
+  id: string;
+  label: string;
+  scopes: string[];
+  lastUsedAt: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
+export interface CreateApiKeyResult {
+  apiKey: ApiKey;
+  rawKey: string;
+}

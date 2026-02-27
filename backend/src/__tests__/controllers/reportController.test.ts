@@ -5,7 +5,9 @@ jest.mock('@services/encryption/encryptionService', () => ({
   encryptionService: { decrypt: jest.fn((v: string) => `dec:${v}`) },
 }));
 import { encryptionService } from '@services/encryption/encryptionService';
-const mockDecrypt = encryptionService.decrypt as jest.MockedFunction<typeof encryptionService.decrypt>;
+const mockDecrypt = encryptionService.decrypt as jest.MockedFunction<
+  typeof encryptionService.decrypt
+>;
 
 jest.mock('@config/database');
 import { getDatabase } from '@config/database';
@@ -93,10 +95,7 @@ describe('reportController.monthlySummary', () => {
 
     // raw() should have been called with the default 6
     const rawMock = (db as unknown as Record<string, jest.Mock>)['raw'];
-    expect(rawMock).toHaveBeenCalledWith(
-      'DATE_SUB(CURDATE(), INTERVAL ? MONTH)',
-      [6]
-    );
+    expect(rawMock).toHaveBeenCalledWith('DATE_SUB(CURDATE(), INTERVAL ? MONTH)', [6]);
   });
 
   it('clamps months above 24 down to 24', async () => {
@@ -106,10 +105,7 @@ describe('reportController.monthlySummary', () => {
     await reportController.monthlySummary(makeReq({ months: '999' }), makeRes().res, next);
 
     const rawMock = (db as unknown as Record<string, jest.Mock>)['raw'];
-    expect(rawMock).toHaveBeenCalledWith(
-      'DATE_SUB(CURDATE(), INTERVAL ? MONTH)',
-      [24]
-    );
+    expect(rawMock).toHaveBeenCalledWith('DATE_SUB(CURDATE(), INTERVAL ? MONTH)', [24]);
   });
 
   it('treats months=0 as invalid and uses the default 6', async () => {
@@ -120,10 +116,7 @@ describe('reportController.monthlySummary', () => {
 
     // 0 is falsy so `parseInt('0') || 6` evaluates to 6
     const rawMock = (db as unknown as Record<string, jest.Mock>)['raw'];
-    expect(rawMock).toHaveBeenCalledWith(
-      'DATE_SUB(CURDATE(), INTERVAL ? MONTH)',
-      [6]
-    );
+    expect(rawMock).toHaveBeenCalledWith('DATE_SUB(CURDATE(), INTERVAL ? MONTH)', [6]);
   });
 
   it('converts string income and expenses to numbers', async () => {
@@ -169,7 +162,10 @@ describe('reportController.topPayees', () => {
 
     const result = json.mock.calls[0][0] as {
       status: string;
-      data: { total: number; payees: Array<{ payee: string; totalAmount: number; percentage: number }> };
+      data: {
+        total: number;
+        payees: Array<{ payee: string; totalAmount: number; percentage: number }>;
+      };
     };
     expect(result.status).toBe('success');
     expect(result.data.total).toBeCloseTo(120);

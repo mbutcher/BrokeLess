@@ -69,7 +69,27 @@
     "sessionsSignedIn": "Connecté le",
     "signOutEverywhere": "Se déconnecter partout",
     "signOutEverywhereDesc": "Révoque tous les jetons d'actualisation sur tous les appareils.",
-    "signOutAll": "Déconnecter tout"
+    "signOutAll": "Déconnecter tout",
+    "apiKeys": {
+      "title": "Clés API",
+      "description": "Clés à longue durée de vie pour l'accès programmatique. Utilisez-les avec le serveur MCP ou des scripts.",
+      "empty": "Aucune clé API pour l'instant.",
+      "create": "Créer une clé API",
+      "revoke": "Révoquer",
+      "label": "Libellé",
+      "labelPlaceholder": "ex. Claude MCP",
+      "scopes": "Portées",
+      "expiresAt": "Expiration (facultatif)",
+      "lastUsed": "Dernière utilisation",
+      "neverUsed": "Jamais utilisée",
+      "expires": "Expire le",
+      "noExpiry": "Sans expiration",
+      "copyKey": "Copier la clé",
+      "copied": "Copié !",
+      "oneTimeWarning": "Copiez cette clé maintenant — elle ne sera plus affichée.",
+      "createSuccess": "Clé API créée",
+      "revokeSuccess": "Clé API révoquée"
+    }
   },
   "budget": {
     "title": "Mon budget",

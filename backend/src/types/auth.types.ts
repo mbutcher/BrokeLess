@@ -158,6 +158,38 @@ export interface TotpSetupResult {
   secret: string; // base32 secret shown once for manual entry
 }
 
+// ─── API Keys ─────────────────────────────────────────────────────────────────
+
+export interface ApiKey {
+  id: string;
+  userId: string;
+  label: string;
+  keyHash: string;
+  scopes: string[];
+  lastUsedAt: Date | null;
+  expiresAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/** Safe public representation of an API key (no hash) */
+export interface PublicApiKey {
+  id: string;
+  label: string;
+  scopes: string[];
+  lastUsedAt: Date | null;
+  expiresAt: Date | null;
+  createdAt: Date;
+}
+
+export interface CreateApiKeyData {
+  userId: string;
+  label: string;
+  keyHash: string;
+  scopes: string[];
+  expiresAt: Date | null;
+}
+
 // ─── Repository input shapes ──────────────────────────────────────────────────
 
 export interface CreateUserData {

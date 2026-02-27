@@ -135,11 +135,10 @@ describe('simplefinController.mapAccount', () => {
       next
     );
 
-    expect(mockService.mapAccount).toHaveBeenCalledWith(
-      USER_ID,
-      'sf-acct-42',
-      { action: 'link', localAccountId: 'local-acct-1' }
-    );
+    expect(mockService.mapAccount).toHaveBeenCalledWith(USER_ID, 'sf-acct-42', {
+      action: 'link',
+      localAccountId: 'local-acct-1',
+    });
     expect(json).toHaveBeenCalledWith({ status: 'success', data: null });
   });
 });

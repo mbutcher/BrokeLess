@@ -52,7 +52,9 @@ class RecurringTransactionRepository {
   }
 
   async findById(id: string, userId: string): Promise<RecurringTransaction | null> {
-    const row = await this.db('recurring_transactions').where({ id, user_id: userId }).first();
+    const row: unknown = await this.db('recurring_transactions')
+      .where({ id, user_id: userId })
+      .first();
     return row ? rowToRecurring(row as Record<string, unknown>) : null;
   }
 
@@ -65,9 +67,7 @@ class RecurringTransactionRepository {
     const rows = await this.db('recurring_transactions')
       .where({ is_active: true })
       .where('next_due_date', '<=', cutoffDate)
-      .where(function () {
-        this.whereNull('end_date').orWhere('end_date', '>=', this.client.raw('next_due_date'));
-      });
+      .whereRaw('(end_date IS NULL OR end_date >= next_due_date)');
     return rows.map(rowToRecurring);
   }
 
@@ -90,7 +90,7 @@ class RecurringTransactionRepository {
       next_due_date: data.nextDueDate,
       end_date: data.endDate ?? null,
     });
-    const row = await this.db('recurring_transactions').where({ id }).first();
+    const row: unknown = await this.db('recurring_transactions').where({ id }).first();
     return rowToRecurring(row as Record<string, unknown>);
   }
 

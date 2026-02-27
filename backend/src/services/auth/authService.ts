@@ -75,7 +75,7 @@ class AuthService {
     const user = await userRepository.create({ emailEncrypted, emailHash, passwordHash });
 
     // Seed default categories for the new user (non-fatal if this fails)
-    categoryService.seedDefaultsForUser(user.id).catch((err) => {
+    categoryService.seedDefaultsForUser(user.id).catch((err: unknown) => {
       logger.error('Failed to seed default categories for user', { userId: user.id, err });
     });
 

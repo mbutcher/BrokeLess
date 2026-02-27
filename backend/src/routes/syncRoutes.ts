@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import { authenticate } from '@middleware/authenticate';
+import { authenticateAny } from '@middleware/authenticate';
 import { syncController } from '@controllers/syncController';
 
 const router = Router();
 
 // All sync endpoints require authentication
-router.get('/', authenticate, syncController.get);
+router.get('/', authenticateAny, syncController.get);
 
 export default router;

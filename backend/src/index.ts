@@ -62,6 +62,7 @@ if (env.isDevelopment) {
 }
 
 // Health check endpoint
+// eslint-disable-next-line @typescript-eslint/no-misused-promises
 app.get('/health', async (_req, res) => {
   const dbHealth = await checkDatabaseHealth();
 
@@ -118,6 +119,7 @@ async function startServer() {
       simplefinScheduler.shutdown();
       netWorthScheduler.shutdown();
       recurringTransactionScheduler.shutdown();
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       server.close(async () => {
         await closeDatabase();
         logger.info('Server closed');
@@ -140,6 +142,6 @@ async function startServer() {
 }
 
 // Start the server
-startServer();
+void startServer();
 
 export default app;

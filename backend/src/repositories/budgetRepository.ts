@@ -39,8 +39,8 @@ class BudgetRepository {
   }
 
   async findById(id: string, userId: string): Promise<Budget | null> {
-    const row = await this.db('budgets').where({ id, user_id: userId }).first();
-    return row ? rowToBudget(row) : null;
+    const row: unknown = await this.db('budgets').where({ id, user_id: userId }).first();
+    return row ? rowToBudget(row as Record<string, unknown>) : null;
   }
 
   async findAllForUser(userId: string): Promise<Budget[]> {
@@ -57,7 +57,7 @@ class BudgetRepository {
       start_date: data.startDate,
       end_date: data.endDate,
     });
-    const row = await this.db('budgets').where({ id }).first();
+    const row: unknown = await this.db('budgets').where({ id }).first();
     return rowToBudget(row as Record<string, unknown>);
   }
 

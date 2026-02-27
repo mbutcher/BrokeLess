@@ -49,7 +49,7 @@ describe('similarity', () => {
   });
 
   it('stays below fuzzy threshold (0.70) for unrelated payees', () => {
-    expect(similarity('Netflix', 'Amazon')).toBeLessThan(0.70);
-    expect(similarity('Shell Gas Station', 'Hilton Hotels')).toBeLessThan(0.70);
+    expect(similarity('Netflix', 'Amazon')).toBeLessThan(0.7);
+    expect(similarity('Shell Gas Station', 'Hilton Hotels')).toBeLessThan(0.7);
   });
 });

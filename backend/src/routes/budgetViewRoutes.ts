@@ -1,12 +1,13 @@
 import { Router } from 'express';
-import { authenticate } from '@middleware/authenticate';
+import { authenticateAny, requireScope } from '@middleware/authenticate';
 import { validateRequest } from '@middleware/validateRequest';
 import { budgetLineController } from '@controllers/budgetLineController';
 import { budgetViewQuerySchema, upcomingExpensesSchema } from '@validators/coreValidators';
 
 const router = Router();
 
-router.use(authenticate);
+router.use(authenticateAny);
+router.use(requireScope('budget:read'));
 
 // GET /budget-view?start=YYYY-MM-DD&end=YYYY-MM-DD
 router.get(

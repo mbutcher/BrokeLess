@@ -1,4 +1,5 @@
 import Joi from 'joi';
+import { VALID_SCOPES } from '@services/auth/apiKeyService';
 
 export const registerSchema = Joi.object({
   email: Joi.string().email().max(254).lowercase().trim().required().messages({
@@ -71,4 +72,25 @@ export const webAuthnDeviceNameSchema = Joi.object({
 export const challengeTokenSchema = Joi.object({
   challengeToken: Joi.string().required(),
   response: Joi.object().required(),
+});
+
+export const createApiKeySchema = Joi.object({
+  label: Joi.string().min(1).max(255).required().messages({
+    'string.min': 'Label must not be empty',
+    'string.max': 'Label must be no more than 255 characters',
+    'any.required': 'Label is required',
+  }),
+  scopes: Joi.array()
+    .items(Joi.string().valid(...VALID_SCOPES))
+    .min(1)
+    .required()
+    .messages({
+      'array.min': 'At least one scope is required',
+      'any.required': 'Scopes are required',
+      'any.only': 'Invalid scope value',
+    }),
+  expiresAt: Joi.date().iso().greater('now').optional().messages({
+    'date.greater': 'Expiry date must be in the future',
+    'date.format': 'Expiry date must be a valid ISO 8601 date',
+  }),
 });
