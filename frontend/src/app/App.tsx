@@ -10,7 +10,6 @@ import { LoginPage } from '@features/auth/pages/LoginPage';
 import { TwoFactorPage } from '@features/auth/pages/TwoFactorPage';
 import { RegisterPage } from '@features/auth/pages/RegisterPage';
 import { SecuritySettingsPage } from '@features/auth/pages/SecuritySettingsPage';
-import { PreferencesPage } from '@features/auth/pages/PreferencesPage';
 import { DashboardPage } from '@features/dashboard/pages/DashboardPage';
 import { AccountsPage } from '@features/core/pages/AccountsPage';
 import { TransactionsPage } from '@features/core/pages/TransactionsPage';
@@ -18,10 +17,11 @@ import { BudgetPage } from '@features/core/pages/BudgetPage';
 import { DebtDetailPage } from '@features/core/pages/DebtDetailPage';
 import { LiabilitiesPage } from '@features/core/pages/LiabilitiesPage';
 import { SavingsGoalsPage } from '@features/core/pages/SavingsGoalsPage';
-import { SimplefinSettingsPage } from '@features/integrations/pages/SimplefinSettingsPage';
 import { ImportsPage } from '@features/integrations/pages/ImportsPage';
 import { ReportsPage } from '@features/reports/pages/ReportsPage';
 import { RecurringTransactionsPage } from '@features/core/pages/RecurringTransactionsPage';
+import { AccountSettingsPage } from '@features/settings/pages/AccountSettingsPage';
+import { IntegrationsSettingsPage } from '@features/settings/pages/IntegrationsSettingsPage';
 
 /**
  * AuthInitializer calls GET /auth/me on mount to restore session from
@@ -67,9 +67,13 @@ function App() {
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/recurring-transactions" element={<RecurringTransactionsPage />} />
           <Route path="/imports" element={<ImportsPage />} />
-          <Route path="/settings/integrations/simplefin" element={<SimplefinSettingsPage />} />
+          <Route path="/settings/account" element={<AccountSettingsPage />} />
+          <Route path="/settings/integrations" element={<IntegrationsSettingsPage />} />
           <Route path="/settings/security" element={<SecuritySettingsPage />} />
-          <Route path="/settings/preferences" element={<PreferencesPage />} />
+          {/* Legacy route redirects */}
+          <Route path="/settings" element={<Navigate to="/settings/account" replace />} />
+          <Route path="/settings/preferences" element={<Navigate to="/settings/account" replace />} />
+          <Route path="/settings/integrations/simplefin" element={<Navigate to="/settings/integrations" replace />} />
         </Route>
 
         {/* Default redirect */}

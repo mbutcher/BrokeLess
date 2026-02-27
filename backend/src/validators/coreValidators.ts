@@ -524,6 +524,7 @@ export const updateRecurringTransactionSchema = Joi.object({
 // ─── User Profile Validators ──────────────────────────────────────────────────
 
 export const updateProfileSchema = Joi.object({
+  displayName: Joi.string().max(100).allow(null, '').optional(),
   defaultCurrency: Joi.string().length(3).uppercase().messages({
     'string.length': 'defaultCurrency must be a 3-letter currency code (e.g. CAD)',
   }),
@@ -533,3 +534,11 @@ export const updateProfileSchema = Joi.object({
   timezone: Joi.string().max(100),
   weekStart: Joi.string().valid('sunday', 'monday', 'saturday'),
 }).min(1);
+
+export const changePasswordSchema = Joi.object({
+  currentPassword: Joi.string().required(),
+  newPassword: Joi.string().min(12).max(128).required(),
+  confirmNewPassword: Joi.valid(Joi.ref('newPassword')).required().messages({
+    'any.only': 'Passwords do not match',
+  }),
+});

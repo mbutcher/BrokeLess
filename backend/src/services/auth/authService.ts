@@ -16,6 +16,7 @@ import type {
   PublicUser,
   SessionInfo,
   UpdateProfileData,
+  ChangePasswordData,
 } from '@typings/auth.types';
 
 /**
@@ -278,9 +279,26 @@ class AuthService {
     return this.getPublicUser(userId);
   }
 
+  /** Change a user's password after verifying the current one. */
+  async changePassword(userId: string, data: ChangePasswordData): Promise<void> {
+    const user = await userRepository.findById(userId);
+    if (!user) throw new UnauthorizedError('User not found');
+
+    const valid = await passwordService.verify(data.currentPassword, user.passwordHash);
+    if (!valid) throw new UnauthorizedError('Current password is incorrect');
+
+    const { valid: pwValid, errors } = passwordService.validate(data.newPassword);
+    if (!pwValid) throw new Error(errors.join('; '));
+
+    const newHash = await passwordService.hash(data.newPassword);
+    await userRepository.updatePasswordHash(userId, newHash);
+    loggers.auth('password_changed', userId);
+  }
+
   private toPublicUser(
     user: {
       id: string;
+      displayName: string | null;
       totpEnabled: boolean;
       webauthnEnabled: boolean;
       emailVerified: boolean;
@@ -297,6 +315,7 @@ class AuthService {
     return {
       id: user.id,
       email,
+      displayName: user.displayName,
       totpEnabled: user.totpEnabled,
       webauthnEnabled: user.webauthnEnabled,
       emailVerified: user.emailVerified,

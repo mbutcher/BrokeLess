@@ -13,7 +13,7 @@ import {
   challengeTokenSchema,
   createApiKeySchema,
 } from '@validators/authValidators';
-import { updateProfileSchema } from '@validators/coreValidators';
+import { updateProfileSchema, changePasswordSchema } from '@validators/coreValidators';
 
 const router = Router();
 
@@ -29,6 +29,12 @@ router.patch(
   authenticate,
   validateRequest(updateProfileSchema),
   authController.updateProfile
+);
+router.patch(
+  '/me/password',
+  authenticate,
+  validateRequest(changePasswordSchema),
+  authController.changePassword
 );
 
 // ─── TOTP / 2FA ───────────────────────────────────────────────────────────────

@@ -7,6 +7,7 @@ function rowToUser(row: Record<string, unknown>): User {
     id: row['id'] as string,
     emailEncrypted: row['email_encrypted'] as string,
     emailHash: row['email_hash'] as string,
+    displayName: (row['display_name'] as string | null | undefined) ?? null,
     passwordHash: row['password_hash'] as string,
     isActive: Boolean(row['is_active']),
     emailVerified: Boolean(row['email_verified']),
@@ -114,6 +115,7 @@ class UserRepository {
 
   async updatePreferences(userId: string, data: UpdateProfileData): Promise<void> {
     const updates: Record<string, unknown> = {};
+    if (data.displayName !== undefined) updates['display_name'] = data.displayName ?? null;
     if (data.defaultCurrency !== undefined) updates['default_currency'] = data.defaultCurrency;
     if (data.locale !== undefined) updates['locale'] = data.locale;
     if (data.dateFormat !== undefined) updates['date_format'] = data.dateFormat;
@@ -124,6 +126,12 @@ class UserRepository {
     if (Object.keys(updates).length > 0) {
       await this.db('users').where({ id: userId }).update(updates);
     }
+  }
+
+  async updatePasswordHash(userId: string, newPasswordHash: string): Promise<void> {
+    await this.db('users').where({ id: userId }).update({
+      password_hash: newPasswordHash,
+    });
   }
 }
 

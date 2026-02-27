@@ -4,6 +4,7 @@ export interface User {
   id: string;
   emailEncrypted: string;
   emailHash: string;
+  displayName: string | null;
   passwordHash: string;
   isActive: boolean;
   emailVerified: boolean;
@@ -118,6 +119,7 @@ export interface RequestMeta {
 export interface PublicUser {
   id: string;
   email: string; // decrypted
+  displayName: string | null;
   totpEnabled: boolean;
   webauthnEnabled: boolean;
   emailVerified: boolean;
@@ -131,12 +133,18 @@ export interface PublicUser {
 }
 
 export interface UpdateProfileData {
+  displayName?: string | null;
   defaultCurrency?: string;
   locale?: string;
   dateFormat?: 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD';
   timeFormat?: '12h' | '24h';
   timezone?: string;
   weekStart?: 'sunday' | 'monday' | 'saturday';
+}
+
+export interface ChangePasswordData {
+  currentPassword: string;
+  newPassword: string;
 }
 
 export interface AuthTokens {

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { LogOut, LogOutIcon, Shield, Fingerprint, Monitor, Key, Copy, Check } from 'lucide-react';
+import { LogOut, LogOutIcon, Shield, Fingerprint, Monitor, Key, Copy, Check, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { authApi } from '../api/authApi';
 import type { ApiKey, CreateApiKeyResult } from '../types';
@@ -44,6 +44,33 @@ export function SecuritySettingsPage() {
   const { user, clearAuth } = useAuthStore();
   const [showTotpSetup, setShowTotpSetup] = useState(false);
   const { disable: disableTotp, isDisabling, disableError } = useTotpSetup();
+
+  // ─── Password change state ─────────────────────────────────────────────────
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [passwordChanged, setPasswordChanged] = useState(false);
+  const [passwordMismatch, setPasswordMismatch] = useState(false);
+
+  const changePasswordMutation = useMutation({
+    mutationFn: () => authApi.changePassword({ currentPassword, newPassword, confirmNewPassword }),
+    onSuccess: () => {
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+      setPasswordChanged(true);
+      setTimeout(() => setPasswordChanged(false), 4000);
+    },
+  });
+
+  function handleChangePassword() {
+    setPasswordMismatch(false);
+    if (newPassword !== confirmNewPassword) {
+      setPasswordMismatch(true);
+      return;
+    }
+    changePasswordMutation.mutate();
+  }
 
   // ─── API Key state ────────────────────────────────────────────────────────
   const [apiKeyDialogOpen, setApiKeyDialogOpen] = useState(false);
@@ -153,6 +180,75 @@ export function SecuritySettingsPage() {
             {t('security.signOut')}
           </Button>
         </div>
+
+        {/* Password Change */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Lock className="h-5 w-5 text-muted-foreground" />
+              <CardTitle className="text-base">{t('security.changePassword')}</CardTitle>
+            </div>
+            <p className="text-sm text-muted-foreground">{t('security.changePasswordDesc')}</p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {passwordMismatch && (
+              <Alert variant="destructive">
+                <AlertDescription>{t('security.passwordMismatch')}</AlertDescription>
+              </Alert>
+            )}
+            {changePasswordMutation.isError && (
+              <Alert variant="destructive">
+                <AlertDescription>{getApiErrorMessage(changePasswordMutation.error)}</AlertDescription>
+              </Alert>
+            )}
+            {passwordChanged && (
+              <Alert className="border-green-200 bg-green-50">
+                <AlertDescription className="text-green-800">
+                  {t('security.passwordChanged')}
+                </AlertDescription>
+              </Alert>
+            )}
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="current-password">{t('security.currentPassword')}</Label>
+                <Input
+                  id="current-password"
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  autoComplete="current-password"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="new-password">{t('security.newPassword')}</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  autoComplete="new-password"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="confirm-password">{t('security.confirmPassword')}</Label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  autoComplete="new-password"
+                />
+              </div>
+            </div>
+            <Button
+              onClick={handleChangePassword}
+              disabled={!currentPassword || !newPassword || !confirmNewPassword || changePasswordMutation.isPending}
+              isLoading={changePasswordMutation.isPending}
+            >
+              {t('security.changePassword')}
+            </Button>
+          </CardContent>
+        </Card>
 
         {/* TOTP Section */}
         <Card>

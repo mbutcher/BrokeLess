@@ -95,6 +95,15 @@ class AuthController {
     res.status(200).json({ status: 'success', data: { user } });
   });
 
+  changePassword = asyncHandler(async (req: Request, res: Response) => {
+    const { currentPassword, newPassword } = req.body as {
+      currentPassword: string;
+      newPassword: string;
+    };
+    await authService.changePassword(req.user!.id, { currentPassword, newPassword });
+    res.status(200).json({ status: 'success', data: null });
+  });
+
   // ─── TOTP ─────────────────────────────────────────────────────────────────
 
   totpSetup = asyncHandler(async (req: Request, res: Response) => {

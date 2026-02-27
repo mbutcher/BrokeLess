@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { NavLink, useNavigate, Outlet } from 'react-router-dom';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { NavLink, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard,
@@ -12,21 +11,15 @@ import {
   BarChart2,
   RefreshCw,
   Download,
-  Plug,
-  Settings,
-  SlidersHorizontal,
-  LogOut,
   Menu,
   X,
   WifiOff,
 } from 'lucide-react';
-import { authApi } from '@features/auth/api/authApi';
-import { useAuthStore } from '@features/auth/stores/authStore';
-import { Button } from '@components/ui/button';
 import { useSimplefinStatus, usePendingReviewCount, useUnmappedAccounts } from '@features/integrations/hooks/useSimplefin';
 import { useNetworkStore } from '@stores/networkStore';
 import { OfflineBanner } from './OfflineBanner';
 import { SyncNotification } from './SyncNotification';
+import { UserAvatarMenu } from './UserAvatarMenu';
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, key: 'nav.dashboard' },
@@ -41,23 +34,11 @@ const navItems = [
 
 function SidebarContent({ onNav }: { onNav?: () => void }) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const { user, clearAuth } = useAuthStore();
   const { data: sfConnection } = useSimplefinStatus();
   const { data: reviewCount = 0 } = usePendingReviewCount();
   const { data: unmapped = [] } = useUnmappedAccounts();
   const importsBadge = reviewCount + unmapped.length;
   const { isOnline, pendingCount } = useNetworkStore();
-
-  const logoutMutation = useMutation({
-    mutationFn: () => authApi.logout(),
-    onSuccess: () => {
-      clearAuth();
-      queryClient.clear();
-      navigate('/login', { replace: true });
-    },
-  });
 
   return (
     <div className="flex flex-col h-full">
@@ -112,58 +93,8 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
         )}
       </nav>
 
-      {/* Bottom: settings + user + logout */}
-      <div className="px-3 pb-4 space-y-1 border-t border-gray-100 pt-3">
-        <NavLink
-          to="/settings/integrations/simplefin"
-          onClick={onNav}
-          className={({ isActive }) =>
-            [
-              'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-              isActive
-                ? 'bg-blue-50 text-blue-700'
-                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
-            ].join(' ')
-          }
-        >
-          <Plug className="h-4 w-4 shrink-0" />
-          {t('nav.integrations')}
-        </NavLink>
-        <NavLink
-          to="/settings/security"
-          onClick={onNav}
-          className={({ isActive }) =>
-            [
-              'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-              isActive
-                ? 'bg-blue-50 text-blue-700'
-                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
-            ].join(' ')
-          }
-        >
-          <Settings className="h-4 w-4 shrink-0" />
-          {t('nav.settings')}
-        </NavLink>
-        <NavLink
-          to="/settings/preferences"
-          onClick={onNav}
-          className={({ isActive }) =>
-            [
-              'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-              isActive
-                ? 'bg-blue-50 text-blue-700'
-                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
-            ].join(' ')
-          }
-        >
-          <SlidersHorizontal className="h-4 w-4 shrink-0" />
-          {t('nav.preferences')}
-        </NavLink>
-
-        <div className="px-3 py-2">
-          <p className="text-xs text-gray-400 truncate">{user?.email}</p>
-        </div>
-
+      {/* Bottom: offline status + avatar menu */}
+      <div className="px-3 pb-4 border-t border-gray-100 pt-3 space-y-2">
         {/* Offline / pending status */}
         {(!isOnline || pendingCount > 0) && (
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-amber-50 text-amber-700 text-xs">
@@ -181,16 +112,10 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
           </div>
         )}
 
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full justify-start gap-3 text-gray-600"
-          isLoading={logoutMutation.isPending}
-          onClick={() => logoutMutation.mutate()}
-        >
-          <LogOut className="h-4 w-4 shrink-0" />
-          {t('nav.signOut')}
-        </Button>
+        <div className="flex items-center justify-between px-3 py-1">
+          <span className="text-xs text-gray-400">{t('nav.settings')}</span>
+          <UserAvatarMenu onNav={onNav} />
+        </div>
       </div>
     </div>
   );
@@ -236,15 +161,18 @@ export function AppLayout() {
             <Menu className="h-5 w-5" />
           </button>
           <span className="ml-3 text-sm font-bold text-gray-900">BudgetApp</span>
-          {mobileOpen && (
-            <button
-              onClick={() => setMobileOpen(false)}
-              className="ml-auto p-1 rounded-md text-gray-600 hover:bg-gray-100"
-              aria-label="Close menu"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          )}
+          <div className="ml-auto flex items-center gap-2">
+            {mobileOpen && (
+              <button
+                onClick={() => setMobileOpen(false)}
+                className="p-1 rounded-md text-gray-600 hover:bg-gray-100"
+                aria-label="Close menu"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            )}
+            <UserAvatarMenu />
+          </div>
         </header>
 
         <OfflineBanner />

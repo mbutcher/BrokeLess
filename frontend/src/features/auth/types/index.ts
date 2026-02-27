@@ -1,6 +1,7 @@
 export interface User {
   id: string;
   email: string;
+  displayName?: string | null;
   totpEnabled: boolean;
   webauthnEnabled: boolean;
   emailVerified: boolean;
@@ -14,12 +15,19 @@ export interface User {
 }
 
 export interface UpdateProfileInput {
+  displayName?: string | null;
   defaultCurrency?: string;
   locale?: string;
   dateFormat?: 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD';
   timeFormat?: '12h' | '24h';
   timezone?: string;
   weekStart?: 'sunday' | 'monday' | 'saturday';
+}
+
+export interface ChangePasswordInput {
+  currentPassword: string;
+  newPassword: string;
+  confirmNewPassword: string;
 }
 
 export interface LoginCredentials {

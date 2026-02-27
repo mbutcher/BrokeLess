@@ -5,6 +5,7 @@ import type {
   SessionInfo,
   TotpSetupData,
   UpdateProfileInput,
+  ChangePasswordInput,
   ApiKey,
   CreateApiKeyResult,
 } from '../types';
@@ -45,6 +46,9 @@ export const authApi = {
 
   updateProfile: (data: UpdateProfileInput) =>
     apiClient.patch<ApiResponse<{ user: User }>>('/auth/me', data),
+
+  changePassword: (data: ChangePasswordInput) =>
+    apiClient.patch<ApiResponse<null>>('/auth/me/password', data),
 
   // ─── TOTP ──────────────────────────────────────────────────────────────────
 
