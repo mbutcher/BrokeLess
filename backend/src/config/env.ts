@@ -1,6 +1,7 @@
 import * as dotenv from 'dotenv';
 import * as fs from 'fs';
 import * as path from 'path';
+import logger from '../utils/logger';
 
 // Load environment variables
 dotenv.config();
@@ -152,10 +153,10 @@ export function validateEnv(): void {
   // Warn about missing optional but recommended variables
   if (env.isProduction) {
     if (!env.password.pepper) {
-      console.warn('Warning: PASSWORD_PEPPER not set. Passwords will be less secure.');
+      logger.warn('PASSWORD_PEPPER not set. Passwords will be less secure.');
     }
     if (!env.redis.password) {
-      console.warn('Warning: REDIS_PASSWORD not set. Redis is not password-protected.');
+      logger.warn('REDIS_PASSWORD not set. Redis is not password-protected.');
     }
   }
 }

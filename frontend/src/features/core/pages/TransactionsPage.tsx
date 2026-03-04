@@ -44,58 +44,58 @@ export function TransactionsPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">{t('transactions.title')}</h1>
+        <h1 className="text-2xl font-bold text-foreground">{t('transactions.title')}</h1>
         <button
           onClick={() => { setEditing(null); setShowForm(true); }}
-          className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700"
+          className="bg-primary text-primary-foreground rounded-lg px-4 py-2 text-sm font-medium hover:bg-primary/90"
         >
           {t('transactions.addTransaction')}
         </button>
       </div>
 
       {/* Filters */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4 space-y-3">
+      <div className="bg-card border border-border rounded-xl p-4 mb-4 space-y-3">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">{t('transactions.filterAccount')}</label>
+            <label className="block text-xs text-muted-foreground mb-1">{t('transactions.filterAccount')}</label>
             <select
-              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
+              className="w-full border border-border rounded-lg px-2 py-1.5 text-sm bg-background text-foreground"
               value={filters.accountId ?? ''}
               onChange={(e) => setFilters((f) => ({ ...f, accountId: e.target.value || undefined, page: 1 }))}
             >
-              <option value="">All accounts</option>
+              <option value="">{t('transactions.allAccounts')}</option>
               {accounts.filter((a) => a.isActive).map((a) => (
                 <option key={a.id} value={a.id}>{a.name}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">{t('transactions.filterCategory')}</label>
+            <label className="block text-xs text-muted-foreground mb-1">{t('transactions.filterCategory')}</label>
             <select
-              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
+              className="w-full border border-border rounded-lg px-2 py-1.5 text-sm bg-background text-foreground"
               value={filters.categoryId ?? ''}
               onChange={(e) => setFilters((f) => ({ ...f, categoryId: e.target.value || undefined, page: 1 }))}
             >
-              <option value="">All categories</option>
+              <option value="">{t('transactions.allCategories')}</option>
               {categories.filter((c) => c.isActive).map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">{t('transactions.filterFrom')}</label>
+            <label className="block text-xs text-muted-foreground mb-1">{t('transactions.filterFrom')}</label>
             <input
               type="date"
-              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
+              className="w-full border border-border rounded-lg px-2 py-1.5 text-sm bg-background text-foreground"
               value={filters.startDate ?? ''}
               onChange={(e) => setFilters((f) => ({ ...f, startDate: e.target.value || undefined, page: 1 }))}
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">{t('transactions.filterTo')}</label>
+            <label className="block text-xs text-muted-foreground mb-1">{t('transactions.filterTo')}</label>
             <input
               type="date"
-              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
+              className="w-full border border-border rounded-lg px-2 py-1.5 text-sm bg-background text-foreground"
               value={filters.endDate ?? ''}
               onChange={(e) => setFilters((f) => ({ ...f, endDate: e.target.value || undefined, page: 1 }))}
             />
@@ -105,11 +105,11 @@ export function TransactionsPage() {
         {/* Search + tag row */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">{t('transactions.searchPlaceholder')}</label>
+            <label className="block text-xs text-muted-foreground mb-1">{t('transactions.searchPlaceholder')}</label>
             <div className="relative">
               <input
                 type="text"
-                className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm pr-8 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
+                className="w-full border border-border rounded-lg px-3 py-1.5 text-sm pr-8 bg-background text-foreground disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-ring"
                 placeholder={isOnline ? t('transactions.searchPlaceholderShort') : t('transactions.searchOffline')}
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
@@ -120,7 +120,7 @@ export function TransactionsPage() {
                 <button
                   type="button"
                   onClick={() => setSearchInput('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg leading-none"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-lg leading-none"
                   aria-label="Clear search"
                 >
                   ×
@@ -129,9 +129,9 @@ export function TransactionsPage() {
             </div>
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">{t('transactions.filterTag')}</label>
+            <label className="block text-xs text-muted-foreground mb-1">{t('transactions.filterTag')}</label>
             <select
-              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm"
+              className="w-full border border-border rounded-lg px-2 py-1.5 text-sm bg-background text-foreground"
               value={filters.tag ?? ''}
               onChange={(e) => setFilters((f) => ({ ...f, tag: e.target.value || undefined, page: 1 }))}
             >

@@ -7,6 +7,7 @@ import { useAuthStore } from '@features/auth/stores/authStore';
 import { useFormatters } from '@lib/i18n/useFormatters';
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@components/ui/dialog';
 import type { HouseholdRole } from '../types';
 
 function RoleBadge({ role }: { role: HouseholdRole }) {
@@ -36,6 +37,7 @@ export function HouseholdSettingsPage() {
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState('');
   const [showAddMember, setShowAddMember] = useState(false);
+  const [confirmingRemove, setConfirmingRemove] = useState<string | null>(null);
 
   const isOwner = household?.members.find((m) => m.userId === currentUserId)?.role === 'owner';
 
@@ -56,8 +58,7 @@ export function HouseholdSettingsPage() {
   }
 
   function handleRemove(userId: string) {
-    if (!confirm(t('household.settings.confirmRemove'))) return;
-    removeMember.mutate(userId);
+    setConfirmingRemove(userId);
   }
 
   if (isLoading) {
@@ -162,6 +163,35 @@ export function HouseholdSettingsPage() {
       </div>
 
       <AddMemberDialog open={showAddMember} onClose={() => setShowAddMember(false)} />
+
+      {/* Remove member confirmation dialog */}
+      <Dialog open={confirmingRemove !== null} onOpenChange={(open) => { if (!open) setConfirmingRemove(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{t('household.settings.removeMember')}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">{t('household.settings.confirmRemove')}</p>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="outline" size="sm" onClick={() => setConfirmingRemove(null)}>
+              {t('common.cancel')}
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={removeMember.isPending}
+              onClick={() => {
+                if (confirmingRemove) {
+                  removeMember.mutate(confirmingRemove, {
+                    onSuccess: () => setConfirmingRemove(null),
+                  });
+                }
+              }}
+            >
+              {t('household.settings.removeMember')}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

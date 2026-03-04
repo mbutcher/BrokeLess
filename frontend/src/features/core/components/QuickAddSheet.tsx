@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@components/ui/dialog';
 import { Button } from '@components/ui/button';
@@ -27,9 +27,16 @@ export function QuickAddSheet({ open, onClose }: Props) {
 
   const [amount, setAmount] = useState('');
   const [payee, setPayee] = useState('');
-  const [accountId, setAccountId] = useState(activeAccounts[0]?.id ?? '');
+  const [accountId, setAccountId] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [date, setDate] = useState(today);
+
+  // Sync accountId once accounts load (avoids stale empty string on initial render)
+  useEffect(() => {
+    if (accountId === '' && activeAccounts.length > 0) {
+      setAccountId(activeAccounts[0]!.id);
+    }
+  }, [activeAccounts, accountId]);
 
   function reset() {
     setAmount('');

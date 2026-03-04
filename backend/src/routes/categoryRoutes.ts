@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { categoryController } from '@controllers/categoryController';
-import { authenticateAny } from '@middleware/authenticate';
+import { authenticateAny, requireScope } from '@middleware/authenticate';
 import { loadHousehold } from '@middleware/requireHousehold';
 import { validateRequest } from '@middleware/validateRequest';
 import { createCategorySchema, updateCategorySchema } from '@validators/coreValidators';
@@ -10,10 +10,20 @@ const router = Router();
 router.use(authenticateAny);
 router.use(loadHousehold);
 
-router.get('/', categoryController.list);
-router.post('/', validateRequest(createCategorySchema), categoryController.create);
-router.get('/:id', categoryController.getById);
-router.patch('/:id', validateRequest(updateCategorySchema), categoryController.update);
-router.delete('/:id', categoryController.archive);
+router.get('/', requireScope('categories:read'), categoryController.list);
+router.post(
+  '/',
+  requireScope('categories:write'),
+  validateRequest(createCategorySchema),
+  categoryController.create
+);
+router.get('/:id', requireScope('categories:read'), categoryController.getById);
+router.patch(
+  '/:id',
+  requireScope('categories:write'),
+  validateRequest(updateCategorySchema),
+  categoryController.update
+);
+router.delete('/:id', requireScope('categories:write'), categoryController.archive);
 
 export default router;

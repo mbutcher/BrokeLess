@@ -308,7 +308,7 @@ class AuthService {
     if (!valid) throw new UnauthorizedError('Current password is incorrect');
 
     const { valid: pwValid, errors } = passwordService.validate(data.newPassword);
-    if (!pwValid) throw new Error(errors.join('; '));
+    if (!pwValid) throw new AppError(errors.join('; '), 400);
 
     const newHash = await passwordService.hash(data.newPassword);
     await userRepository.updatePasswordHash(userId, newHash);

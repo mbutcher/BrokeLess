@@ -35,7 +35,9 @@ class TransactionTagRepository {
     const normalised = [...new Set(tags.map((t) => t.trim().toLowerCase()).filter(Boolean))];
 
     await this.db.transaction(async (trx) => {
-      await trx('transaction_tags').where({ transaction_id: transactionId }).delete();
+      await trx('transaction_tags')
+        .where({ transaction_id: transactionId, user_id: userId })
+        .delete();
       if (normalised.length > 0) {
         await trx('transaction_tags').insert(
           normalised.map((tag) => ({

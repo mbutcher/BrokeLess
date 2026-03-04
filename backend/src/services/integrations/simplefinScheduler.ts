@@ -6,6 +6,7 @@ import { sendSimplefinSyncError } from '@services/notifications/pushNotification
 
 class SimplefinScheduler {
   private job: cron.ScheduledTask | null = null;
+  private isRunning = false;
 
   start(): void {
     // Run every 15 minutes — check each connection for eligibility
@@ -16,11 +17,14 @@ class SimplefinScheduler {
   }
 
   private async runEligibleSyncs(): Promise<void> {
+    if (this.isRunning) return;
+    this.isRunning = true;
     let connections;
     try {
       connections = await simplefinRepository.findAllAutoSyncEligible();
     } catch (err) {
       logger.error('SimpleFIN scheduler: failed to load eligible connections', { err });
+      this.isRunning = false;
       return;
     }
 
@@ -52,6 +56,7 @@ class SimplefinScheduler {
         });
       });
     }
+    this.isRunning = false;
   }
 
   shutdown(): void {

@@ -4,11 +4,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import type { Account, AccountType, CreateAccountInput } from '../types';
+import type { Account, CreateAccountInput } from '../types';
 import { useCreateAccount, useUpdateAccount } from '../hooks/useAccounts';
 import { useAuthStore } from '@features/auth/stores/authStore';
-
-const ASSET_TYPES = new Set<AccountType>(['checking', 'savings', 'investment', 'other']);
+import { ACCOUNT_TYPES, inferIsAsset } from '../constants';
 
 // 31-colour palette + 1 "none" (white) slot = 32 swatches, 4 rows of 8
 const PALETTE = [
@@ -20,15 +19,6 @@ const PALETTE = [
   '#93c5fd', '#3b82f6', '#1d4ed8', '#1e3a8a',
   '#c4b5fd', '#8b5cf6', '#6d28d9', '#4c1d95',
   '#d1d5db', '#6b7280', '#374151', '#111827',
-];
-
-/** Derives isAsset from account type — no manual toggle needed. */
-function inferIsAsset(type: AccountType): boolean {
-  return ASSET_TYPES.has(type);
-}
-
-const ACCOUNT_TYPES: AccountType[] = [
-  'checking', 'savings', 'credit_card', 'loan', 'line_of_credit', 'mortgage', 'investment', 'other',
 ];
 
 const accountSchema = z.object({

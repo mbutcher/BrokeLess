@@ -66,11 +66,11 @@ function SpendingTab() {
       {/* Controls */}
       <div className="flex flex-wrap items-end gap-3">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">{t('reports.period')}</label>
+          <label className="block text-xs text-muted-foreground mb-1">{t('reports.period')}</label>
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
-            className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white"
+            className="border border-border rounded-lg px-3 py-1.5 text-sm bg-background text-foreground"
           >
             <option value="this_month">{t('reports.thisMonth')}</option>
             <option value="last_month">{t('reports.lastMonth')}</option>
@@ -81,15 +81,15 @@ function SpendingTab() {
           </select>
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">{t('reports.type')}</label>
-          <div className="flex border border-gray-200 rounded-lg overflow-hidden text-sm">
+          <label className="block text-xs text-muted-foreground mb-1">{t('reports.type')}</label>
+          <div className="flex border border-border rounded-lg overflow-hidden text-sm">
             <button
               onClick={() => setType('expense')}
               className={[
                 'px-3 py-1.5 transition-colors',
                 type === 'expense'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50',
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-background text-foreground hover:bg-muted',
               ].join(' ')}
             >
               {t('reports.expenses')}
@@ -99,8 +99,8 @@ function SpendingTab() {
               className={[
                 'px-3 py-1.5 transition-colors',
                 type === 'income'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50',
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-background text-foreground hover:bg-muted',
               ].join(' ')}
             >
               {t('reports.income')}
@@ -111,21 +111,21 @@ function SpendingTab() {
 
       {/* Chart */}
       {isLoading ? (
-        <div className="h-72 bg-gray-100 animate-pulse rounded-xl" />
+        <div className="h-72 bg-muted animate-pulse rounded-xl" />
       ) : data ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-card rounded-xl border border-border p-4">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium text-foreground">
               {type === 'expense' ? t('reports.expenses') : t('reports.income')}: {fmt.currency(data.total)}
             </span>
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-muted-foreground">
               {data.start} – {data.end}
             </span>
           </div>
           <SpendingPieChart categories={data.categories} total={data.total} />
         </div>
       ) : (
-        <div className="text-center py-16 text-gray-400 text-sm">{t('reports.noData')}</div>
+        <div className="text-center py-16 text-muted-foreground text-sm">{t('reports.noData')}</div>
       )}
     </div>
   );
@@ -149,11 +149,11 @@ function NetWorthTab() {
       {/* Controls */}
       <div className="flex flex-wrap items-end gap-3">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">{t('reports.timeRange')}</label>
+          <label className="block text-xs text-muted-foreground mb-1">{t('reports.timeRange')}</label>
           <select
             value={months}
             onChange={(e) => setMonths(Number(e.target.value))}
-            className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white"
+            className="border border-border rounded-lg px-3 py-1.5 text-sm bg-background text-foreground"
           >
             <option value={3}>{t('reports.months3')}</option>
             <option value={6}>{t('reports.months6')}</option>
@@ -162,12 +162,12 @@ function NetWorthTab() {
           </select>
         </div>
         <div className="flex items-center gap-3 ml-auto">
-          <label className="flex items-center gap-1.5 text-sm text-gray-600 cursor-pointer">
+          <label className="flex items-center gap-1.5 text-sm text-foreground cursor-pointer">
             <input
               type="checkbox"
               checked={showLiabilities}
               onChange={(e) => setShowLiabilities(e.target.checked)}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              className="rounded border-border"
             />
             {t('reports.showLiabilities')}
           </label>
@@ -184,25 +184,25 @@ function NetWorthTab() {
       {/* Summary cards */}
       {latest && (
         <div className="grid grid-cols-3 gap-4">
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <p className="text-xs text-gray-500 uppercase tracking-wide">{t('reports.netWorth')}</p>
+          <div className="bg-card rounded-xl border border-border p-4">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide">{t('reports.netWorth')}</p>
             <p
               className={[
                 'text-2xl font-bold mt-1',
-                latest.netWorth >= 0 ? 'text-blue-600' : 'text-red-500',
+                latest.netWorth >= 0 ? 'text-primary' : 'text-destructive',
               ].join(' ')}
             >
               {fmt.currency(latest.netWorth)}
             </p>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <p className="text-xs text-gray-500 uppercase tracking-wide">{t('reports.totalAssets')}</p>
+          <div className="bg-card rounded-xl border border-border p-4">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide">{t('reports.totalAssets')}</p>
             <p className="text-2xl font-bold mt-1 text-green-600">
               {fmt.currency(latest.totalAssets)}
             </p>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <p className="text-xs text-gray-500 uppercase tracking-wide">{t('reports.totalLiabilities')}</p>
+          <div className="bg-card rounded-xl border border-border p-4">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide">{t('reports.totalLiabilities')}</p>
             <p className="text-2xl font-bold mt-1 text-rose-500">
               {fmt.currency(latest.totalLiabilities)}
             </p>
@@ -212,15 +212,15 @@ function NetWorthTab() {
 
       {/* Chart */}
       {isLoading ? (
-        <div className="h-72 bg-gray-100 animate-pulse rounded-xl" />
+        <div className="h-72 bg-muted animate-pulse rounded-xl" />
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-card rounded-xl border border-border p-4">
           <NetWorthChart snapshots={snapshots} showLiabilities={showLiabilities} />
         </div>
       )}
 
       {takeSnapshot.isError && (
-        <p className="text-xs text-red-600">{t('reports.snapshotError')}</p>
+        <p className="text-xs text-destructive">{t('reports.snapshotError')}</p>
       )}
     </div>
   );
@@ -247,11 +247,11 @@ function TopPayeesTab() {
       {/* Controls */}
       <div className="flex flex-wrap items-end gap-3">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">{t('reports.period')}</label>
+          <label className="block text-xs text-muted-foreground mb-1">{t('reports.period')}</label>
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
-            className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white"
+            className="border border-border rounded-lg px-3 py-1.5 text-sm bg-background text-foreground"
           >
             <option value="this_month">{t('reports.thisMonth')}</option>
             <option value="last_month">{t('reports.lastMonth')}</option>
@@ -262,15 +262,15 @@ function TopPayeesTab() {
           </select>
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">{t('reports.type')}</label>
-          <div className="flex border border-gray-200 rounded-lg overflow-hidden text-sm">
+          <label className="block text-xs text-muted-foreground mb-1">{t('reports.type')}</label>
+          <div className="flex border border-border rounded-lg overflow-hidden text-sm">
             <button
               onClick={() => setType('expense')}
               className={[
                 'px-3 py-1.5 transition-colors',
                 type === 'expense'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50',
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-background text-foreground hover:bg-muted',
               ].join(' ')}
             >
               {t('reports.expenses')}
@@ -280,8 +280,8 @@ function TopPayeesTab() {
               className={[
                 'px-3 py-1.5 transition-colors',
                 type === 'income'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50',
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-background text-foreground hover:bg-muted',
               ].join(' ')}
             >
               {t('reports.income')}
@@ -289,11 +289,11 @@ function TopPayeesTab() {
           </div>
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">{t('reports.showTop')}</label>
+          <label className="block text-xs text-muted-foreground mb-1">{t('reports.showTop')}</label>
           <select
             value={limit}
             onChange={(e) => setLimit(Number(e.target.value))}
-            className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white"
+            className="border border-border rounded-lg px-3 py-1.5 text-sm bg-background text-foreground"
           >
             <option value={5}>{t('reports.payees5')}</option>
             <option value={10}>{t('reports.payees10')}</option>
@@ -304,21 +304,21 @@ function TopPayeesTab() {
 
       {/* Chart */}
       {isLoading ? (
-        <div className="h-72 bg-gray-100 animate-pulse rounded-xl" />
+        <div className="h-72 bg-muted animate-pulse rounded-xl" />
       ) : data ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-card rounded-xl border border-border p-4">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium text-foreground">
               {t('reports.total')}: {fmt.currency(data.total)}
             </span>
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-muted-foreground">
               {data.start} – {data.end}
             </span>
           </div>
           <TopPayeesBarChart payees={data.payees} total={data.total} onPayeeClick={handlePayeeClick} />
         </div>
       ) : (
-        <div className="text-center py-16 text-gray-400 text-sm">{t('reports.noData')}</div>
+        <div className="text-center py-16 text-muted-foreground text-sm">{t('reports.noData')}</div>
       )}
     </div>
   );
@@ -347,11 +347,11 @@ function TagsTab() {
       {/* Controls */}
       <div className="flex flex-wrap items-end gap-3">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">{t('reports.period')}</label>
+          <label className="block text-xs text-muted-foreground mb-1">{t('reports.period')}</label>
           <select
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
-            className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white"
+            className="border border-border rounded-lg px-3 py-1.5 text-sm bg-background text-foreground"
           >
             <option value="this_month">{t('reports.thisMonth')}</option>
             <option value="last_month">{t('reports.lastMonth')}</option>
@@ -362,15 +362,15 @@ function TagsTab() {
           </select>
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">{t('reports.type')}</label>
-          <div className="flex border border-gray-200 rounded-lg overflow-hidden text-sm">
+          <label className="block text-xs text-muted-foreground mb-1">{t('reports.type')}</label>
+          <div className="flex border border-border rounded-lg overflow-hidden text-sm">
             <button
               onClick={() => setType('expense')}
               className={[
                 'px-3 py-1.5 transition-colors',
                 type === 'expense'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50',
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-background text-foreground hover:bg-muted',
               ].join(' ')}
             >
               {t('reports.expenses')}
@@ -380,8 +380,8 @@ function TagsTab() {
               className={[
                 'px-3 py-1.5 transition-colors',
                 type === 'income'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50',
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-background text-foreground hover:bg-muted',
               ].join(' ')}
             >
               {t('reports.income')}
@@ -392,14 +392,14 @@ function TagsTab() {
 
       {/* Chart */}
       {isLoading ? (
-        <div className="h-72 bg-gray-100 animate-pulse rounded-xl" />
+        <div className="h-72 bg-muted animate-pulse rounded-xl" />
       ) : data && chartData.length > 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="bg-card rounded-xl border border-border p-4">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium text-foreground">
               {t('reports.tagSummaryTitle')}: {fmt.currency(data.total)}
             </span>
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-muted-foreground">
               {data.start} – {data.end}
             </span>
           </div>
@@ -410,7 +410,7 @@ function TagsTab() {
           />
         </div>
       ) : (
-        <div className="text-center py-16 text-gray-400 text-sm">{t('reports.noTagData')}</div>
+        <div className="text-center py-16 text-muted-foreground text-sm">{t('reports.noTagData')}</div>
       )}
     </div>
   );
@@ -435,12 +435,12 @@ export function ReportsPage() {
     <div className="max-w-5xl mx-auto px-4 py-6 space-y-5">
       {/* Page header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">{t('reports.title')}</h1>
-        <p className="text-sm text-gray-500 mt-0.5">{t('reports.subtitle')}</p>
+        <h1 className="text-2xl font-bold text-foreground">{t('reports.title')}</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">{t('reports.subtitle')}</p>
       </div>
 
       {/* Tab bar */}
-      <div className="flex border-b border-gray-200">
+      <div className="flex border-b border-border">
         {TABS.map(({ id, label }) => (
           <button
             key={id}
@@ -448,8 +448,8 @@ export function ReportsPage() {
             className={[
               'px-4 py-2.5 text-sm font-medium border-b-2 transition-colors',
               tab === id
-                ? 'border-blue-600 text-blue-700'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border',
             ].join(' ')}
           >
             {label}

@@ -14,20 +14,35 @@ import {
 const router = Router();
 
 router.use(authenticateAny);
-router.use(requireScope('accounts:read'));
 router.use(loadHousehold);
 
-router.get('/', accountController.list);
-router.post('/', validateRequest(createAccountSchema), accountController.create);
-router.get('/:id', accountController.get);
-router.patch('/:id', validateRequest(updateAccountSchema), accountController.update);
-router.delete('/:id', accountController.archive);
+router.get('/', requireScope('accounts:read'), accountController.list);
+router.post(
+  '/',
+  requireScope('accounts:write'),
+  validateRequest(createAccountSchema),
+  accountController.create
+);
+router.get('/:id', requireScope('accounts:read'), accountController.get);
+router.patch(
+  '/:id',
+  requireScope('accounts:write'),
+  validateRequest(updateAccountSchema),
+  accountController.update
+);
+router.delete('/:id', requireScope('accounts:write'), accountController.archive);
 
 // ─── Account share management ─────────────────────────────────────────────────
-router.get('/:id/shares', accountShareController.getShares);
-router.put('/:id/shares', validateRequest(putSharesSchema), accountShareController.putShares);
+router.get('/:id/shares', requireScope('accounts:read'), accountShareController.getShares);
+router.put(
+  '/:id/shares',
+  requireScope('accounts:write'),
+  validateRequest(putSharesSchema),
+  accountShareController.putShares
+);
 router.patch(
   '/:id/shares/:userId',
+  requireScope('accounts:write'),
   validateRequest(patchShareSchema),
   accountShareController.patchShare
 );

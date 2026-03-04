@@ -60,7 +60,7 @@ export function useDashboardHints() {
   return useQuery({
     queryKey: HINTS_QUERY_KEY,
     queryFn: fetchDashboardHints,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 15 * 60 * 1000,
   });
 }
 

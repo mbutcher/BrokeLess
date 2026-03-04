@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
 import { useAccounts } from '../hooks/useAccounts';
 import { useCategories } from '../hooks/useCategories';
 import { useCreateTransaction, useUpdateTransaction, useAllTags } from '../hooks/useTransactions';
@@ -27,12 +28,16 @@ interface TransactionFormProps {
   onCancel: () => void;
 }
 
+const inputClass =
+  'w-full border border-border rounded-lg px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring';
+
 export function TransactionForm({
   transaction,
   defaultAccountId,
   onSuccess,
   onCancel,
 }: TransactionFormProps) {
+  const { t } = useTranslation();
   const isEditing = Boolean(transaction);
   const { data: accounts = [] } = useAccounts();
   const { data: categories = [] } = useCategories();
@@ -75,7 +80,7 @@ export function TransactionForm({
     () =>
       tagInput.trim()
         ? allTags.filter(
-            (t) => t.startsWith(tagInput.trim().toLowerCase()) && !tags.includes(t)
+            (tag) => tag.startsWith(tagInput.trim().toLowerCase()) && !tags.includes(tag)
           )
         : [],
     [tagInput, allTags, tags]
@@ -154,42 +159,42 @@ export function TransactionForm({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Account</label>
-          <select {...register('accountId')} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option value="">Select account</option>
+          <label className="block text-sm font-medium text-foreground mb-1">Account</label>
+          <select {...register('accountId')} className={inputClass}>
+            <option value="">{t('transactions.selectAccount')}</option>
             {accounts.filter((a) => a.isActive).map((a) => (
               <option key={a.id} value={a.id}>{a.name}</option>
             ))}
           </select>
-          {errors.accountId && <p className="text-red-500 text-xs mt-1">{errors.accountId.message}</p>}
+          {errors.accountId && <p className="text-destructive text-xs mt-1">{errors.accountId.message}</p>}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-          <input type="date" {...register('date')} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          {errors.date && <p className="text-red-500 text-xs mt-1">{errors.date.message}</p>}
+          <label className="block text-sm font-medium text-foreground mb-1">Date</label>
+          <input type="date" {...register('date')} className={inputClass} />
+          {errors.date && <p className="text-destructive text-xs mt-1">{errors.date.message}</p>}
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Amount <span className="text-gray-400 text-xs">(negative = expense)</span>
+          <label className="block text-sm font-medium text-foreground mb-1">
+            Amount <span className="text-muted-foreground text-xs">(negative = expense)</span>
           </label>
           <input
             type="number"
             step="0.01"
             {...register('amount', { valueAsNumber: true })}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={inputClass}
             placeholder="-45.00"
           />
-          {errors.amount && <p className="text-red-500 text-xs mt-1">{errors.amount.message}</p>}
+          {errors.amount && <p className="text-destructive text-xs mt-1">{errors.amount.message}</p>}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-          <select {...register('categoryId')} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <option value="">Uncategorised</option>
+          <label className="block text-sm font-medium text-foreground mb-1">Category</label>
+          <select {...register('categoryId')} className={inputClass}>
+            <option value="">{t('transactions.uncategorised')}</option>
             {topLevelIncome.length > 0 && (
               <>
                 <option disabled>── Income ──</option>
@@ -227,36 +232,36 @@ export function TransactionForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Payee (optional)</label>
-        <input {...register('payee')} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. Whole Foods" />
+        <label className="block text-sm font-medium text-foreground mb-1">Payee (optional)</label>
+        <input {...register('payee')} className={inputClass} placeholder="e.g. Whole Foods" />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
-        <input {...register('description')} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <label className="block text-sm font-medium text-foreground mb-1">Description (optional)</label>
+        <input {...register('description')} className={inputClass} />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
-        <textarea {...register('notes')} rows={2} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
+        <label className="block text-sm font-medium text-foreground mb-1">Notes (optional)</label>
+        <textarea {...register('notes')} rows={2} className={`${inputClass} resize-none`} />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Tags <span className="text-gray-400 text-xs">(optional — press Enter or comma to add)</span>
+        <label className="block text-sm font-medium text-foreground mb-1">
+          Tags <span className="text-muted-foreground text-xs">(optional — press Enter or comma to add)</span>
         </label>
         <div className="tag-input-wrapper relative">
-          <div className="flex flex-wrap gap-1.5 items-center min-h-[38px] border border-gray-300 rounded-lg px-2 py-1.5 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent">
+          <div className="flex flex-wrap gap-1.5 items-center min-h-[38px] border border-border rounded-lg px-2 py-1.5 focus-within:ring-2 focus-within:ring-ring focus-within:border-transparent bg-background">
             {tags.map((tag) => (
               <span
                 key={tag}
-                className="inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-700 rounded px-1.5 py-0.5"
+                className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary rounded px-1.5 py-0.5"
               >
                 #{tag}
                 <button
                   type="button"
                   onClick={() => removeTag(tag)}
-                  className="text-blue-500 hover:text-blue-800 leading-none"
+                  className="text-primary/70 hover:text-primary leading-none"
                   aria-label={`Remove tag ${tag}`}
                 >
                   ×
@@ -277,17 +282,17 @@ export function TransactionForm({
                 // Delay so suggestion clicks register first
                 setTimeout(() => setShowSuggestions(false), 150);
               }}
-              className="flex-1 min-w-[80px] text-sm outline-none bg-transparent"
-              placeholder={tags.length === 0 ? 'vacation, dining…' : ''}
+              className="flex-1 min-w-[80px] text-sm outline-none bg-transparent text-foreground placeholder:text-muted-foreground"
+              placeholder={tags.length === 0 ? t('transactions.tagPlaceholder') : ''}
             />
           </div>
           {showSuggestions && suggestions.length > 0 && (
-            <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-md max-h-40 overflow-y-auto">
+            <ul className="absolute z-10 w-full mt-1 bg-card border border-border rounded-lg shadow-md max-h-40 overflow-y-auto">
               {suggestions.map((s) => (
                 <li key={s}>
                   <button
                     type="button"
-                    className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
+                    className="w-full text-left px-3 py-1.5 text-sm hover:bg-muted text-foreground"
                     onMouseDown={(e) => {
                       e.preventDefault();
                       addTag(s);
@@ -303,18 +308,18 @@ export function TransactionForm({
       </div>
 
       {isEditing && (
-        <label className="flex items-center gap-2 text-sm text-gray-700">
+        <label className="flex items-center gap-2 text-sm text-foreground">
           <input type="checkbox" {...register('isCleared')} className="rounded" />
-          Mark as cleared
+          {t('transactions.markCleared')}
         </label>
       )}
 
       <div className="flex gap-3 pt-2">
-        <button type="button" onClick={onCancel} className="flex-1 border border-gray-300 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-          Cancel
+        <button type="button" onClick={onCancel} className="flex-1 border border-border rounded-lg px-4 py-2 text-sm font-medium text-foreground hover:bg-muted">
+          {t('common.cancel')}
         </button>
-        <button type="submit" disabled={isSubmitting} className="flex-1 bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
-          {isSubmitting ? 'Saving...' : isEditing ? 'Update' : 'Add Transaction'}
+        <button type="submit" disabled={isSubmitting} className="flex-1 bg-primary text-primary-foreground rounded-lg px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-50">
+          {isSubmitting ? t('common.saving') : isEditing ? t('transactions.updateTransaction') : t('transactions.addTransaction')}
         </button>
       </div>
     </form>

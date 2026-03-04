@@ -8,16 +8,13 @@ import { useAuthStore } from '@features/auth/stores/authStore';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@components/ui/dialog';
 import { ManageSharesDialog } from '@features/household/components/ManageSharesDialog';
 import type { Account, AccountType } from '../types';
+import { ACCOUNT_TYPES } from '../constants';
 
 type SortKey = 'name-asc' | 'name-desc' | 'balance-desc' | 'balance-asc' | 'type' | 'rate-desc' | 'rate-asc';
 type GroupBy = 'all' | 'assets' | 'liabilities';
 
-const ACCOUNT_TYPES: AccountType[] = [
-  'checking', 'savings', 'credit_card', 'loan', 'line_of_credit', 'mortgage', 'investment', 'other',
-];
-
 const selectClass =
-  'border border-gray-200 rounded-lg px-2 py-1.5 text-xs text-gray-600 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500';
+  'border border-border rounded-lg px-2 py-1.5 text-xs text-foreground bg-background focus:outline-none focus:ring-2 focus:ring-ring';
 
 export function AccountsPage() {
   const { t } = useTranslation();
@@ -164,8 +161,8 @@ export function AccountsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('accounts.title')}</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <h1 className="text-2xl font-bold text-foreground">{t('accounts.title')}</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
             {t('accounts.netWorth')}{' '}
             <span
               className={
@@ -268,7 +265,7 @@ export function AccountsPage() {
             <option value="name-desc">{t('accounts.nameZA')}</option>
             <option value="balance-desc">{t('accounts.balanceDesc')}</option>
             <option value="balance-asc">{t('accounts.balanceAsc')}</option>
-            <option value="type">{t('common.type', 'Type')}</option>
+            <option value="type">{t('common.type')}</option>
             <option value="rate-desc">{t('accounts.rateDesc')}</option>
             <option value="rate-asc">{t('accounts.rateAsc')}</option>
           </select>

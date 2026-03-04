@@ -15,8 +15,13 @@ router.use(authenticateAny);
 
 // ─── Connection ──────────────────────────────────────────────────────────────
 router.get('/status', requireScope('simplefin:read'), simplefinController.getStatus);
-router.post('/connect', validateRequest(connectSimplefinSchema), simplefinController.connect);
-router.delete('/disconnect', simplefinController.disconnect);
+router.post(
+  '/connect',
+  requireScope('simplefin:write'),
+  validateRequest(connectSimplefinSchema),
+  simplefinController.connect
+);
+router.delete('/disconnect', requireScope('simplefin:write'), simplefinController.disconnect);
 
 // ─── Sync ────────────────────────────────────────────────────────────────────
 router.post('/sync', requireScope('simplefin:write'), simplefinController.sync);
@@ -25,6 +30,7 @@ router.post('/sync', requireScope('simplefin:write'), simplefinController.sync);
 router.get('/schedule', requireScope('simplefin:read'), simplefinController.getSchedule);
 router.patch(
   '/schedule',
+  requireScope('simplefin:write'),
   validateRequest(updateSimplefinScheduleSchema),
   simplefinController.updateSchedule
 );
@@ -37,6 +43,7 @@ router.get(
 );
 router.post(
   '/accounts/:simplefinAccountId/map',
+  requireScope('simplefin:write'),
   validateRequest(mapAccountSchema),
   simplefinController.mapAccount
 );
@@ -50,6 +57,7 @@ router.get(
 );
 router.post(
   '/reviews/:reviewId/resolve',
+  requireScope('simplefin:write'),
   validateRequest(resolveReviewSchema),
   simplefinController.resolveReview
 );

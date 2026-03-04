@@ -5,6 +5,7 @@ import { cn } from '@lib/utils';
 import { useAuthStore } from '@features/auth/stores/authStore';
 import { useFormatters } from '@lib/i18n/useFormatters';
 import { useExchangeRate } from '../hooks/useExchangeRate';
+import { LIABILITY_TYPES } from '../constants';
 import type { Account } from '../types';
 
 interface AccountCardProps {
@@ -106,7 +107,7 @@ export function AccountCard({ account, onEdit, onArchive, onShare, className }: 
             {account.annualRate != null && (
               <span className="text-xs text-gray-400 shrink-0">· {(account.annualRate * 100).toFixed(2)}% APR</span>
             )}
-            {['loan', 'mortgage', 'credit_card', 'line_of_credit'].includes(account.type) && account.isActive && (
+            {LIABILITY_TYPES.includes(account.type) && account.isActive && (
               <Link
                 to={`/accounts/${account.id}/debt`}
                 className="text-xs text-blue-600 hover:underline shrink-0"

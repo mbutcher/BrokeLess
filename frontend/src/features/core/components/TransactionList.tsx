@@ -25,21 +25,21 @@ export function TransactionList({ filters, onEdit, onPageChange }: TransactionLi
     return (
       <div className="space-y-2">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-16 bg-gray-100 animate-pulse rounded-xl" />
+          <div key={i} className="h-16 bg-muted animate-pulse rounded-xl" />
         ))}
       </div>
     );
   }
 
   if (error) {
-    return <div className="text-red-600 text-sm p-4">Failed to load transactions.</div>;
+    return <div className="text-destructive text-sm p-4">Failed to load transactions.</div>;
   }
 
   const transactions = data?.data ?? [];
 
   if (transactions.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-400">
+      <div className="text-center py-12 text-muted-foreground">
         <p className="text-sm">No transactions found.</p>
       </div>
     );
@@ -61,8 +61,8 @@ export function TransactionList({ filters, onEdit, onPageChange }: TransactionLi
         const totalPages = Math.ceil(data.total / data.limit);
         const currentPage = data.page;
         return (
-          <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-            <p className="text-xs text-gray-400">
+          <div className="flex items-center justify-between pt-2 border-t border-border">
+            <p className="text-xs text-muted-foreground">
               {t('transactions.showing', { count: data.data.length, total: data.total })}
             </p>
             {totalPages > 1 && (
@@ -70,19 +70,19 @@ export function TransactionList({ filters, onEdit, onPageChange }: TransactionLi
                 <button
                   onClick={() => onPageChange(currentPage - 1)}
                   disabled={currentPage <= 1}
-                  className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-800 disabled:opacity-40 disabled:cursor-not-allowed px-2 py-1 rounded hover:bg-gray-100"
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed px-2 py-1 rounded hover:bg-muted"
                   aria-label={t('transactions.prevPage')}
                 >
                   <ChevronLeft className="h-3.5 w-3.5" />
                   {t('transactions.prevPage')}
                 </button>
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-muted-foreground">
                   {t('transactions.page', { page: currentPage, totalPages })}
                 </span>
                 <button
                   onClick={() => onPageChange(currentPage + 1)}
                   disabled={currentPage >= totalPages}
-                  className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-800 disabled:opacity-40 disabled:cursor-not-allowed px-2 py-1 rounded hover:bg-gray-100"
+                  className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed px-2 py-1 rounded hover:bg-muted"
                   aria-label={t('transactions.nextPage')}
                 >
                   {t('transactions.nextPage')}

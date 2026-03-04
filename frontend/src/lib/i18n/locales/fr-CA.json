@@ -25,7 +25,10 @@
     "restore": "Restaurer",
     "viewAll": "Voir tout",
     "offline": "Hors ligne",
-    "pendingSync": "{{count}} synchronisation en attente"
+    "pendingSync": "{{count}} synchronisation en attente",
+    "confirm": "Confirmer",
+    "edit": "Modifier",
+    "type": "Type"
   },
   "auth": {
     "appName": "Budget App",
@@ -468,7 +471,15 @@
     "prevPage": "Précédent",
     "nextPage": "Suivant",
     "filterTag": "Étiquette",
-    "allTags": "Toutes les étiquettes"
+    "allTags": "Toutes les étiquettes",
+    "allAccounts": "Tous les comptes",
+    "allCategories": "Toutes les catégories",
+    "noDescription": "Aucune description",
+    "transfer": "Virement",
+    "selectAccount": "Sélectionner un compte",
+    "tagPlaceholder": "Ajouter une étiquette...",
+    "markCleared": "Marquer comme compensé",
+    "updateTransaction": "Mettre à jour la transaction"
   },
   "recurring": {
     "title": "Transactions récurrentes",
@@ -615,7 +626,8 @@
       "addMember": "Ajouter un membre",
       "removeMember": "Supprimer",
       "memberSince": "Membre depuis",
-      "nameLabel": "Nom du foyer"
+      "nameLabel": "Nom du foyer",
+      "confirmRemove": "Êtes-vous sûr de vouloir supprimer ce membre ? Son compte sera désactivé et tous ses partages de compte seront supprimés."
     },
     "roles": {
       "owner": "Propriétaire",

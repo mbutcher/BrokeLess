@@ -25,7 +25,10 @@
     "restore": "Restore",
     "viewAll": "View all",
     "offline": "Offline",
-    "pendingSync": "{{count}} pending sync"
+    "pendingSync": "{{count}} pending sync",
+    "confirm": "Confirm",
+    "edit": "Edit",
+    "type": "Type"
   },
   "auth": {
     "appName": "Budget App",
@@ -468,7 +471,15 @@
     "prevPage": "Previous",
     "nextPage": "Next",
     "filterTag": "Tag",
-    "allTags": "All tags"
+    "allTags": "All tags",
+    "allAccounts": "All Accounts",
+    "allCategories": "All Categories",
+    "noDescription": "No description",
+    "transfer": "Transfer",
+    "selectAccount": "Select account",
+    "tagPlaceholder": "Add a tag...",
+    "markCleared": "Mark as cleared",
+    "updateTransaction": "Update Transaction"
   },
   "recurring": {
     "title": "Recurring Transactions",
@@ -615,7 +626,8 @@
       "addMember": "Add Member",
       "removeMember": "Remove",
       "memberSince": "Member since",
-      "nameLabel": "Household Name"
+      "nameLabel": "Household Name",
+      "confirmRemove": "Are you sure you want to remove this member? This will deactivate their account and remove all their account shares."
     },
     "roles": {
       "owner": "Owner",

@@ -46,7 +46,7 @@ function GoalDeadlineWarning({ goalId, goalName, targetDate, onActiveChange }: G
   );
 
   const pct = progress?.percentComplete ?? -1;
-  const expectedPct = daysLeft <= 30 ? 100 - (daysLeft / 30) * (100 - pct) : Infinity;
+  const expectedPct = daysLeft <= 30 ? ((30 - daysLeft) / 30) * 100 : Infinity;
   const isActive = Boolean(progress && daysLeft <= 30 && daysLeft >= 0 && pct < expectedPct);
 
   useEffect(() => {
