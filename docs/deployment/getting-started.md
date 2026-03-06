@@ -320,7 +320,7 @@ SELECT * FROM mysql.general_log ORDER BY event_time DESC LIMIT 100;
 3. Add service logic in `backend/src/services/`
 4. Create repository method if needed
 5. Add validation schema in `backend/src/validators/`
-6. Update OpenAPI spec in `docs/openapi/paths/`
+6. Update OpenAPI spec in `docs/api/paths/`
 7. Write tests
 8. Update documentation
 

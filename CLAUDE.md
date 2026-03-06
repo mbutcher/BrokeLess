@@ -49,8 +49,11 @@ npm run test:watch      # Jest watch mode
 npm run test:coverage   # Jest with coverage
 npm run migrate         # Run Knex migrations
 npm run migrate:make    # Create new migration
+npm run migrate:rollback # Roll back last migration
 npm run migrate:status  # Check migration status
 npm run seed            # Run seeders
+npm run seed:fresh      # Rollback all + migrate + seed (dev only, refuses in prod)
+npm run search:backfill # One-time backfill of transaction search index
 ```
 
 ### Frontend
@@ -67,17 +70,20 @@ npm run format:check    # Check Prettier compliance
 npm test                # Vitest
 npm run test:ui         # Vitest UI dashboard
 npm run test:coverage   # Vitest with coverage
+npm run storybook       # Storybook dev server (port 6006)
+npm run build-storybook # Build Storybook static site
+npm run test-storybook  # Run Storybook interaction tests
 ```
 
 ### Docker
 ```bash
 # Development
-docker-compose -f docker/docker-compose.dev.yml up -d
-docker-compose -f docker/docker-compose.dev.yml down
+docker compose -f docker/docker-compose.dev.yml up -d
+docker compose -f docker/docker-compose.dev.yml down
 
 # Production (Unraid)
-docker-compose -f docker/docker-compose.prod.yml up -d
-docker-compose -f docker/docker-compose.prod.yml down
+docker compose -f docker/docker-compose.prod.yml up -d
+docker compose -f docker/docker-compose.prod.yml down
 ```
 
 ### Initial Setup
@@ -136,6 +142,7 @@ src/
 
 ### TypeScript
 - Strict mode enabled in both backend and frontend
+- `noUncheckedIndexedAccess: true` in both tsconfigs — array index access `arr[n]` returns `T | undefined`; use `arr[n]!` when length is already checked, or `arr.at(-1) ?? fallback`
 - No `any` — use proper types or `unknown`
 - Explicit return types on functions (backend enforced by ESLint)
 - Zod schemas used for runtime validation on both sides
@@ -148,7 +155,7 @@ src/
 ### Database
 - UUID primary keys on all tables
 - `created_at` / `updated_at` timestamps everywhere
-- Sensitive fields (email, TOTP secrets) are AES-256-GCM encrypted at the application layer
+- Sensitive fields encrypted at the application layer (AES-256-GCM): email, TOTP secrets, transaction payee/description/notes
 - All schema changes via Knex migrations — never modify DB directly
 
 ### Authentication Flow
@@ -158,7 +165,7 @@ src/
 - Reuse detection: presenting a revoked refresh token kills all sessions
 
 ### API Responses
-- Standard envelope: `{ success: boolean, data?: T, error?: string }`
+- Standard envelope: `{ status: 'success', data: T }` on success; `{ status: 'error', error: string }` on failure
 - HTTP status codes used semantically
 - Rate limiting: 100 req / 15 min general; 5 req / 15 min on login
 
@@ -180,7 +187,9 @@ src/
 ---
 
 ## Docs & References
-- `docs/planning/architecture-decisions/` — ADRs for tech stack and auth strategy
-- `docs/planning/database-schema.md` — Full schema reference
-- `docs/developer/` — Getting started, API docs, security guidelines, deployment
+- `docs/developer/architecture-decisions/` — ADRs for tech stack and auth strategy
+- `docs/developer/database-schema.md` — Full schema reference
+- `docs/deployment/` — Getting started, deployment guide
+- `docs/api/` — OpenAPI spec and path definitions
+- `docs/product/` — Roadmaps and PRDs
 - `secrets/.env.example` — All supported environment variables

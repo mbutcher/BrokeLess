@@ -140,4 +140,28 @@ This is why **backing up production secrets** is critical!
 
 ## Key Rotation
 
-See [Security Guidelines](../docs/developer/security-guidelines.md#key-rotation) for key rotation procedures.
+### JWT Secret
+
+1. Generate a new secret: `openssl rand -base64 64 > secrets/production/jwt_secret.txt`
+2. Restart the backend: `docker compose -f docker/docker-compose.prod.yml restart backend`
+
+All existing sessions are immediately invalidated — users will need to log in again.
+
+### Database Password
+
+1. Generate a new password: `openssl rand -base64 32 > secrets/production/db_password.txt`
+2. Update the password inside MariaDB:
+   ```bash
+   docker exec -it budget_mariadb \
+     sh -c 'mysql -u root -p"$(cat /run/secrets/db_root_password)" -e \
+     "ALTER USER '\''budget_user'\''@'\''%'\'' IDENTIFIED BY '\''<new-password>'\'';"'
+   ```
+3. Restart the backend: `docker compose -f docker/docker-compose.prod.yml restart backend`
+
+### Encryption Key
+
+> **Note:** Rotating the AES-256-GCM field-level encryption key requires re-encrypting all encrypted database fields (emails, payees, descriptions, notes). A migration tool for this has not been implemented yet. Until it is, treat the encryption key as a long-lived credential — protect it accordingly and store the backup in encrypted storage separate from the database.
+
+### Password Pepper
+
+> **Note:** Rotating the password pepper invalidates all existing password hashes — every user must reset their password. Treat this as a break-glass procedure only (e.g., confirmed pepper compromise).

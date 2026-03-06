@@ -11,7 +11,7 @@ type YamlDoc = Record<string, unknown>;
  * The merged spec is returned as a plain object for swagger-ui-express.
  */
 export function buildSwaggerSpec(): YamlDoc {
-  const docsDir = path.resolve(__dirname, '../../../docs/openapi');
+  const docsDir = path.resolve(__dirname, '../../../docs/api');
   const base = yaml.load(fs.readFileSync(path.join(docsDir, 'openapi.yaml'), 'utf8')) as YamlDoc;
 
   if (!base['paths']) base['paths'] = {};
