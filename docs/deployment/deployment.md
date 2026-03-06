@@ -9,6 +9,7 @@
 ## What You'll Need Before Starting
 
 - **Unraid 6.12 or newer**
+- **Docker Compose Manager** installed from Community Applications (search "Docker Compose Manager" by dcflachs)
 - **Nginx Proxy Manager** installed from Community Applications (for access outside your home network)
 - A domain name pointed at your home IP, or a local hostname like `budget.lan`
 
