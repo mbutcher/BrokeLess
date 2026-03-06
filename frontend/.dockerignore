@@ -67,11 +67,5 @@ vite.config.ts.timestamp-*
 # Other config files (not needed in production build)
 .prettierrc*
 .eslintrc*
-tsconfig.json
-tsconfig.node.json
 vitest.config.ts
-tailwind.config.js
-postcss.config.js
 
-# Public folder (handled by COPY in Dockerfile)
-public/

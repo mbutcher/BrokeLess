@@ -96,8 +96,11 @@ app.use(errorHandler);
 // Initialize database and start server
 async function startServer() {
   try {
-    // Initialize database connection
-    await initializeDatabase();
+    // Initialize database connection and run pending migrations
+    const db = await initializeDatabase();
+    logger.info('Running database migrations...');
+    await db.migrate.latest();
+    logger.info('Migrations complete');
 
     // Start background services
     simplefinScheduler.start();

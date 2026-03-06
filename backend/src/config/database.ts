@@ -1,3 +1,4 @@
+import * as path from 'path';
 import knex, { Knex } from 'knex';
 import { env } from './env';
 import { logger } from '../utils/logger';
@@ -24,9 +25,12 @@ const dbConfig: Knex.Config = {
     createTimeoutMillis: 30000,
   },
   migrations: {
-    directory: './src/database/migrations',
+    // In production the compiled output is in dist/; in dev ts-node runs from src/
+    directory: env.isProduction
+      ? path.join(__dirname, '..', 'database', 'migrations')
+      : path.join(__dirname, '..', '..', 'src', 'database', 'migrations'),
     tableName: 'knex_migrations',
-    extension: 'ts',
+    extension: env.isProduction ? 'js' : 'ts',
   },
   debug: env.isDevelopment,
 };

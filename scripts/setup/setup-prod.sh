@@ -152,6 +152,15 @@ for d in "${dirs[@]}"; do
 done
 success "Directories created under ${DATA_DIR}"
 
+# Create the MariaDB InnoDB encryption keyfile (required before first start)
+KEY_FILE="${DATA_DIR}/mariadb/keys/keyfile.enc"
+if [[ ! -f "$KEY_FILE" ]]; then
+  DB_ENC_KEY=$(cat "$SECRET_DIR/db_encryption_key.txt")
+  printf '1;%s\n' "$DB_ENC_KEY" > "$KEY_FILE"
+  chmod 600 "$KEY_FILE"
+  success "MariaDB encryption keyfile created"
+fi
+
 echo ""
 info "Building images and starting containers (first run may take a few minutes)..."
 echo ""
