@@ -157,7 +157,7 @@ KEY_FILE="${DATA_DIR}/mariadb/keys/keyfile.enc"
 if [[ ! -f "$KEY_FILE" ]]; then
   DB_ENC_KEY=$(cat "$SECRET_DIR/db_encryption_key.txt")
   printf '1;%s\n' "$DB_ENC_KEY" > "$KEY_FILE"
-  chmod 600 "$KEY_FILE"
+  chmod 644 "$KEY_FILE"
   success "MariaDB encryption keyfile created"
 fi
 
