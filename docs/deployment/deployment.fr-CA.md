@@ -27,7 +27,7 @@ cd /mnt/user/repos/BudgetApp
 
 Le script d'installation vous demandera votre nom de domaine, puis s'occupera du reste automatiquement — génération de vos clés de sécurité, création de tous les dossiers nécessaires et démarrage de l'application.
 
-Une fois terminé, BudgetApp sera accessible sur le port **3000**.
+Une fois terminé, BudgetApp sera accessible sur le port **13911**.
 
 > **Optionnel :** Passez votre nom de domaine directement pour éviter la question :
 > ```bash
@@ -58,7 +58,7 @@ Si vous souhaitez accéder à BudgetApp depuis l'extérieur de votre réseau ave
 2. Remplissez l'onglet **Details** :
    - **Domain Names :** `budget.votredomaine.com`
    - **Forward Hostname / IP :** l'adresse IP de votre serveur Unraid
-   - **Forward Port :** `3000`
+   - **Forward Port :** `13911`
    - Activez **Websockets Support**
 3. Dans l'onglet **SSL** :
    - Sélectionnez **Request a new SSL Certificate**
@@ -140,7 +140,7 @@ docker compose -f docker/docker-compose.prod.yml logs
 Consultez les messages d'erreur. Causes fréquentes :
 
 - **Fichiers secrets manquants** — relancez `./scripts/setup/setup-prod.sh` depuis le dossier du dépôt.
-- **Port 3000 déjà utilisé** — un autre conteneur utilise ce port. Changez-le en modifiant `FRONTEND_PORT` dans `secrets/production/.env`, puis redémarrez.
+- **Port 13911 déjà utilisé** — un autre conteneur utilise ce port. Changez-le en modifiant `FRONTEND_PORT` dans `secrets/production/.env`, puis redémarrez.
 
 ### L'application démarre mais je ne peux pas me connecter / erreurs WebAuthn
 

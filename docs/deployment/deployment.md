@@ -27,7 +27,7 @@ cd /mnt/user/repos/BudgetApp
 
 The setup script will ask for your domain name, then do everything else automatically — generating your security keys, creating all the necessary folders, and starting the app.
 
-When it finishes, BudgetApp will be running on port **3000**.
+When it finishes, BudgetApp will be running on port **13911**.
 
 > **Optional:** Pass your domain name directly to skip the prompt:
 > ```bash
@@ -58,7 +58,7 @@ If you want to access BudgetApp from outside your home network with a real domai
 2. Fill in the **Details** tab:
    - **Domain Names:** `budget.yourdomain.com`
    - **Forward Hostname / IP:** the IP address of your Unraid server
-   - **Forward Port:** `3000`
+   - **Forward Port:** `13911`
    - Turn on **Websockets Support**
 3. On the **SSL** tab:
    - Select **Request a new SSL Certificate**
@@ -140,7 +140,7 @@ docker compose -f docker/docker-compose.prod.yml logs
 Check the output for error messages. Common causes:
 
 - **Missing secret files** — run `./scripts/setup/setup-prod.sh` again from the repo folder.
-- **Port 3000 already in use** — another container is using that port. Change the port by editing `FRONTEND_PORT` in `secrets/production/.env`, then restart.
+- **Port 13911 already in use** — another container is using that port. Change the port by editing `FRONTEND_PORT` in `secrets/production/.env`, then restart.
 
 ### The app starts but I can't log in / WebAuthn errors
 

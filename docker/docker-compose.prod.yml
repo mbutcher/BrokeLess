@@ -1,5 +1,5 @@
 # SSL and external routing are handled by Nginx Proxy Manager (or any reverse proxy).
-# Point your proxy at http://<host>:${FRONTEND_PORT:-3000} — the frontend nginx
+# Point your proxy at http://<host>:${FRONTEND_PORT:-13911} — the frontend nginx
 # serves static files and proxies /api/v1 requests to the backend internally.
 
 services:
@@ -14,7 +14,7 @@ services:
     container_name: budget_frontend
     restart: unless-stopped
     ports:
-      - "${FRONTEND_PORT:-3000}:80"
+      - "${FRONTEND_PORT:-13911}:80"
     networks:
       - budget_app
     environment:
