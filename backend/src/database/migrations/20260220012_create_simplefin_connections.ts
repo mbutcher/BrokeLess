@@ -2,7 +2,7 @@ import type { Knex } from 'knex';
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('simplefin_connections', (table) => {
-    table.uuid('id').primary().defaultTo(knex.raw('(UUID())'));
+    table.uuid('id').primary();
     // One SimpleFIN connection per user
     table
       .uuid('user_id')

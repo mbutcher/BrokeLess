@@ -5,7 +5,8 @@ function rowToPasskey(row: Record<string, unknown>): Passkey {
   let transports: string[] | null = null;
   if (row['transports']) {
     try {
-      transports = JSON.parse(row['transports'] as string) as string[];
+      const raw = row['transports'];
+      transports = (typeof raw === 'string' ? JSON.parse(raw) : raw) as string[];
     } catch {
       transports = null;
     }

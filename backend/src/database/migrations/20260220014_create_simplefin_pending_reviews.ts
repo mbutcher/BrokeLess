@@ -2,7 +2,7 @@ import type { Knex } from 'knex';
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('simplefin_pending_reviews', (table) => {
-    table.uuid('id').primary().defaultTo(knex.raw('(UUID())'));
+    table.uuid('id').primary();
     table.uuid('user_id').notNullable().references('id').inTable('users').onDelete('CASCADE');
 
     // The SimpleFIN transaction that triggered the fuzzy-match flag

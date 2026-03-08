@@ -2,7 +2,7 @@ import type { Knex } from 'knex';
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('budget_lines', (table) => {
-    table.uuid('id').primary().defaultTo(knex.raw('UUID()'));
+    table.uuid('id').primary();
     table.uuid('user_id').notNullable().references('id').inTable('users').onDelete('CASCADE');
     table.string('name', 100).notNullable();
     table.enu('classification', ['income', 'expense']).notNullable();
@@ -44,10 +44,7 @@ export async function up(knex: Knex): Promise<void> {
     table.boolean('is_active').notNullable().defaultTo(true);
     table.string('notes', 255).nullable();
     table.timestamp('created_at').notNullable().defaultTo(knex.fn.now());
-    table
-      .timestamp('updated_at')
-      .notNullable()
-      .defaultTo(knex.raw('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'));
+    table.timestamp('updated_at').notNullable().defaultTo(knex.fn.now());
 
     table.index(['user_id']);
     table.index(['category_id']);

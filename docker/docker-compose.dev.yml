@@ -13,16 +13,16 @@ services:
       - /app/node_modules  # Prevent overwriting node_modules
       - ../secrets/development:/app/secrets:ro
       - ../docs:/docs:ro
+      - backend_data:/app/data  # SQLite database file (used when DB_CLIENT=sqlite3)
     env_file:
       - ../secrets/development/.env
     environment:
       - NODE_ENV=development
       - DEBUG=budget:*
-      - DB_HOST=mariadb
-      - DB_PORT=3306
-    depends_on:
-      mariadb:
-        condition: service_healthy
+      # DB_CLIENT defaults to sqlite3 — override to mariadb or postgres profiles
+      # - DB_CLIENT=mysql2
+      # - DB_HOST=mariadb
+      # - DB_PORT=3306
     networks:
       - budget_dev
     command: npm run dev
@@ -47,8 +47,9 @@ services:
     command: npm run dev
     restart: unless-stopped
 
-  # MariaDB (Development)
+  # MariaDB (Development) — start with: docker compose --profile mariadb up -d
   mariadb:
+    profiles: [mariadb]
     image: mariadb:11.2
     container_name: budget_mariadb_dev
     ports:
@@ -71,11 +72,38 @@ services:
       start_period: 30s
     restart: unless-stopped
 
+  # PostgreSQL (Development) — start with: docker compose --profile postgres up -d
+  postgres:
+    profiles: [postgres]
+    image: postgres:16-alpine
+    container_name: budget_postgres_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=budget_app
+      - POSTGRES_USER=budget_user
+      - POSTGRES_PASSWORD=dev_pass
+    networks:
+      - budget_dev
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U budget_user -d budget_app"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+
 networks:
   budget_dev:
     driver: bridge
     name: budget_dev_network
 
 volumes:
+  backend_data:
+    name: budget_sqlite_dev_data
   mariadb_dev_data:
     name: budget_mariadb_dev_data
+  postgres_dev_data:
+    name: budget_postgres_dev_data

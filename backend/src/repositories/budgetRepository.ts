@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import { dialectHelper } from '@utils/db/dialectHelper';
 import { getDatabase } from '@config/database';
 import type {
   Budget,
@@ -94,12 +95,7 @@ class BudgetRepository {
       category_id: e.categoryId,
       allocated_amount: e.allocatedAmount,
     }));
-    await this.db.raw(
-      `INSERT INTO budget_categories (budget_id, category_id, allocated_amount)
-       VALUES ${rows.map(() => '(?, ?, ?)').join(', ')}
-       ON DUPLICATE KEY UPDATE allocated_amount = VALUES(allocated_amount), updated_at = NOW()`,
-      rows.flatMap((r) => [r.budget_id, r.category_id, r.allocated_amount])
-    );
+    await dialectHelper.upsertBudgetCategories(this.db, rows);
   }
 
   /**

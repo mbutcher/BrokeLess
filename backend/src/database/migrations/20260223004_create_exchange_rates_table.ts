@@ -2,7 +2,7 @@ import type { Knex } from 'knex';
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('exchange_rates', (table) => {
-    table.uuid('id').primary().defaultTo(knex.raw('(UUID())'));
+    table.uuid('id').primary();
     // e.g. 'USD', 'CAD', 'EUR'
     table.string('from_currency', 3).notNullable();
     table.string('to_currency', 3).notNullable();

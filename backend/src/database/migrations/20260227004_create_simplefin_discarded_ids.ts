@@ -1,15 +1,12 @@
+import { randomUUID } from 'node:crypto';
 import type { Knex } from 'knex';
+import { dialectHelper } from '../../utils/db/dialectHelper';
 
 export async function up(knex: Knex): Promise<void> {
   // 1. Create the new normalized table
   await knex.schema.createTable('simplefin_discarded_ids', (table) => {
-    table.specificType('id', 'CHAR(36)').notNullable().primary();
-    table
-      .specificType('user_id', 'CHAR(36)')
-      .notNullable()
-      .references('id')
-      .inTable('users')
-      .onDelete('CASCADE');
+    table.uuid('id').notNullable().primary();
+    table.uuid('user_id').notNullable().references('id').inTable('users').onDelete('CASCADE');
     table.string('sfin_id', 255).notNullable();
     table.timestamp('discarded_at').notNullable().defaultTo(knex.fn.now());
     table.unique(['user_id', 'sfin_id'], { indexName: 'uq_simplefin_discarded_user_sfin' });
@@ -18,18 +15,33 @@ export async function up(knex: Knex): Promise<void> {
   });
 
   // 2. Backfill rows from existing discarded_ids_json JSON arrays
-  //    JSON_TABLE is available in MariaDB 10.6+ (we run 11.2)
-  await knex.raw(`
-    INSERT IGNORE INTO simplefin_discarded_ids (id, user_id, sfin_id, discarded_at)
-    SELECT UUID(), c.user_id, j.sfin_id, NOW()
-    FROM simplefin_connections c,
-         JSON_TABLE(
-           c.discarded_ids_json,
-           '$[*]' COLUMNS (sfin_id VARCHAR(255) PATH '$')
-         ) j
-    WHERE c.discarded_ids_json IS NOT NULL
-      AND c.discarded_ids_json != '[]'
-  `);
+  //    Implemented in JS to avoid dialect-specific JSON functions (JSON_TABLE, json_each, etc.)
+  const connections = (await knex('simplefin_connections')
+    .whereNotNull('discarded_ids_json')
+    .whereNot('discarded_ids_json', '[]')
+    .select('user_id', 'discarded_ids_json')) as Array<{
+    user_id: string;
+    discarded_ids_json: string | string[] | null;
+  }>;
+
+  const now = new Date();
+  for (const conn of connections) {
+    const raw = conn.discarded_ids_json;
+    const ids: string[] = Array.isArray(raw)
+      ? raw
+      : typeof raw === 'string'
+        ? (JSON.parse(raw) as string[])
+        : [];
+
+    for (const sfinId of ids) {
+      await dialectHelper.insertIgnore(knex, 'simplefin_discarded_ids', {
+        id: randomUUID(),
+        user_id: conn.user_id,
+        sfin_id: sfinId,
+        discarded_at: now,
+      });
+    }
+  }
 
   // 3. Drop the old JSON blob column
   await knex.schema.alterTable('simplefin_connections', (table) => {
@@ -43,18 +55,23 @@ export async function down(knex: Knex): Promise<void> {
     table.text('discarded_ids_json').nullable().after('auto_sync_window_end');
   });
 
-  // 2. Backfill JSON column from the normalized table using JSON_ARRAYAGG
-  await knex.raw(`
-    UPDATE simplefin_connections sc
-    SET sc.discarded_ids_json = (
-      SELECT JSON_ARRAYAGG(sd.sfin_id)
-      FROM simplefin_discarded_ids sd
-      WHERE sd.user_id = sc.user_id
-    )
-    WHERE EXISTS (
-      SELECT 1 FROM simplefin_discarded_ids sd WHERE sd.user_id = sc.user_id
-    )
-  `);
+  // 2. Backfill JSON column from the normalized table (JS aggregation — no dialect-specific functions needed)
+  const rows = (await knex('simplefin_discarded_ids')
+    .select('user_id', 'sfin_id')
+    .orderBy(['user_id', 'sfin_id'])) as Array<{ user_id: string; sfin_id: string }>;
+
+  const byUser = new Map<string, string[]>();
+  for (const row of rows) {
+    const list = byUser.get(row.user_id) ?? [];
+    list.push(row.sfin_id);
+    byUser.set(row.user_id, list);
+  }
+
+  for (const [userId, sfinIds] of byUser) {
+    await knex('simplefin_connections')
+      .where({ user_id: userId })
+      .update({ discarded_ids_json: JSON.stringify(sfinIds) });
+  }
 
   // 3. Drop the normalized table
   await knex.schema.dropTable('simplefin_discarded_ids');

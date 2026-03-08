@@ -2,7 +2,7 @@ import type { Knex } from 'knex';
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('account_shares', (table) => {
-    table.uuid('id').primary().defaultTo(knex.raw('(UUID())'));
+    table.uuid('id').primary();
     table.uuid('account_id').notNullable().references('id').inTable('accounts').onDelete('CASCADE');
     table
       .uuid('shared_with_user_id')

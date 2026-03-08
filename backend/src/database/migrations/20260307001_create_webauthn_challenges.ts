@@ -2,7 +2,7 @@ import type { Knex } from 'knex';
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('webauthn_challenges', (table) => {
-    table.specificType('id', 'CHAR(36)').primary().defaultTo(knex.raw('(UUID())'));
+    table.uuid('id').primary();
     table.string('challenge', 512).notNullable();
     table.string('type', 4).notNullable().comment('reg or auth');
     table.string('user_id', 36).nullable();

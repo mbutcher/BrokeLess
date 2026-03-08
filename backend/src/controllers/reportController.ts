@@ -3,6 +3,7 @@ import { asyncHandler, AppError } from '@middleware/errorHandler';
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 import { getDatabase } from '@config/database';
+import { dialectHelper } from '@utils/db/dialectHelper';
 import { forecastService } from '@services/core/forecastService';
 import { netWorthSnapshotRepository } from '@repositories/netWorthSnapshotRepository';
 import { encryptionService } from '@services/encryption/encryptionService';
@@ -35,8 +36,8 @@ class ReportController {
     const db = getDatabase();
     const rows = (await db('transactions')
       .where({ user_id: req.user!.id, is_transfer: false })
-      .where('date', '>=', db.raw('DATE_SUB(CURDATE(), INTERVAL ? MONTH)', [months]))
-      .select(db.raw("DATE_FORMAT(date, '%Y-%m') as month"))
+      .where('date', '>=', dialectHelper.nowMinusInterval(db, months, 'MONTH'))
+      .select(db.raw(`${dialectHelper.formatMonthSQL('date')} as month`))
       .sum({ income: db.raw('CASE WHEN amount > 0 THEN amount ELSE 0 END') })
       .sum({ expenses: db.raw('CASE WHEN amount < 0 THEN ABS(amount) ELSE 0 END') })
       .groupBy('month')

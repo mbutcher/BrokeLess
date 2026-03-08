@@ -2,7 +2,7 @@ import type { Knex } from 'knex';
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('budgets', (table) => {
-    table.uuid('id').primary().defaultTo(knex.raw('(UUID())'));
+    table.uuid('id').primary();
     table.uuid('user_id').notNullable().references('id').inTable('users').onDelete('CASCADE');
 
     table.string('name', 100).notNullable();
@@ -22,7 +22,7 @@ export async function up(knex: Knex): Promise<void> {
   });
 
   await knex.schema.createTable('budget_categories', (table) => {
-    table.uuid('id').primary().defaultTo(knex.raw('(UUID())'));
+    table.uuid('id').primary();
 
     table.uuid('budget_id').notNullable().references('id').inTable('budgets').onDelete('CASCADE');
 

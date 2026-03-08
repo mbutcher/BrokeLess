@@ -17,6 +17,7 @@ import type { Knex } from 'knex';
 import * as argon2 from 'argon2';
 import { env } from '../../config/env';
 import { encryptionService } from '../../services/encryption/encryptionService';
+import { dialectHelper } from '../../utils/db/dialectHelper';
 
 // ─── Environment Guard ────────────────────────────────────────────────────────
 
@@ -555,11 +556,11 @@ export async function seed(knex: Knex): Promise<void> {
 
   // ── Truncate all seed-managed tables ───────────────────────────────────────
   console.log('[dev_seed] Truncating tables...');
-  await knex.raw('SET FOREIGN_KEY_CHECKS = 0');
+  await dialectHelper.disableForeignKeyChecks(knex);
   for (const table of TRUNCATE_TABLES) {
     await knex(table).truncate();
   }
-  await knex.raw('SET FOREIGN_KEY_CHECKS = 1');
+  await dialectHelper.enableForeignKeyChecks(knex);
 
   // ── Users ──────────────────────────────────────────────────────────────────
   console.log('[dev_seed] Inserting users...');

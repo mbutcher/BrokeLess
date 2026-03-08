@@ -9,7 +9,9 @@ function rowToApiKey(row: Record<string, unknown>): ApiKey {
     userId: row['user_id'] as string,
     label: row['label'] as string,
     keyHash: row['key_hash'] as string,
-    scopes: JSON.parse(row['scopes'] as string) as string[],
+    scopes: (typeof row['scopes'] === 'string'
+      ? JSON.parse(row['scopes'])
+      : row['scopes']) as string[],
     lastUsedAt: row['last_used_at'] ? new Date(row['last_used_at'] as string) : null,
     expiresAt: row['expires_at'] ? new Date(row['expires_at'] as string) : null,
     createdAt: new Date(row['created_at'] as string),

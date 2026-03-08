@@ -1,6 +1,7 @@
 import { getDatabase } from '@config/database';
 import type { BudgetLine, DashboardHint } from '@typings/core.types';
 import { computeCurrentPayPeriod } from '@services/core/budgetLineService';
+import { dialectHelper } from '@utils/db/dialectHelper';
 
 const ANNUAL_REVIEW_THRESHOLD_MS = 365 * 24 * 60 * 60 * 1000;
 
@@ -67,7 +68,7 @@ class DashboardHintsService {
         // the N×M Cartesian product (monthly_totals × transactions) that would
         // inflate the SUM when a category has multiple months of history.
         db
-          .raw<{ rows: CategoryAvgRow[] }>(
+          .raw(
             `
         SELECT
           c.name AS category_name,
@@ -76,14 +77,14 @@ class DashboardHintsService {
         FROM (
           SELECT
             t2.category_id,
-            DATE_FORMAT(t2.date, '%Y-%m') AS mo,
+            ${dialectHelper.formatMonthSQL('t2.date')} AS mo,
             SUM(ABS(t2.amount)) AS monthly_spend
           FROM transactions t2
           WHERE t2.user_id = ?
             AND t2.is_transfer = 0
             AND t2.amount < 0
             AND t2.category_id IS NOT NULL
-            AND t2.date >= DATE_SUB(?, INTERVAL 4 MONTH)
+            AND t2.date >= ${dialectHelper.dateSubSQL('?', 4, 'MONTH')}
             AND t2.date < ?
           GROUP BY t2.category_id, mo
         ) AS monthly_totals
@@ -105,7 +106,7 @@ class DashboardHintsService {
         `,
             [userId, monthStart, monthStart, userId, monthStart, monthEnd]
           )
-          .then((result) => result.rows ?? [])
+          .then((result: unknown) => dialectHelper.rawRows<CategoryAvgRow>(result))
           .catch(() => [] as CategoryAvgRow[]),
 
         // Whether a pay-period anchor budget line exists

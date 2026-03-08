@@ -2,7 +2,7 @@ import type { Knex } from 'knex';
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('users', (table) => {
-    table.uuid('id').primary().defaultTo(knex.raw('(UUID())'));
+    table.uuid('id').primary();
 
     // Email stored two ways:
     //   email_encrypted: AES-256-GCM "iv:authTag:ciphertext" for display after decryption

@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { Knex } from 'knex';
+import { isMySQL } from '../../utils/db/dialectHelper';
 
 interface UserRow {
   id: string;
@@ -72,11 +73,24 @@ export async function down(knex: Knex): Promise<void> {
   });
 
   // Step 2: Restore user_id from the household owner
-  await knex.raw(`
-    UPDATE categories c
-    JOIN household_members hm ON hm.household_id = c.household_id AND hm.role = 'owner'
-    SET c.user_id = hm.user_id
-  `);
+  if (isMySQL(knex)) {
+    await knex.raw(`
+      UPDATE categories c
+      JOIN household_members hm ON hm.household_id = c.household_id AND hm.role = 'owner'
+      SET c.user_id = hm.user_id
+    `);
+  } else {
+    // PostgreSQL / SQLite: use a correlated subquery (JOIN in UPDATE is MySQL-only)
+    await knex.raw(`
+      UPDATE categories
+      SET user_id = (
+        SELECT hm.user_id
+        FROM household_members hm
+        WHERE hm.household_id = categories.household_id
+          AND hm.role = 'owner'
+      )
+    `);
+  }
 
   // Step 3: Make user_id NOT NULL, add index, drop household_id
   await knex.schema.alterTable('categories', (table) => {

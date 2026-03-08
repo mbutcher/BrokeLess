@@ -1,4 +1,5 @@
 import { getDatabase } from '@config/database';
+import { dialectHelper } from '@utils/db/dialectHelper';
 import type { ForecastMonth } from '@typings/core.types';
 
 interface HistoricalRow {
@@ -31,8 +32,8 @@ class ForecastService {
 
     const rows = (await db('transactions')
       .where({ user_id: userId, is_transfer: false })
-      .where('date', '>=', db.raw('DATE_SUB(CURDATE(), INTERVAL 6 MONTH)'))
-      .select(db.raw("DATE_FORMAT(date, '%Y-%m') as month"))
+      .where('date', '>=', dialectHelper.nowMinusInterval(db, 6, 'MONTH'))
+      .select(db.raw(`${dialectHelper.formatMonthSQL('date')} as month`))
       .sum({ income: db.raw('CASE WHEN amount > 0 THEN amount ELSE 0 END') })
       .sum({ expenses: db.raw('CASE WHEN amount < 0 THEN ABS(amount) ELSE 0 END') })
       .groupBy('month')

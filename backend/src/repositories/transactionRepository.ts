@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import type { Knex } from 'knex';
+import { dialectHelper } from '@utils/db/dialectHelper';
 import { getDatabase } from '@config/database';
 import type {
   Transaction,
@@ -196,7 +197,9 @@ class TransactionRepository {
       .where('t.account_id', '!=', tx.accountId)
       .where('t.amount', targetAmount)
       .whereNull('tl.id') // not already linked
-      .whereRaw('ABS(DATEDIFF(t.date, ?)) <= 3', [tx.date.toISOString().substring(0, 10)])
+      .whereRaw(`${dialectHelper.datediffAbsSQL('t.date', '?')} <= 3`, [
+        tx.date.toISOString().substring(0, 10),
+      ])
       .select(
         't.*',
         'a.id as a_id',

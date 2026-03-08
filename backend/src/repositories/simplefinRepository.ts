@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { getDatabase } from '@config/database';
 import type { SimplefinConnection, UpdateSimplefinScheduleData } from '@typings/core.types';
+import { dialectHelper } from '@utils/db/dialectHelper';
 
 function rowToConnection(row: Record<string, unknown>): SimplefinConnection {
   return {
@@ -99,17 +100,18 @@ class SimplefinRepository {
   }
 
   async addDiscardedId(userId: string, sfinId: string): Promise<void> {
-    await this.db.raw(
-      'INSERT IGNORE INTO simplefin_discarded_ids (id, user_id, sfin_id) VALUES (?, ?, ?)',
-      [randomUUID(), userId, sfinId]
-    );
+    await dialectHelper.insertIgnore(this.db, 'simplefin_discarded_ids', {
+      id: randomUUID(),
+      user_id: userId,
+      sfin_id: sfinId,
+    });
   }
 
   /** Deletes discarded ID rows older than 90 days for the given user. */
   async pruneDiscardedIds(userId: string): Promise<void> {
     await this.db('simplefin_discarded_ids')
       .where({ user_id: userId })
-      .where('discarded_at', '<', this.db.raw('DATE_SUB(NOW(), INTERVAL 90 DAY)'))
+      .where('discarded_at', '<', dialectHelper.nowMinusInterval(this.db, 90, 'DAY'))
       .delete();
   }
 

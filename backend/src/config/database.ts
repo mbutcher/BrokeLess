@@ -1,39 +1,86 @@
 import * as path from 'path';
+import * as fs from 'fs';
 import knex, { Knex } from 'knex';
 import { env } from './env';
 import { logger } from '../utils/logger';
 
 let db: Knex | null = null;
 
-// Database configuration
-const dbConfig: Knex.Config = {
-  client: 'mysql2',
-  connection: {
-    host: env.db.host,
-    port: env.db.port,
-    database: env.db.database,
-    user: env.db.user,
-    password: env.db.password,
-    charset: 'utf8mb4',
-    timezone: 'Z', // Store all dates in UTC
-  },
-  pool: {
-    min: 2,
-    max: 10,
-    acquireTimeoutMillis: 30000,
-    idleTimeoutMillis: 30000,
-    createTimeoutMillis: 30000,
-  },
-  migrations: {
-    // In production the compiled output is in dist/; in dev ts-node runs from src/
-    directory: env.isProduction
-      ? path.join(__dirname, '..', 'database', 'migrations')
-      : path.join(__dirname, '..', '..', 'src', 'database', 'migrations'),
+const migrationsDir = env.isProduction
+  ? path.join(__dirname, '..', 'database', 'migrations')
+  : path.join(__dirname, '..', '..', 'src', 'database', 'migrations');
+
+const migrationExt = env.isProduction ? 'js' : 'ts';
+
+function buildConfig(): Knex.Config {
+  const client = env.db.client;
+
+  const migrations: Knex.MigratorConfig = {
+    directory: migrationsDir,
     tableName: 'knex_migrations',
-    extension: env.isProduction ? 'js' : 'ts',
-  },
-  debug: env.isDevelopment,
-};
+    extension: migrationExt,
+  };
+
+  if (client === 'sqlite3') {
+    // Ensure the data directory exists
+    const dir = path.dirname(env.db.path);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    return {
+      client: 'better-sqlite3',
+      connection: { filename: env.db.path },
+      useNullAsDefault: true,
+      migrations,
+      debug: env.isDevelopment,
+    };
+  }
+
+  if (client === 'pg') {
+    return {
+      client: 'pg',
+      connection: {
+        host: env.db.host,
+        port: env.db.port,
+        database: env.db.database,
+        user: env.db.user,
+        password: env.db.password,
+      },
+      pool: {
+        min: 2,
+        max: 10,
+        acquireTimeoutMillis: 30000,
+        idleTimeoutMillis: 30000,
+        createTimeoutMillis: 30000,
+      },
+      migrations,
+      debug: env.isDevelopment,
+    };
+  }
+
+  // Default: mysql2
+  return {
+    client: 'mysql2',
+    connection: {
+      host: env.db.host,
+      port: env.db.port,
+      database: env.db.database,
+      user: env.db.user,
+      password: env.db.password,
+      charset: 'utf8mb4',
+      timezone: 'Z', // Store all dates in UTC
+    },
+    pool: {
+      min: 2,
+      max: 10,
+      acquireTimeoutMillis: 30000,
+      idleTimeoutMillis: 30000,
+      createTimeoutMillis: 30000,
+    },
+    migrations,
+    debug: env.isDevelopment,
+  };
+}
 
 /**
  * Initialize database connection
@@ -44,14 +91,20 @@ export async function initializeDatabase(): Promise<Knex> {
   }
 
   try {
-    db = knex(dbConfig);
+    db = knex(buildConfig());
 
     // Test connection
     await db.raw('SELECT 1');
-    logger.info('✅ Database connected successfully', {
-      host: env.db.host,
-      database: env.db.database,
-    });
+
+    if (env.db.client === 'sqlite3') {
+      logger.info('✅ Database connected successfully', { engine: 'SQLite', file: env.db.path });
+    } else {
+      logger.info('✅ Database connected successfully', {
+        engine: env.db.client,
+        host: env.db.host,
+        database: env.db.database,
+      });
+    }
 
     return db;
   } catch (error) {

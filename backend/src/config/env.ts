@@ -20,8 +20,8 @@ const readSecret = (filename: string): string | undefined => {
   return undefined;
 };
 
-// Required environment variables
-const requiredEnvVars = ['NODE_ENV', 'APP_PORT', 'DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_USER'];
+// Required environment variables (DB connection vars checked conditionally based on DB_CLIENT)
+const requiredEnvVars = ['NODE_ENV', 'APP_PORT'];
 
 // Bracket notation required by noPropertyAccessFromIndexSignature
 const e = process.env;
@@ -35,6 +35,11 @@ export const env = {
 
   // Database
   db: {
+    // 'sqlite3' | 'mysql2' | 'pg' — defaults to sqlite3 (zero-config)
+    client: (e['DB_CLIENT'] as 'sqlite3' | 'mysql2' | 'pg') ?? 'sqlite3',
+    // SQLite file path (only used when client = 'sqlite3')
+    path: e['DB_PATH'] ?? '/app/data/budget.db',
+    // MySQL / PostgreSQL connection fields (not required when client = 'sqlite3')
     host: e['DB_HOST'] ?? '',
     port: parseInt(e['DB_PORT'] ?? '3306', 10),
     database: e['DB_NAME'] ?? '',
@@ -134,6 +139,14 @@ export function validateEnv(): void {
     if (!env.db.password) {
       missing.push('DB_PASSWORD');
     }
+  }
+
+  // When using a server-based DB, connection vars are required
+  const serverClient = env.db.client === 'mysql2' || env.db.client === 'pg';
+  if (serverClient) {
+    ['DB_HOST', 'DB_NAME', 'DB_USER'].forEach((v) => {
+      if (!e[v]) missing.push(v);
+    });
   }
 
   if (missing.length > 0) {

@@ -93,9 +93,9 @@ describe('reportController.monthlySummary', () => {
 
     await reportController.monthlySummary(makeReq(), makeRes().res, next);
 
-    // raw() should have been called with the default 6
+    // raw() should have been called with the default 6 (SQLite dialect in test env)
     const rawMock = (db as unknown as Record<string, jest.Mock>)['raw'];
-    expect(rawMock).toHaveBeenCalledWith('DATE_SUB(CURDATE(), INTERVAL ? MONTH)', [6]);
+    expect(rawMock).toHaveBeenCalledWith("DATE('now', '-6 months')");
   });
 
   it('clamps months above 24 down to 24', async () => {
@@ -105,7 +105,7 @@ describe('reportController.monthlySummary', () => {
     await reportController.monthlySummary(makeReq({ months: '999' }), makeRes().res, next);
 
     const rawMock = (db as unknown as Record<string, jest.Mock>)['raw'];
-    expect(rawMock).toHaveBeenCalledWith('DATE_SUB(CURDATE(), INTERVAL ? MONTH)', [24]);
+    expect(rawMock).toHaveBeenCalledWith("DATE('now', '-24 months')");
   });
 
   it('treats months=0 as invalid and uses the default 6', async () => {
@@ -116,7 +116,7 @@ describe('reportController.monthlySummary', () => {
 
     // 0 is falsy so `parseInt('0') || 6` evaluates to 6
     const rawMock = (db as unknown as Record<string, jest.Mock>)['raw'];
-    expect(rawMock).toHaveBeenCalledWith('DATE_SUB(CURDATE(), INTERVAL ? MONTH)', [6]);
+    expect(rawMock).toHaveBeenCalledWith("DATE('now', '-6 months')");
   });
 
   it('converts string income and expenses to numbers', async () => {

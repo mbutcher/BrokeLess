@@ -30,7 +30,11 @@ interface ChallengeRow {
 /**
  * Store a challenge in the DB and return its id (UUID generated in app code).
  */
-async function storeChallenge(challenge: string, type: 'reg' | 'auth', userId?: string): Promise<string> {
+async function storeChallenge(
+  challenge: string,
+  type: 'reg' | 'auth',
+  userId?: string
+): Promise<string> {
   const db = getDatabase();
   const id = crypto.randomUUID();
   const expiresAt = new Date(Date.now() + CHALLENGE_TTL_SECONDS * 1000);
@@ -43,7 +47,10 @@ async function storeChallenge(challenge: string, type: 'reg' | 'auth', userId?: 
   });
 
   // Fire-and-forget cleanup of expired challenges
-  void db('webauthn_challenges').where('expires_at', '<', new Date()).delete().catch(() => undefined);
+  void db('webauthn_challenges')
+    .where('expires_at', '<', new Date())
+    .delete()
+    .catch(() => undefined);
 
   return id;
 }

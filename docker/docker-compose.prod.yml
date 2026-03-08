@@ -17,6 +17,7 @@ services:
     volumes:
       - /mnt/user/appdata/budget-app/logs:/app/logs
       - /mnt/user/appdata/budget-app/uploads:/app/uploads
+      - /mnt/user/appdata/budget-app/data:/app/data  # SQLite database file (DB_CLIENT=sqlite3)
     env_file:
       - ../secrets/production/.env
     secrets:

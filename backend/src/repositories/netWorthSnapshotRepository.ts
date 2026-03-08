@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import { getDatabase } from '@config/database';
 import { accountRepository } from '@repositories/accountRepository';
 import type { NetWorthSnapshot } from '@typings/core.types';
+import { dialectHelper } from '@utils/db/dialectHelper';
 
 function rowToSnapshot(row: Record<string, unknown>): NetWorthSnapshot {
   return {
@@ -68,7 +69,7 @@ class NetWorthSnapshotRepository {
   async findHistory(userId: string, months: number): Promise<NetWorthSnapshot[]> {
     const rows = await this.db('net_worth_snapshots')
       .where({ user_id: userId })
-      .where('snapshot_date', '>=', this.db.raw('DATE_SUB(CURDATE(), INTERVAL ? MONTH)', [months]))
+      .where('snapshot_date', '>=', dialectHelper.nowMinusInterval(this.db, months, 'MONTH'))
       .orderBy('snapshot_date', 'asc');
     return rows.map(rowToSnapshot);
   }
