@@ -42,13 +42,6 @@ export const env = {
     password: readSecret('db_password.txt') ?? e['DB_PASSWORD'] ?? '',
   },
 
-  // Redis
-  redis: {
-    host: e['REDIS_HOST'] ?? 'localhost',
-    port: parseInt(e['REDIS_PORT'] ?? '6379', 10),
-    password: readSecret('redis_password.txt') ?? e['REDIS_PASSWORD'],
-  },
-
   // JWT
   jwt: {
     secret: readSecret('jwt_secret.txt') ?? e['JWT_SECRET'] ?? '',
@@ -154,9 +147,6 @@ export function validateEnv(): void {
   if (env.isProduction) {
     if (!env.password.pepper) {
       logger.warn('PASSWORD_PEPPER not set. Passwords will be less secure.');
-    }
-    if (!env.redis.password) {
-      logger.warn('REDIS_PASSWORD not set. Redis is not password-protected.');
     }
   }
 }

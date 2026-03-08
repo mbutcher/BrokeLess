@@ -1,36 +1,21 @@
+# Single-container production deployment.
+# MariaDB must be installed separately (e.g. from Unraid Community Applications).
 # SSL and external routing are handled by Nginx Proxy Manager (or any reverse proxy).
-# Point your proxy at http://<host>:${FRONTEND_PORT:-13911} — the frontend nginx
-# serves static files and proxies /api/v1 requests to the backend internally.
+# Point your proxy at http://<host>:${APP_PORT:-13911}
 
 services:
-  # Frontend (React Production Build + internal API proxy)
-  frontend:
+  budget_app:
     build:
-      context: ../frontend
-      dockerfile: Dockerfile
+      context: ../
+      dockerfile: docker/Dockerfile
       args:
-        - NODE_ENV=production
         - VITE_API_URL=/api/v1
-    container_name: budget_frontend
+    container_name: budget_app
     restart: unless-stopped
     ports:
-      - "${FRONTEND_PORT:-13911}:80"
-    networks:
-      - budget_app
-    environment:
-      - NODE_ENV=production
-
-  # Backend API (Production)
-  backend:
-    build:
-      context: ../backend
-      dockerfile: Dockerfile
-      args:
-        - NODE_ENV=production
-    container_name: budget_backend
-    restart: unless-stopped
+      - "${APP_PORT:-13911}:80"
     volumes:
-      - /mnt/user/appdata/budget-app/logs/backend:/app/logs
+      - /mnt/user/appdata/budget-app/logs:/app/logs
       - /mnt/user/appdata/budget-app/uploads:/app/uploads
     env_file:
       - ../secrets/production/.env
@@ -39,105 +24,26 @@ services:
       - jwt_secret
       - encryption_key
       - password_pepper
-      - redis_password
       - master_secret
       - backup_encryption_key
     environment:
       - NODE_ENV=production
-      - DB_HOST=mariadb
-      - DB_PORT=3306
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-    depends_on:
-      mariadb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - budget_app
-      - budget_data
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
-
-  # MariaDB with Encryption
-  mariadb:
-    build:
-      context: ./mariadb
-      dockerfile: Dockerfile
-    container_name: budget_mariadb
-    restart: unless-stopped
-    volumes:
-      - /mnt/user/appdata/budget-app/mariadb/data:/var/lib/mysql
-      - /mnt/user/appdata/budget-app/mariadb/backups:/backups
-      - /mnt/user/appdata/budget-app/mariadb/keys:/etc/mysql/encryption:ro
-    env_file:
-      - ../secrets/production/.env.db
-    secrets:
-      - db_root_password
-      - db_encryption_key
-    networks:
-      - budget_data
-    command:
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
-      - --plugin-load-add=file_key_management
-      - --file-key-management-filename=/etc/mysql/encryption/keyfile.enc
-      - --innodb-encrypt-tables=ON
-      - --innodb-encryption-threads=4
-    healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-
-  # Redis for Session Management
-  redis:
-    image: redis:7-alpine
-    container_name: budget_redis
-    restart: unless-stopped
-    volumes:
-      - /mnt/user/appdata/budget-app/redis/data:/data
-      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
-    secrets:
-      - redis_password
-    networks:
-      - budget_data
-    command: sh -c 'redis-server /usr/local/etc/redis/redis.conf --requirepass "$$(cat /run/secrets/redis_password)"'
-    healthcheck:
-      test: ["CMD", "sh", "-c", "redis-cli -a $$(cat /run/secrets/redis_password) ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-networks:
-  budget_app:
-    driver: bridge
-    name: budget_app_network
-  budget_data:
-    driver: bridge
-    name: budget_data_network
-    internal: true  # No external access — DB/Redis only reachable from backend
+      start_period: 60s
 
 secrets:
   db_password:
     file: ../secrets/production/db_password.txt
-  db_root_password:
-    file: ../secrets/production/db_root_password.txt
-  db_encryption_key:
-    file: ../secrets/production/db_encryption_key.txt
   jwt_secret:
     file: ../secrets/production/jwt_secret.txt
   encryption_key:
     file: ../secrets/production/encryption_key.txt
   password_pepper:
     file: ../secrets/production/password_pepper.txt
-  redis_password:
-    file: ../secrets/production/redis_password.txt
   master_secret:
     file: ../secrets/production/master_secret.txt
   backup_encryption_key:

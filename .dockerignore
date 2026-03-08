@@ -1,0 +1,47 @@
+# Ignore everything by default, then whitelist what the build needs.
+
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Secrets — never send to Docker daemon
+secrets/
+
+# Dependencies — each build stage installs its own
+node_modules
+frontend/node_modules
+backend/node_modules
+
+# Build output — rebuild inside Docker
+frontend/dist
+backend/dist
+
+# Dev/test artefacts
+e2e/
+coverage/
+.nyc_output/
+*.log
+
+# Docs (not needed at runtime)
+docs/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Docker files not needed inside the image
+docker/docker-compose*.yml
+docker/mariadb
+docker/redis
+
+# CI / scripts not needed inside the image
+.github/
+scripts/

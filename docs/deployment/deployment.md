@@ -10,12 +10,32 @@
 
 - **Unraid 6.12 or newer**
 - **Docker Compose Manager** installed from Community Applications (search "Docker Compose Manager" by dcflachs)
+- **MariaDB** installed from Community Applications — BudgetApp uses this as its database
 - **Nginx Proxy Manager** installed from Community Applications (for access outside your home network)
 - A domain name pointed at your home IP, or a local hostname like `budget.lan`
 
 ---
 
-## 1. Install BudgetApp
+## 1. Prepare Your Database
+
+BudgetApp stores your data in a MariaDB database that you manage. If you don't already have MariaDB installed, install it from Community Applications first.
+
+Once MariaDB is running, open a terminal and connect to it (or use Adminer), then run:
+
+```sql
+CREATE DATABASE IF NOT EXISTS budget_app
+  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE USER 'budget_user'@'%' IDENTIFIED BY 'choose_a_strong_password';
+GRANT ALL PRIVILEGES ON budget_app.* TO 'budget_user'@'%';
+FLUSH PRIVILEGES;
+```
+
+Write down the password you chose — the setup script will ask for it.
+
+---
+
+## 2. Install BudgetApp
 
 Open an Unraid Terminal and run these three commands:
 
@@ -25,7 +45,11 @@ cd /mnt/user/repos/BudgetApp
 ./scripts/setup/setup-prod.sh
 ```
 
-The setup script will ask for your domain name, then do everything else automatically — generating your security keys, creating all the necessary folders, and starting the app.
+The setup script will ask for:
+- Your domain name (e.g. `budget.yourdomain.com`)
+- Your MariaDB server address and the database credentials you created above
+
+It will then generate your security keys, create the necessary folders, and start the app.
 
 When it finishes, BudgetApp will be running on port **13911**.
 
@@ -36,7 +60,7 @@ When it finishes, BudgetApp will be running on port **13911**.
 
 ---
 
-## 2. Save Your Master Secret
+## 3. Save Your Master Secret
 
 The first time you open BudgetApp in a browser, you will see a screen asking you to save your **Master Secret** before you can create an account.
 
@@ -50,7 +74,7 @@ Once you dismiss this screen, the secret will never be shown again.
 
 ---
 
-## 3. Set Up Nginx Proxy Manager (for external access)
+## 4. Set Up Nginx Proxy Manager (for external access)
 
 If you want to access BudgetApp from outside your home network with a real domain name and HTTPS, configure a Proxy Host in Nginx Proxy Manager:
 
@@ -77,14 +101,15 @@ BudgetApp is now accessible at `https://budget.yourdomain.com`.
 
 ---
 
-## 4. Backup
+## 5. Backup
 
-BudgetApp stores all of its data in two places. Back up both regularly.
+BudgetApp stores data in two places. Back up both regularly.
 
-| What | Where on your Unraid server |
-|------|-----------------------------|
-| All app data (database, sessions, uploads) | `/mnt/user/appdata/budget-app/` |
+| What | Where |
+|------|-------|
+| Uploaded files and logs | `/mnt/user/appdata/budget-app/` |
 | Master Secret | `secrets/production/master_secret.txt` (inside the BudgetApp repo folder) |
+| Database | Managed by your MariaDB container — back up via your MariaDB backup process |
 
 **The Master Secret file is tiny but critical.** Copy it somewhere off-server (a password manager, an encrypted USB drive, a second location). You can rebuild everything else from it.
 
@@ -92,7 +117,7 @@ For the app data folder, use Unraid's built-in backup tools or the **CA Backup /
 
 ---
 
-## 5. Upgrade
+## 6. Upgrade
 
 ```bash
 cd /mnt/user/repos/BudgetApp
@@ -105,13 +130,13 @@ Any database updates are applied automatically when the app starts back up.
 
 ---
 
-## 6. Restore / Disaster Recovery
+## 7. Restore / Disaster Recovery
 
 ### Moving to a new server (or rebuilding after a failure)
 
-1. Install Docker and Docker Compose on the new server.
+1. Install Docker, Docker Compose Manager, and MariaDB on the new server.
 2. Clone the BudgetApp repository to the same path.
-3. Copy your backed-up `/mnt/user/appdata/budget-app/` folder to the new server.
+3. Restore your MariaDB database backup to your MariaDB instance.
 4. Restore your security keys from your Master Secret:
 
 ```bash
@@ -119,7 +144,14 @@ cd /mnt/user/repos/BudgetApp
 ./scripts/setup/derive-secrets.sh YOUR-MASTER-SECRET-HERE
 ```
 
-5. Start the app:
+5. Manually create the database password secret file with the password you used for `budget_user`:
+
+```bash
+printf '%s' 'your_db_password' > secrets/production/db_password.txt
+chmod 600 secrets/production/db_password.txt
+```
+
+6. Start the app:
 
 ```bash
 docker compose -f docker/docker-compose.prod.yml up -d --build
@@ -139,8 +171,9 @@ docker compose -f docker/docker-compose.prod.yml logs
 
 Check the output for error messages. Common causes:
 
+- **Can't connect to database** — verify the MariaDB host address and credentials in `secrets/production/.env`. Make sure the MariaDB container is running.
 - **Missing secret files** — run `./scripts/setup/setup-prod.sh` again from the repo folder.
-- **Port 13911 already in use** — another container is using that port. Change the port by editing `FRONTEND_PORT` in `secrets/production/.env`, then restart.
+- **Port 13911 already in use** — another container is using that port. Change it by editing `APP_PORT` in `secrets/production/.env`, then restart.
 
 ### The app starts but I can't log in / WebAuthn errors
 
@@ -152,7 +185,7 @@ Make sure your domain name in Nginx Proxy Manager exactly matches the domain you
 docker compose -f docker/docker-compose.prod.yml ps
 ```
 
-All four services (`budget_frontend`, `budget_backend`, `budget_mariadb`, `budget_redis`) should show **Up**.
+The `budget_app` container should show **Up (healthy)**.
 
 ### SSL certificate problems
 

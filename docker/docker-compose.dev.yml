@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Backend API (Development)
   backend:
@@ -22,13 +20,9 @@ services:
       - DEBUG=budget:*
       - DB_HOST=mariadb
       - DB_PORT=3306
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
     depends_on:
       mariadb:
         condition: service_healthy
-      redis:
-        condition: service_started
     networks:
       - budget_dev
     command: npm run dev
@@ -61,7 +55,6 @@ services:
       - "3306:3306"
     volumes:
       - mariadb_dev_data:/var/lib/mysql
-      - ../docker/mariadb/init:/docker-entrypoint-initdb.d:ro
     environment:
       - MYSQL_ROOT_PASSWORD=dev_root_pass
       - MYSQL_DATABASE=budget_app
@@ -78,24 +71,6 @@ services:
       start_period: 30s
     restart: unless-stopped
 
-  # Redis (Development)
-  redis:
-    image: redis:7-alpine
-    container_name: budget_redis_dev
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_dev_data:/data
-    networks:
-      - budget_dev
-    command: redis-server --appendonly yes
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
 networks:
   budget_dev:
     driver: bridge
@@ -104,5 +79,3 @@ networks:
 volumes:
   mariadb_dev_data:
     name: budget_mariadb_dev_data
-  redis_dev_data:
-    name: budget_redis_dev_data

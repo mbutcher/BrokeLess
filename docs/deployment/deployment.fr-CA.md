@@ -10,12 +10,32 @@
 
 - **Unraid 6.12 ou plus récent**
 - **Docker Compose Manager** installé depuis les Applications communautaires (recherchez « Docker Compose Manager » par dcflachs)
+- **MariaDB** installé depuis les Applications communautaires — BudgetApp l'utilise comme base de données
 - **Nginx Proxy Manager** installé depuis les Applications communautaires (pour l'accès depuis l'extérieur de votre réseau)
 - Un nom de domaine pointant vers votre IP résidentielle, ou un nom d'hôte local comme `budget.lan`
 
 ---
 
-## 1. Installer BudgetApp
+## 1. Préparer la base de données
+
+BudgetApp stocke vos données dans une base de données MariaDB que vous gérez. Si vous n'avez pas encore MariaDB, installez-le depuis les Applications communautaires.
+
+Une fois MariaDB démarré, ouvrez un terminal et connectez-vous (ou utilisez Adminer), puis exécutez :
+
+```sql
+CREATE DATABASE IF NOT EXISTS budget_app
+  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE USER 'budget_user'@'%' IDENTIFIED BY 'choisissez_un_mot_de_passe_fort';
+GRANT ALL PRIVILEGES ON budget_app.* TO 'budget_user'@'%';
+FLUSH PRIVILEGES;
+```
+
+Notez le mot de passe choisi — le script d'installation vous le demandera.
+
+---
+
+## 2. Installer BudgetApp
 
 Ouvrez un Terminal Unraid et exécutez ces trois commandes :
 
@@ -25,7 +45,11 @@ cd /mnt/user/repos/BudgetApp
 ./scripts/setup/setup-prod.sh
 ```
 
-Le script d'installation vous demandera votre nom de domaine, puis s'occupera du reste automatiquement — génération de vos clés de sécurité, création de tous les dossiers nécessaires et démarrage de l'application.
+Le script d'installation vous demandera :
+- Votre nom de domaine (ex. : `budget.votredomaine.com`)
+- L'adresse de votre serveur MariaDB et les identifiants de base de données créés ci-dessus
+
+Il générera ensuite vos clés de sécurité, créera les dossiers nécessaires et démarrera l'application.
 
 Une fois terminé, BudgetApp sera accessible sur le port **13911**.
 
@@ -36,7 +60,7 @@ Une fois terminé, BudgetApp sera accessible sur le port **13911**.
 
 ---
 
-## 2. Sauvegarder votre Secret principal
+## 3. Sauvegarder votre Secret principal
 
 La première fois que vous ouvrez BudgetApp dans un navigateur, un écran vous demandera de sauvegarder votre **Secret principal** avant de pouvoir créer un compte.
 
@@ -50,7 +74,7 @@ Une fois cet écran fermé, le secret ne sera plus jamais affiché.
 
 ---
 
-## 3. Configurer Nginx Proxy Manager (pour l'accès externe)
+## 4. Configurer Nginx Proxy Manager (pour l'accès externe)
 
 Si vous souhaitez accéder à BudgetApp depuis l'extérieur de votre réseau avec un vrai nom de domaine et HTTPS, configurez un Proxy Host dans Nginx Proxy Manager :
 
@@ -77,14 +101,15 @@ BudgetApp est maintenant accessible à l'adresse `https://budget.votredomaine.co
 
 ---
 
-## 4. Sauvegarde
+## 5. Sauvegarde
 
-BudgetApp stocke toutes ses données à deux endroits. Sauvegardez les deux régulièrement.
+BudgetApp stocke les données à deux endroits. Sauvegardez les deux régulièrement.
 
-| Quoi | Où sur votre serveur Unraid |
-|------|-----------------------------|
-| Toutes les données de l'application (base de données, sessions, fichiers) | `/mnt/user/appdata/budget-app/` |
+| Quoi | Où |
+|------|----|
+| Fichiers téléversés et journaux | `/mnt/user/appdata/budget-app/` |
 | Secret principal | `secrets/production/master_secret.txt` (dans le dossier du dépôt BudgetApp) |
+| Base de données | Gérée par votre conteneur MariaDB — sauvegardez via votre processus de sauvegarde MariaDB |
 
 **Le fichier Secret principal est petit mais essentiel.** Copiez-le hors du serveur (gestionnaire de mots de passe, clé USB chiffrée, autre emplacement). Tout le reste peut être reconstruit à partir de celui-ci.
 
@@ -92,7 +117,7 @@ Pour le dossier de données, utilisez les outils de sauvegarde intégrés d'Unra
 
 ---
 
-## 5. Mise à jour
+## 6. Mise à jour
 
 ```bash
 cd /mnt/user/repos/BudgetApp
@@ -105,13 +130,13 @@ Les mises à jour de la base de données sont appliquées automatiquement au dé
 
 ---
 
-## 6. Restauration / Reprise après sinistre
+## 7. Restauration / Reprise après sinistre
 
 ### Déménagement vers un nouveau serveur (ou reconstruction après une panne)
 
-1. Installez Docker et Docker Compose sur le nouveau serveur.
+1. Installez Docker, Docker Compose Manager et MariaDB sur le nouveau serveur.
 2. Clonez le dépôt BudgetApp au même chemin.
-3. Copiez votre dossier de sauvegarde `/mnt/user/appdata/budget-app/` vers le nouveau serveur.
+3. Restaurez votre sauvegarde de base de données MariaDB dans votre instance MariaDB.
 4. Restaurez vos clés de sécurité à partir de votre Secret principal :
 
 ```bash
@@ -119,7 +144,14 @@ cd /mnt/user/repos/BudgetApp
 ./scripts/setup/derive-secrets.sh VOTRE-SECRET-PRINCIPAL-ICI
 ```
 
-5. Démarrez l'application :
+5. Créez manuellement le fichier du mot de passe de base de données avec le mot de passe que vous avez utilisé pour `budget_user` :
+
+```bash
+printf '%s' 'votre_mot_de_passe_bd' > secrets/production/db_password.txt
+chmod 600 secrets/production/db_password.txt
+```
+
+6. Démarrez l'application :
 
 ```bash
 docker compose -f docker/docker-compose.prod.yml up -d --build
@@ -139,8 +171,9 @@ docker compose -f docker/docker-compose.prod.yml logs
 
 Consultez les messages d'erreur. Causes fréquentes :
 
+- **Impossible de se connecter à la base de données** — vérifiez l'adresse et les identifiants MariaDB dans `secrets/production/.env`. Assurez-vous que le conteneur MariaDB est démarré.
 - **Fichiers secrets manquants** — relancez `./scripts/setup/setup-prod.sh` depuis le dossier du dépôt.
-- **Port 13911 déjà utilisé** — un autre conteneur utilise ce port. Changez-le en modifiant `FRONTEND_PORT` dans `secrets/production/.env`, puis redémarrez.
+- **Port 13911 déjà utilisé** — un autre conteneur utilise ce port. Changez-le en modifiant `APP_PORT` dans `secrets/production/.env`, puis redémarrez.
 
 ### L'application démarre mais je ne peux pas me connecter / erreurs WebAuthn
 
@@ -152,7 +185,7 @@ Assurez-vous que le nom de domaine dans Nginx Proxy Manager correspond exactemen
 docker compose -f docker/docker-compose.prod.yml ps
 ```
 
-Les quatre services (`budget_frontend`, `budget_backend`, `budget_mariadb`, `budget_redis`) doivent afficher **Up**.
+Le conteneur `budget_app` doit afficher **Up (healthy)**.
 
 ### Problèmes de certificat SSL
 

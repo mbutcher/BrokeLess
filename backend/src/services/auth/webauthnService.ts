@@ -9,8 +9,8 @@ import type {
   AuthenticationResponseJSON,
   AuthenticatorTransportFuture,
 } from '@simplewebauthn/types';
-import { createClient } from 'redis';
 import { env } from '@config/env';
+import { getDatabase } from '@config/database';
 import { loggers } from '@utils/logger';
 import { UnauthorizedError, ConflictError } from '@middleware/errorHandler';
 import { userRepository } from '@repositories/userRepository';
@@ -18,19 +18,48 @@ import { passkeyRepository } from '@repositories/passkeyRepository';
 import type { Passkey } from '@typings/auth.types';
 
 const CHALLENGE_TTL_SECONDS = 300; // 5 minutes
-const CHALLENGE_KEY_PREFIX = 'webauthn:challenge:';
 
-let redisClient: ReturnType<typeof createClient> | null = null;
+interface ChallengeRow {
+  id: string;
+  challenge: string;
+  type: string;
+  user_id: string | null;
+  expires_at: Date;
+}
 
-async function getRedis(): Promise<ReturnType<typeof createClient>> {
-  if (!redisClient) {
-    redisClient = createClient({
-      socket: { host: env.redis.host, port: env.redis.port },
-      password: env.redis.password,
-    });
-    await redisClient.connect();
-  }
-  return redisClient;
+/**
+ * Store a challenge in the DB and return its id (UUID generated in app code).
+ */
+async function storeChallenge(challenge: string, type: 'reg' | 'auth', userId?: string): Promise<string> {
+  const db = getDatabase();
+  const id = crypto.randomUUID();
+  const expiresAt = new Date(Date.now() + CHALLENGE_TTL_SECONDS * 1000);
+  await db('webauthn_challenges').insert({
+    id,
+    challenge,
+    type,
+    user_id: userId ?? null,
+    expires_at: expiresAt,
+  });
+
+  // Fire-and-forget cleanup of expired challenges
+  void db('webauthn_challenges').where('expires_at', '<', new Date()).delete().catch(() => undefined);
+
+  return id;
+}
+
+/**
+ * Consume a challenge by id. Returns the challenge string, or null if not found/expired.
+ * The row is deleted immediately regardless of outcome.
+ */
+async function consumeChallenge(id: string): Promise<string | null> {
+  const db = getDatabase();
+  const row = await db('webauthn_challenges')
+    .where({ id })
+    .where('expires_at', '>', new Date())
+    .first<ChallengeRow>();
+  await db('webauthn_challenges').where({ id }).delete();
+  return row?.challenge ?? null;
 }
 
 class WebAuthnService {
@@ -48,7 +77,8 @@ class WebAuthnService {
 
   /**
    * Generate WebAuthn registration options.
-   * The challenge is stored in Redis with a 5-min TTL.
+   * The challenge is stored in the DB with a 5-min TTL.
+   * Returns options plus the challengeToken (DB row id) to pass back to the client.
    */
   async generateRegistrationOptions(
     userId: string,
@@ -72,36 +102,39 @@ class WebAuthnService {
       },
     });
 
-    const redis = await getRedis();
-    const key = `${CHALLENGE_KEY_PREFIX}reg:${userId}`;
-    await redis.setEx(key, CHALLENGE_TTL_SECONDS, options.challenge);
+    await storeChallenge(options.challenge, 'reg', userId);
 
     return options;
   }
 
   /**
    * Verify a registration response and persist the new passkey.
-   * The Redis challenge is deleted immediately after verification.
+   * The DB challenge is deleted immediately after verification.
    */
   async verifyRegistration(
     userId: string,
     response: RegistrationResponseJSON,
     deviceName?: string
   ): Promise<Passkey> {
-    const redis = await getRedis();
-    const key = `${CHALLENGE_KEY_PREFIX}reg:${userId}`;
-    const expectedChallenge = await redis.get(key);
+    const db = getDatabase();
+    // Find the pending reg challenge for this user
+    const row = await db('webauthn_challenges')
+      .where({ type: 'reg', user_id: userId })
+      .where('expires_at', '>', new Date())
+      .orderBy('created_at', 'desc')
+      .first<ChallengeRow>();
 
-    // Delete the challenge immediately regardless of outcome
-    await redis.del(key);
+    if (row) {
+      await db('webauthn_challenges').where({ id: row.id }).delete();
+    }
 
-    if (!expectedChallenge) {
+    if (!row) {
       throw new UnauthorizedError('Registration session expired. Please try again.');
     }
 
     const verification = await verifyRegistrationResponse({
       response,
-      expectedChallenge,
+      expectedChallenge: row.challenge,
       expectedOrigin: this.origin,
       expectedRPID: this.rpId,
     });
@@ -140,7 +173,7 @@ class WebAuthnService {
   /**
    * Generate WebAuthn authentication options.
    * If userId is provided, only include credentials for that user (targeted auth).
-   * The challenge is stored in Redis keyed by a random token.
+   * The challenge is stored in the DB keyed by a random token returned to the caller.
    */
   async generateAuthenticationOptions(userId?: string): Promise<{
     options: Awaited<ReturnType<typeof generateAuthenticationOptions>>;
@@ -159,11 +192,7 @@ class WebAuthnService {
       allowCredentials,
     });
 
-    // Store challenge with a random token as key (userId may not be known yet)
-    const challengeToken = Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString('hex');
-    const redis = await getRedis();
-    const key = `${CHALLENGE_KEY_PREFIX}auth:${challengeToken}`;
-    await redis.setEx(key, CHALLENGE_TTL_SECONDS, options.challenge);
+    const challengeToken = await storeChallenge(options.challenge, 'auth', userId);
 
     return { options, challengeToken };
   }
@@ -176,12 +205,7 @@ class WebAuthnService {
     response: AuthenticationResponseJSON,
     challengeToken: string
   ): Promise<string> {
-    const redis = await getRedis();
-    const key = `${CHALLENGE_KEY_PREFIX}auth:${challengeToken}`;
-    const expectedChallenge = await redis.get(key);
-
-    // Delete challenge immediately regardless of outcome
-    await redis.del(key);
+    const expectedChallenge = await consumeChallenge(challengeToken);
 
     if (!expectedChallenge) {
       throw new UnauthorizedError('Authentication session expired. Please try again.');

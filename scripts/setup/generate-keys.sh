@@ -95,18 +95,6 @@ generate_production_secrets() {
   write_secret "password_pepper.txt"       "$(derive_base64  'budgetapp:password-pepper')"
   echo "✅ Derived: password_pepper.txt"
 
-  write_secret "db_password.txt"           "$(derive_alnum32 'budgetapp:db-password')"
-  echo "✅ Derived: db_password.txt"
-
-  write_secret "db_root_password.txt"      "$(derive_alnum32 'budgetapp:db-root-password')"
-  echo "✅ Derived: db_root_password.txt"
-
-  write_secret "db_encryption_key.txt"     "$(derive_hex     'budgetapp:db-encryption-key')"
-  echo "✅ Derived: db_encryption_key.txt"
-
-  write_secret "redis_password.txt"        "$(derive_alnum32 'budgetapp:redis-password')"
-  echo "✅ Derived: redis_password.txt"
-
   write_secret "backup_encryption_key.txt" "$(derive_base64  'budgetapp:backup-encryption-key')"
   echo "✅ Derived: backup_encryption_key.txt"
 }
@@ -185,24 +173,6 @@ if [[ ! -f "$ENV_FILE" ]]; then
   rm -f "$ENV_FILE.bak"
   chmod 600 "$ENV_FILE"
   echo "✅ Created: .env"
-fi
-
-# .env.db for production
-if [[ "$ENVIRONMENT" == "production" ]]; then
-  ENV_DB_FILE="$SECRET_DIR/.env.db"
-  if [[ ! -f "$ENV_DB_FILE" ]]; then
-    echo ""
-    echo "Creating production database .env file..."
-    cat > "$ENV_DB_FILE" <<EOF
-MYSQL_ROOT_PASSWORD_FILE=/run/secrets/db_root_password
-MYSQL_DATABASE=budget_app
-MYSQL_USER=budget_user
-MYSQL_PASSWORD_FILE=/run/secrets/db_password
-TZ=America/New_York
-EOF
-    chmod 600 "$ENV_DB_FILE"
-    echo "✅ Created: .env.db"
-  fi
 fi
 
 # ─── Summary ─────────────────────────────────────────────────────────────────

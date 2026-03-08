@@ -6,13 +6,14 @@
 # The script will:
 #   1. Validate prerequisites (Docker, Docker Compose, openssl)
 #   2. Prompt for your domain / LAN hostname (or accept --domain flag)
-#   3. Generate the master secret and derive all cryptographic sub-keys
-#   4. Create every required host directory
-#   5. Write the production .env from the built-in template
-#   6. Start the Docker stack
+#   3. Prompt for your external MariaDB connection details
+#   4. Generate the master secret and derive all cryptographic sub-keys
+#   5. Create required host directories
+#   6. Write the production .env from the built-in template
+#   7. Start the Docker stack
 #
 # SSL is handled by Nginx Proxy Manager (or any external reverse proxy).
-# See docs/deployment/deployment.md for NPM setup instructions.
+# See docs/deployment/deployment.md for full setup instructions.
 
 set -euo pipefail
 
@@ -54,7 +55,7 @@ echo "  ╚═══════════════════════
 echo -e "${RESET}"
 
 # ── Prerequisites ───────────────────────────────────────────────────────────────
-header "1/5  Checking prerequisites"
+header "1/6  Checking prerequisites"
 
 command -v docker &>/dev/null        || error "Docker is not installed. Install Docker Engine 24+."
 docker compose version &>/dev/null   || error "Docker Compose v2 is not available. Update Docker."
@@ -65,7 +66,7 @@ success "Docker Compose $(docker compose version --short)"
 success "openssl $(openssl version | awk '{print $2}')"
 
 # ── Domain prompt ───────────────────────────────────────────────────────────────
-header "2/5  Domain / hostname"
+header "2/6  Domain / hostname"
 
 if [[ -z "$DOMAIN" ]]; then
   echo ""
@@ -92,8 +93,49 @@ fi
 APP_URL="${PROTOCOL}://${DOMAIN}"
 success "Domain: $DOMAIN  ->  $APP_URL"
 
+# ── External MariaDB connection ──────────────────────────────────────────────────
+header "3/6  External MariaDB connection"
+
+echo ""
+echo "  BudgetApp requires an external MariaDB instance."
+echo "  Install MariaDB from Unraid Community Applications first, then enter"
+echo "  the connection details below."
+echo ""
+echo "  If you haven't created the database yet, run these SQL commands in"
+echo "  Adminer (or any MariaDB client) after this script completes:"
+echo ""
+echo -e "  ${BOLD}CREATE DATABASE IF NOT EXISTS budget_app"
+echo "    CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+echo "  CREATE USER 'budget_user'@'%' IDENTIFIED BY 'your_password';"
+echo "  GRANT ALL PRIVILEGES ON budget_app.* TO 'budget_user'@'%';"
+echo -e "  FLUSH PRIVILEGES;${RESET}"
+echo ""
+
+read -rp "  MariaDB hostname or IP [192.168.1.x]: " DB_HOST
+[[ -z "$DB_HOST" ]] && error "Database host cannot be empty."
+
+read -rp "  MariaDB port [3306]: " DB_PORT
+DB_PORT="${DB_PORT:-3306}"
+
+read -rp "  Database name [budget_app]: " DB_NAME
+DB_NAME="${DB_NAME:-budget_app}"
+
+read -rp "  Database user [budget_user]: " DB_USER
+DB_USER="${DB_USER:-budget_user}"
+
+read -rsp "  Database password: " DB_PASSWORD
+echo ""
+[[ -z "$DB_PASSWORD" ]] && error "Database password cannot be empty."
+
+# Write db_password.txt
+mkdir -p "$SECRET_DIR"
+chmod 700 "$SECRET_DIR"
+printf '%s' "$DB_PASSWORD" > "$SECRET_DIR/db_password.txt"
+chmod 600 "$SECRET_DIR/db_password.txt"
+success "Database password saved to secrets/production/db_password.txt"
+
 # ── Generate secrets ────────────────────────────────────────────────────────────
-header "3/5  Generating cryptographic secrets"
+header "4/6  Generating cryptographic secrets"
 
 bash "$SCRIPT_DIR/generate-keys.sh" production
 
@@ -103,10 +145,10 @@ echo -e "  ${BOLD}Your master secret (the only value you need to save):${RESET}"
 echo -e "  ${YELLOW}${MASTER_HEX}${RESET}"
 echo ""
 warn "Copy this to your password manager before continuing."
-success "All sub-keys derived and written to: $SECRET_DIR"
+success "All secrets written to: $SECRET_DIR"
 
 # ── Write production .env ───────────────────────────────────────────────────────
-header "4/5  Writing production .env"
+header "5/6  Writing production .env"
 
 ENV_FILE="$SECRET_DIR/.env"
 
@@ -125,25 +167,19 @@ patch_env "WEBAUTHN_ORIGIN"   "$APP_URL"
 patch_env "LOG_LEVEL"         "info"
 patch_env "LOG_DIR"           "/app/logs"
 patch_env "TZ"                "$TZ"
+patch_env "DB_HOST"           "$DB_HOST"
+patch_env "DB_PORT"           "$DB_PORT"
+patch_env "DB_NAME"           "$DB_NAME"
+patch_env "DB_USER"           "$DB_USER"
 
 rm -f "$ENV_FILE.bak"
 success "Written: $ENV_FILE"
 
-ENV_DB_FILE="$SECRET_DIR/.env.db"
-if [[ -f "$ENV_DB_FILE" ]]; then
-  sed -i.bak "s|^TZ=.*|TZ=${TZ}|" "$ENV_DB_FILE"
-  rm -f "$ENV_DB_FILE.bak"
-fi
-
 # ── Create data directories and start the stack ─────────────────────────────────
-header "5/5  Creating data directories and starting stack"
+header "6/6  Creating data directories and starting stack"
 
 dirs=(
-  "mariadb/data"
-  "mariadb/backups"
-  "mariadb/keys"
-  "redis/data"
-  "logs/backend"
+  "logs"
   "uploads"
 )
 
@@ -152,17 +188,8 @@ for d in "${dirs[@]}"; do
 done
 success "Directories created under ${DATA_DIR}"
 
-# Create the MariaDB InnoDB encryption keyfile (required before first start)
-KEY_FILE="${DATA_DIR}/mariadb/keys/keyfile.enc"
-if [[ ! -f "$KEY_FILE" ]]; then
-  DB_ENC_KEY=$(cat "$SECRET_DIR/db_encryption_key.txt")
-  printf '1;%s\n' "$DB_ENC_KEY" > "$KEY_FILE"
-  chmod 644 "$KEY_FILE"
-  success "MariaDB encryption keyfile created"
-fi
-
 echo ""
-info "Building images and starting containers (first run may take a few minutes)..."
+info "Building image and starting container (first run may take a few minutes)..."
 echo ""
 
 cd "$PROJECT_ROOT"
@@ -171,13 +198,13 @@ docker compose -f "$COMPOSE_FILE" up -d --build
 echo ""
 
 # ── Health check ────────────────────────────────────────────────────────────────
-info "Waiting for the backend to become healthy..."
+info "Waiting for BudgetApp to become healthy..."
 max_attempts=30
 attempt=0
-until docker inspect budget_backend --format '{{.State.Health.Status}}' 2>/dev/null | grep -q "healthy"; do
+until docker inspect budget_app --format '{{.State.Health.Status}}' 2>/dev/null | grep -q "healthy"; do
   attempt=$((attempt + 1))
   if [[ $attempt -ge $max_attempts ]]; then
-    warn "Health check timed out. Check: docker logs budget_backend"
+    warn "Health check timed out. Check: docker logs budget_app"
     break
   fi
   printf "  Attempt %d/%d...\r" "$attempt" "$max_attempts"

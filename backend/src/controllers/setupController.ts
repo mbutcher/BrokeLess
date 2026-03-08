@@ -85,32 +85,6 @@ class SetupController {
       },
     ];
 
-    if (env.redis.password) {
-      secrets.push({
-        name: 'Redis Password',
-        description: 'Password for the Redis session store.',
-        value: env.redis.password,
-      });
-    }
-
-    const dbRootPassword = readSecretFile('db_root_password');
-    if (dbRootPassword) {
-      secrets.push({
-        name: 'Database Root Password',
-        description: 'MariaDB root account password.',
-        value: dbRootPassword,
-      });
-    }
-
-    const dbEncryptionKey = readSecretFile('db_encryption_key');
-    if (dbEncryptionKey) {
-      secrets.push({
-        name: 'Database Encryption Key',
-        description: 'InnoDB file-key-management key. Required to start MariaDB after a restore.',
-        value: dbEncryptionKey,
-      });
-    }
-
     const backupEncryptionKey = readSecretFile('backup_encryption_key');
     if (backupEncryptionKey) {
       secrets.push({
