@@ -58,6 +58,10 @@ const uid = (type: string, seq: number): string =>
 const ALPHA_ID = uid('0001', 1);
 const BETA_ID = uid('0001', 2);
 
+// Households (one per user — single-user households for seed data)
+const ALPHA_HH_ID = uid('0001', 3);
+const BETA_HH_ID = uid('0001', 4);
+
 // Accounts — Alpha (CAD)
 const A_CHECKING = uid('0002', 1); // RBC Chequing
 const A_TFSA = uid('0002', 2); // RBC TFSA
@@ -302,13 +306,15 @@ const TRUNCATE_TABLES = [
   'refresh_tokens',
   'budget_categories', // legacy
   'budgets', // legacy
+  'household_members',
+  'households',
   'users',
 ];
 
 // ─── Categories Data ──────────────────────────────────────────────────────────
 
 function buildCategories(
-  userId: string,
+  householdId: string,
   ids: {
     housing: string;
     food: string;
@@ -367,7 +373,7 @@ function buildCategories(
 ): object[] {
   const top = (id: string, name: string, color: string, icon: string, isIncome = false) => ({
     id,
-    user_id: userId,
+    household_id: householdId,
     name,
     color,
     icon,
@@ -378,7 +384,7 @@ function buildCategories(
 
   const sub = (id: string, parentId: string, name: string, isIncome = false) => ({
     id,
-    user_id: userId,
+    household_id: householdId,
     name,
     color: null,
     icon: null,
@@ -601,6 +607,17 @@ export async function seed(knex: Knex): Promise<void> {
     },
   ]);
 
+  // ── Households & Members ───────────────────────────────────────────────────
+  console.log('[dev_seed] Inserting households...');
+  await knex('households').insert([
+    { id: ALPHA_HH_ID, name: "Mike Alpha's Household" },
+    { id: BETA_HH_ID, name: "Mike Beta's Household" },
+  ]);
+  await knex('household_members').insert([
+    { id: uid('000d', 1), household_id: ALPHA_HH_ID, user_id: ALPHA_ID, role: 'owner', joined_at: new Date().toISOString() },
+    { id: uid('000d', 2), household_id: BETA_HH_ID, user_id: BETA_ID, role: 'owner', joined_at: new Date().toISOString() },
+  ]);
+
   // ── Accounts ───────────────────────────────────────────────────────────────
   console.log('[dev_seed] Inserting accounts...');
   await knex('accounts').insert([
@@ -751,7 +768,7 @@ export async function seed(knex: Knex): Promise<void> {
   // ── Categories ─────────────────────────────────────────────────────────────
   console.log('[dev_seed] Inserting categories...');
 
-  const alphaCategories = buildCategories(ALPHA_ID, {
+  const alphaCategories = buildCategories(ALPHA_HH_ID, {
     housing: A_C_HOUSING,
     food: A_C_FOOD,
     transport: A_C_TRANSPORT,
@@ -807,7 +824,7 @@ export async function seed(knex: Knex): Promise<void> {
     sCashback: A_S_CASHBACK,
   });
 
-  const betaCategories = buildCategories(BETA_ID, {
+  const betaCategories = buildCategories(BETA_HH_ID, {
     housing: B_C_HOUSING,
     food: B_C_FOOD,
     transport: B_C_TRANSPORT,

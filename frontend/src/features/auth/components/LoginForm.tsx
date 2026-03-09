@@ -1,6 +1,5 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link } from 'react-router-dom';
 import { Fingerprint } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { loginSchema, type LoginFormData } from '../schemas';
@@ -85,12 +84,6 @@ export function LoginForm() {
         {t('auth.signInWithPasskey')}
       </Button>
 
-      <p className="text-center text-sm text-muted-foreground">
-        {t('auth.noAccount')}{' '}
-        <Link to="/register" className="font-medium text-primary hover:underline">
-          {t('auth.createOne')}
-        </Link>
-      </p>
     </div>
   );
 }
