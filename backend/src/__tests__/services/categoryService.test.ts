@@ -5,11 +5,12 @@ jest.mock('@repositories/categoryRepository');
 const mockRepo = categoryRepository as jest.Mocked<typeof categoryRepository>;
 
 const USER_ID = 'user-123';
+const HOUSEHOLD_ID = 'household-123';
 const CAT_ID = 'cat-456';
 
 const mockCategory = {
   id: CAT_ID,
-  userId: USER_ID,
+  householdId: HOUSEHOLD_ID,
   name: 'Groceries',
   color: '#f59e0b',
   icon: 'shopping-cart',
@@ -20,14 +21,14 @@ const mockCategory = {
   updatedAt: new Date(),
 };
 
-describe('categoryService.seedDefaultsForUser', () => {
+describe('categoryService.seedDefaultsForHousehold', () => {
   it('calls createBatch with 20 categories', async () => {
     mockRepo.createBatch.mockResolvedValue();
-    await categoryService.seedDefaultsForUser(USER_ID);
+    await categoryService.seedDefaultsForHousehold(HOUSEHOLD_ID);
     expect(mockRepo.createBatch).toHaveBeenCalledTimes(1);
     const [categories] = mockRepo.createBatch.mock.calls[0] ?? [];
     expect(categories).toHaveLength(20);
-    expect(categories?.every((c) => c.userId === USER_ID)).toBe(true);
+    expect(categories?.every((c) => c.householdId === HOUSEHOLD_ID)).toBe(true);
     // 5 income + 15 expense categories
     const income = categories?.filter((c) => c.isIncome);
     const expense = categories?.filter((c) => !c.isIncome);

@@ -33,7 +33,13 @@ function buildDevConfig(): Knex.Config {
   if (dbClient === 'sqlite3') {
     const dir = path.dirname(dbPath);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    return { client: 'better-sqlite3', connection: { filename: dbPath }, useNullAsDefault: true, migrations, seeds };
+    return {
+      client: 'better-sqlite3',
+      connection: { filename: dbPath },
+      useNullAsDefault: true,
+      migrations,
+      seeds,
+    };
   }
 
   if (dbClient === 'pg') {
@@ -45,6 +51,7 @@ function buildDevConfig(): Knex.Config {
         database: process.env['DB_NAME'] || 'budget_app',
         user: process.env['DB_USER'] || 'budget_user',
         password: process.env['DB_PASSWORD'] || 'dev_pass',
+        options: '-c TimeZone=UTC',
       },
       pool: { min: 2, max: 10 },
       migrations,
@@ -83,7 +90,13 @@ function buildProdConfig(): Knex.Config {
   if (dbClient === 'sqlite3') {
     const dir = path.dirname(dbPath);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    return { client: 'better-sqlite3', connection: { filename: dbPath }, useNullAsDefault: true, migrations, seeds };
+    return {
+      client: 'better-sqlite3',
+      connection: { filename: dbPath },
+      useNullAsDefault: true,
+      migrations,
+      seeds,
+    };
   }
 
   if (dbClient === 'pg') {
@@ -95,6 +108,7 @@ function buildProdConfig(): Knex.Config {
         database: process.env['DB_NAME'] || 'budget_app',
         user: process.env['DB_USER'] || 'budget_user',
         password: readSecret('db_password.txt') || process.env['DB_PASSWORD'],
+        options: '-c TimeZone=UTC',
       },
       pool: { min: 2, max: 10, acquireTimeoutMillis: 30000, idleTimeoutMillis: 30000 },
       migrations,

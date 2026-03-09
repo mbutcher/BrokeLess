@@ -35,6 +35,10 @@ export function isSQLite(knex: Knex): boolean {
 // ─── SQL fragment helpers (return plain strings for embedding in raw blocks) ──
 
 class DialectHelper {
+  // NOTE: `client` uses the env-facing names ('sqlite3' | 'mysql2' | 'pg'), NOT the Knex
+  // internal driver names ('better-sqlite3', 'mysql2', 'pg'). The isXxx(knex) helpers below
+  // read from the Knex instance config directly and use the Knex driver names — they are a
+  // separate code path. Do not mix the two.
   private readonly client: DbClient;
 
   constructor(client: DbClient) {

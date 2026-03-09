@@ -22,8 +22,10 @@ export const pushSubscriptionRepository = {
 
   async findById(id: string): Promise<PushSubscription | null> {
     const db = getDatabase();
-    const row = await db('push_subscriptions').where({ id }).first();
-    return row ? rowToSubscription(row as Record<string, unknown>) : null;
+    const row = (await db('push_subscriptions').where({ id }).first()) as
+      | Record<string, unknown>
+      | undefined;
+    return row ? rowToSubscription(row) : null;
   },
 
   async create(data: CreatePushSubscriptionData): Promise<PushSubscription> {

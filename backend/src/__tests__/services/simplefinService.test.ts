@@ -164,6 +164,7 @@ describe('simplefinService.sync', () => {
     mockSfRepo.updateSyncStatus.mockResolvedValue();
     mockSfRepo.updateSyncTimestamp.mockResolvedValue();
     mockSfRepo.getDiscardedIds.mockResolvedValue([]);
+    mockSfRepo.pruneDiscardedIds.mockResolvedValue();
     mockApiClient.fetchAccounts.mockResolvedValue(mockApiResponse);
     mockAccountRepo.setCurrentBalance.mockResolvedValue();
     mockTxRepo.findBySimplefinId.mockResolvedValue(null);

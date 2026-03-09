@@ -45,6 +45,8 @@ function buildConfig(): Knex.Config {
         database: env.db.database,
         user: env.db.user,
         password: env.db.password,
+        // Force UTC session timezone — mirrors mysql2's `timezone: 'Z'`
+        options: '-c TimeZone=UTC',
       },
       pool: {
         min: 2,

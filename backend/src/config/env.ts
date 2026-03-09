@@ -141,6 +141,12 @@ export function validateEnv(): void {
     }
   }
 
+  // Validate DB_CLIENT value
+  const validClients = ['sqlite3', 'mysql2', 'pg'];
+  if (e['DB_CLIENT'] && !validClients.includes(e['DB_CLIENT'])) {
+    missing.push(`DB_CLIENT (got "${e['DB_CLIENT']}", must be one of: ${validClients.join(', ')})`);
+  }
+
   // When using a server-based DB, connection vars are required
   const serverClient = env.db.client === 'mysql2' || env.db.client === 'pg';
   if (serverClient) {

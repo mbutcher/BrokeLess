@@ -7,7 +7,7 @@ import { logger } from '@utils/logger';
 
 export const pushController = {
   /** GET /push/vapid-key — returns the VAPID public key (no auth required) */
-  getVapidKey: asyncHandler(async (_req: Request, res: Response) => {
+  getVapidKey: asyncHandler((_req: Request, res: Response) => {
     if (!isPushEnabled()) {
       res.json({ status: 'success', data: { vapidPublicKey: null } });
       return;

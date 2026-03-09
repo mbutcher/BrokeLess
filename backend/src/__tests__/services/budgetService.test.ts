@@ -121,7 +121,7 @@ describe('budgetService.getBudgetProgress', () => {
   it('returns aggregated totals', async () => {
     const mockCategory = {
       id: 'cat-1',
-      userId: USER_ID,
+      householdId: 'household-123',
       name: 'Groceries',
       color: '#f59e0b',
       icon: null,

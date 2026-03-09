@@ -14,6 +14,13 @@ jest.mock('@repositories/transactionSearchRepository', () => ({
     findMatchingIds: () => Promise.resolve([]),
   },
 }));
+jest.mock('@repositories/transactionTagRepository', () => ({
+  transactionTagRepository: {
+    // Plain functions so resetMocks: true doesn't wipe the Promise return
+    findByTransactionIds: () => Promise.resolve(new Map()),
+    setTags: () => Promise.resolve(),
+  },
+}));
 jest.mock('@config/database', () => ({
   getDatabase: () => ({
     transaction: (cb: (trx: unknown) => Promise<unknown>) => cb({}),

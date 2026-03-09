@@ -2,13 +2,8 @@ import type { Knex } from 'knex';
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('api_keys', (table) => {
-    table.specificType('id', 'CHAR(36)').notNullable().primary();
-    table
-      .specificType('user_id', 'CHAR(36)')
-      .notNullable()
-      .references('id')
-      .inTable('users')
-      .onDelete('CASCADE');
+    table.uuid('id').notNullable().primary();
+    table.uuid('user_id').notNullable().references('id').inTable('users').onDelete('CASCADE');
     table.string('label', 255).notNullable();
     // SHA-256 hex of the raw key — 64 chars
     table.string('key_hash', 64).notNullable().unique();
