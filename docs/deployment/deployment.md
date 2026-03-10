@@ -213,7 +213,7 @@ cd /mnt/user/repos/BudgetApp
    chmod 600 secrets/production/db_password.txt
    ```
 
-5. Copy `secrets/production/.env` from your backup (or recreate it — see Step 1 of the [User Deployment Guide](user-guide.md)).
+5. Copy `secrets/production/.env` from your backup, or re-run `./scripts/setup/setup-prod.sh --domain <your-domain> --port <your-port>` to regenerate it.
 
 6. Start the app:
 
@@ -238,7 +238,7 @@ Check the output for error messages. Common causes:
 - **SQLite permission error** — verify the `/mnt/user/appdata/budget-app/data/` directory exists and is writable. Check it appears in the volumes section of `docker/docker-compose.prod.yml`.
 - **Can't connect to external database** — if using `DB_CLIENT=mysql2` or `DB_CLIENT=pg`, verify the host address, port, and credentials in `secrets/production/.env`. Make sure the database container is running and the `budget_app` database exists.
 - **Missing secret files** — run `./scripts/setup/setup-prod.sh` again from the repo folder.
-- **Port 13911 already in use** — another container is using that port. Change it by editing `APP_PORT` in `secrets/production/.env`, then restart.
+- **Port 13911 already in use** — another container is using that port. Edit `APP_PORT` in `docker/.env` (e.g. change `13911` to a free port), then restart with `docker compose -f docker/docker-compose.prod.yml up -d`. Or re-run `./scripts/setup/setup-prod.sh --port <new-port>` to reconfigure everything at once.
 
 ### The app starts but I can't log in / WebAuthn errors
 
