@@ -143,23 +143,31 @@ success "Host port: ${HOST_PORT}"
 header "4/7  Database"
 
 echo ""
-echo "  Choose your database:"
-echo "    1) SQLite     — built-in, no extra setup needed  (recommended)"
-echo "    2) MariaDB    — use an existing MariaDB server"
-echo "    3) PostgreSQL — use an existing PostgreSQL server"
+echo "  BudgetApp uses SQLite by default — a single file on your server, no extra"
+echo "  setup required. Most households will never need anything else."
 echo ""
 
-DB_CHOICE=""
-while true; do
-  read -rp "  Choice [1]: " DB_CHOICE || true
-  DB_CHOICE="${DB_CHOICE:-1}"
-  case "$DB_CHOICE" in
-    1) DB_TYPE="sqlite";   break ;;
-    2) DB_TYPE="mariadb";  break ;;
-    3) DB_TYPE="postgres"; break ;;
-    *) echo "  Please enter 1, 2, or 3." ;;
-  esac
-done
+DB_TYPE="sqlite"
+USE_EXTERNAL_DB=""
+read -rp "  Use an external database instead (MariaDB or PostgreSQL)? [y/N]: " USE_EXTERNAL_DB || true
+
+if [[ "${USE_EXTERNAL_DB,,}" =~ ^y ]]; then
+  echo ""
+  echo "  Choose your database:"
+  echo "    1) MariaDB    — use an existing MariaDB server"
+  echo "    2) PostgreSQL — use an existing PostgreSQL server"
+  echo ""
+  DB_CHOICE=""
+  while true; do
+    read -rp "  Choice [1]: " DB_CHOICE || true
+    DB_CHOICE="${DB_CHOICE:-1}"
+    case "$DB_CHOICE" in
+      1) DB_TYPE="mariadb";  break ;;
+      2) DB_TYPE="postgres"; break ;;
+      *) echo "  Please enter 1 or 2." ;;
+    esac
+  done
+fi
 
 DB_CLIENT=""
 DB_PATH=""
