@@ -171,9 +171,14 @@ class TransactionRepository {
     await db('transactions').where({ id, user_id: userId }).delete();
   }
 
-  async setIsTransfer(id: string, isTransfer: boolean, trx?: Knex.Transaction): Promise<void> {
+  async setIsTransfer(
+    id: string,
+    userId: string,
+    isTransfer: boolean,
+    trx?: Knex.Transaction
+  ): Promise<void> {
     const db = trx ?? this.db;
-    await db('transactions').where({ id }).update({ is_transfer: isTransfer });
+    await db('transactions').where({ id, user_id: userId }).update({ is_transfer: isTransfer });
   }
 
   /**

@@ -251,7 +251,7 @@ class TransactionService {
       // Remove the link and unmark the partner transaction
       if (linkedTxId) {
         await transactionLinkRepository.deleteByTransactionId(id, trx);
-        await transactionRepository.setIsTransfer(linkedTxId, false, trx);
+        await transactionRepository.setIsTransfer(linkedTxId, userId, false, trx);
       }
 
       await transactionRepository.delete(id, userId, trx);
@@ -298,8 +298,8 @@ class TransactionService {
 
     await this.db.transaction(async (trx) => {
       await transactionLinkRepository.create(txId, targetId, linkType, trx);
-      await transactionRepository.setIsTransfer(txId, true, trx);
-      await transactionRepository.setIsTransfer(targetId, true, trx);
+      await transactionRepository.setIsTransfer(txId, userId, true, trx);
+      await transactionRepository.setIsTransfer(targetId, userId, true, trx);
     });
   }
 
@@ -318,8 +318,8 @@ class TransactionService {
 
     await this.db.transaction(async (trx) => {
       await transactionLinkRepository.deleteByTransactionId(txId, trx);
-      await transactionRepository.setIsTransfer(txId, false, trx);
-      await transactionRepository.setIsTransfer(linkedTxId, false, trx);
+      await transactionRepository.setIsTransfer(txId, userId, false, trx);
+      await transactionRepository.setIsTransfer(linkedTxId, userId, false, trx);
     });
   }
 }
