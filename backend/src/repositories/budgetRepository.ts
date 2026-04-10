@@ -135,7 +135,7 @@ class BudgetRepository {
             FROM transactions t
             WHERE t.category_id = bc.category_id
               AND t.user_id = ?
-              AND t.is_transfer = 0
+              AND t.is_transfer = false
               AND t.amount < 0
               AND t.date BETWEEN ? AND ?
           ), 0) as spent`,

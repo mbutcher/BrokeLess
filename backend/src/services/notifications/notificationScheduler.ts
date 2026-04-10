@@ -88,7 +88,10 @@ class NotificationScheduler {
       let parsedPrefs: Partial<PushPreferences> = {};
       if (user.push_preferences) {
         try {
-          parsedPrefs = JSON.parse(user.push_preferences) as Partial<PushPreferences>;
+          const raw = user.push_preferences;
+          parsedPrefs = (
+            typeof raw === 'string' ? JSON.parse(raw) : raw
+          ) as Partial<PushPreferences>;
         } catch {
           logger.warn('Notification scheduler: invalid push_preferences JSON', { userId: user.id });
         }

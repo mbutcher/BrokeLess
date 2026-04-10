@@ -2,8 +2,11 @@ import type { Knex } from 'knex';
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.alterTable('budget_lines', (table) => {
+    // Use .uuid() so Knex maps to the correct type per dialect:
+    //   PostgreSQL → UUID (matches accounts.id UUID, enabling the FK constraint)
+    //   MySQL/SQLite → CHAR(36)
     table
-      .specificType('account_id', 'CHAR(36)')
+      .uuid('account_id')
       .nullable()
       .references('id')
       .inTable('accounts')

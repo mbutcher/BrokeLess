@@ -11,7 +11,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuLabel,
 } from '@components/ui/dropdown-menu';
 
 function getInitials(displayName: string | null | undefined, email: string | undefined): string {
@@ -68,21 +67,13 @@ export function UserAvatarMenu({ onNav }: UserAvatarMenuProps = {}) {
           {initials}
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" side="top" className="w-48">
-        <DropdownMenuLabel>{t('nav.settings')}</DropdownMenuLabel>
+      <DropdownMenuContent align="end" side="bottom" className="w-48">
         <DropdownMenuItem
           active={path.startsWith('/settings/account')}
           onClick={() => nav('/settings/account')}
         >
           <User className="h-4 w-4 shrink-0" />
           {t('settings.account')}
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          active={path.startsWith('/settings/integrations')}
-          onClick={() => nav('/settings/integrations')}
-        >
-          <Plug className="h-4 w-4 shrink-0" />
-          {t('nav.integrations')}
         </DropdownMenuItem>
         <DropdownMenuItem
           active={path.startsWith('/settings/security')}
@@ -97,6 +88,13 @@ export function UserAvatarMenu({ onNav }: UserAvatarMenuProps = {}) {
         >
           <Users className="h-4 w-4 shrink-0" />
           {t('household.settings.title')}
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          active={path.startsWith('/settings/integrations')}
+          onClick={() => nav('/settings/integrations')}
+        >
+          <Plug className="h-4 w-4 shrink-0" />
+          {t('nav.integrations')}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem

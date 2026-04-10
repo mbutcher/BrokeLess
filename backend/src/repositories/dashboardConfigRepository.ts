@@ -97,23 +97,27 @@ export function buildDefaultConfig(userId: string): DashboardConfig {
 
 // ─── Row mapper ───────────────────────────────────────────────────────────────
 
+function safeJsonParse<T>(raw: unknown, fallback: T): T {
+  if (typeof raw !== 'string') return raw !== null && raw !== undefined ? (raw as T) : fallback;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
 function mapRow(row: Record<string, unknown>): DashboardConfig {
   return {
     userId: String(row['user_id']),
-    widgetVisibility: (typeof row['widget_visibility'] === 'string'
-      ? JSON.parse(row['widget_visibility'])
-      : row['widget_visibility']) as Record<WidgetId, boolean>,
-    excludedAccountIds: (typeof row['excluded_account_ids'] === 'string'
-      ? JSON.parse(row['excluded_account_ids'])
-      : row['excluded_account_ids']) as string[],
-    layouts: (typeof row['layouts'] === 'string'
-      ? JSON.parse(row['layouts'])
-      : row['layouts']) as DashboardLayouts,
+    widgetVisibility: safeJsonParse<Record<WidgetId, boolean>>(
+      row['widget_visibility'],
+      { ...DEFAULT_WIDGET_VISIBILITY }
+    ),
+    excludedAccountIds: safeJsonParse<string[]>(row['excluded_account_ids'], []),
+    layouts: safeJsonParse<DashboardLayouts>(row['layouts'], buildDefaultLayouts()),
     updatedAt: new Date(String(row['updated_at'])),
     acknowledgedRollovers: row['acknowledged_rollovers']
-      ? ((typeof row['acknowledged_rollovers'] === 'string'
-          ? JSON.parse(row['acknowledged_rollovers'])
-          : row['acknowledged_rollovers']) as Record<string, string>)
+      ? safeJsonParse<Record<string, string>>(row['acknowledged_rollovers'], {})
       : {},
     budgetLinesLastReviewedAt: row['budget_lines_last_reviewed_at']
       ? new Date(String(row['budget_lines_last_reviewed_at']))

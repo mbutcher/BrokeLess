@@ -17,9 +17,9 @@ v0.4 is a UX and UI quality pass across the entire application. Rather than ship
 
 | Area | PRD | Status |
 |------|-----|--------|
-| Sidebar (desktop) | [prd/v0.4/nav-sidebar.md](./prd/v0.4/nav-sidebar.md) | Pending |
-| Mobile nav (drawer + top bar) | [prd/v0.4/nav-mobile.md](./prd/v0.4/nav-mobile.md) | Pending |
-| User avatar menu | [prd/v0.4/nav-avatar-menu.md](./prd/v0.4/nav-avatar-menu.md) | Pending |
+| Sidebar (desktop) | [prd/v0.4/nav-sidebar.md](./prd/v0.4/nav-sidebar.md) | Complete |
+| Mobile nav (drawer + top bar) | [prd/v0.4/nav-mobile.md](./prd/v0.4/nav-mobile.md) | Complete |
+| User avatar menu | [prd/v0.4/nav-avatar-menu.md](./prd/v0.4/nav-avatar-menu.md) | Complete |
 
 ---
 

@@ -1,7 +1,7 @@
 # PRD — Navigation: Mobile (Drawer + Top Bar)
 
 **Version:** v0.4
-**Status:** Pending
+**Status:** Complete
 **Component:** Navigation
 **File:** [frontend/src/components/layout/AppLayout.tsx](../../../../frontend/src/components/layout/AppLayout.tsx)
 
@@ -15,13 +15,17 @@ Mobile navigation consists of a fixed top bar (hamburger | app name | avatar) an
 
 ## Problems / Observations
 
-_To be defined._
+- Key features are hidden behind a "swipe from left" menu
+- Swipe menu is less intuitive
+- Still need to allow deep access to all features and tools.
 
 ---
 
 ## Proposed Changes
 
-_To be defined._
+- Replace side navbar with icon based tool bar at bottom of screen
+- Key features: Dashboard, Budget, Transactions, and Goals
+- Center toggle for popup drawer of additional features and screens
 
 ---
 

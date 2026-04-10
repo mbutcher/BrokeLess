@@ -14,7 +14,8 @@
     "preferences": "Préférences",
     "signOut": "Se déconnecter",
     "openMenu": "Ouvrir le menu",
-    "closeMenu": "Fermer le menu"
+    "closeMenu": "Fermer le menu",
+    "more": "Plus"
   },
   "common": {
     "save": "Enregistrer",

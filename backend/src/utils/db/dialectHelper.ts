@@ -7,6 +7,7 @@
  * Consumers import the singleton `dialectHelper` and call its methods.
  */
 
+import { randomUUID } from 'crypto';
 import type { Knex } from 'knex';
 import { env } from '@config/env';
 
@@ -73,7 +74,9 @@ class DialectHelper {
       case 'sqlite3':
         return `DATE(${colExpr}, '-${n} ${unitLower}')`;
       case 'pg':
-        return `(${colExpr} - INTERVAL '${n} ${unitLower}')`;
+        // ::date cast ensures bound parameters (?) are typed correctly;
+        // it is a no-op when colExpr is already a date column reference.
+        return `(${colExpr}::date - INTERVAL '${n} ${unitLower}')`;
       default:
         return `DATE_SUB(${colExpr}, INTERVAL ${n} ${unit})`;
     }
@@ -91,10 +94,8 @@ class DialectHelper {
       case 'pg':
         return `(CURRENT_DATE - INTERVAL '${n} ${unitLower}')`;
       default:
-        // Use CURDATE() for date-only, NOW() for datetime
-        return unit === 'DAY'
-          ? `DATE_SUB(NOW(), INTERVAL ${n} ${unit})`
-          : `DATE_SUB(CURDATE(), INTERVAL ${n} ${unit})`;
+        // CURDATE() returns a date-only value, matching SQLite/PostgreSQL behaviour
+        return `DATE_SUB(CURDATE(), INTERVAL ${n} ${unit})`;
     }
   }
 
@@ -159,12 +160,12 @@ class DialectHelper {
     rows: Array<{ budget_id: string; category_id: string; allocated_amount: number }>
   ): Promise<void> {
     if (rows.length === 0) return;
-    const placeholders = rows.map(() => '(?, ?, ?)').join(', ');
-    const values = rows.flatMap((r) => [r.budget_id, r.category_id, r.allocated_amount]);
+    const placeholders = rows.map(() => '(?, ?, ?, ?)').join(', ');
+    const values = rows.flatMap((r) => [randomUUID(), r.budget_id, r.category_id, r.allocated_amount]);
 
     if (this.client === 'mysql2') {
       await db.raw(
-        `INSERT INTO budget_categories (budget_id, category_id, allocated_amount)
+        `INSERT INTO budget_categories (id, budget_id, category_id, allocated_amount)
          VALUES ${placeholders}
          ON DUPLICATE KEY UPDATE allocated_amount = VALUES(allocated_amount), updated_at = NOW()`,
         values
@@ -172,7 +173,7 @@ class DialectHelper {
     } else {
       // PostgreSQL (3.24+) and SQLite (3.24+) both support ON CONFLICT ... DO UPDATE
       await db.raw(
-        `INSERT INTO budget_categories (budget_id, category_id, allocated_amount)
+        `INSERT INTO budget_categories (id, budget_id, category_id, allocated_amount)
          VALUES ${placeholders}
          ON CONFLICT (budget_id, category_id) DO UPDATE SET
            allocated_amount = EXCLUDED.allocated_amount,
@@ -212,6 +213,9 @@ class DialectHelper {
   /**
    * Disable foreign key constraint enforcement.
    * Call before bulk truncation/seeding; always pair with enableForeignKeyChecks().
+   * PostgreSQL is a no-op here — use truncateTable() instead, which issues
+   * TRUNCATE ... CASCADE and handles self-referential FKs without requiring
+   * the session_replication_role superuser privilege.
    */
   async disableForeignKeyChecks(db: Knex): Promise<void> {
     switch (this.client) {
@@ -219,7 +223,7 @@ class DialectHelper {
         await db.raw('PRAGMA foreign_keys = OFF');
         break;
       case 'pg':
-        await db.raw("SET session_replication_role = 'replica'");
+        // No-op: truncateTable() uses TRUNCATE ... CASCADE instead.
         break;
       default:
         await db.raw('SET FOREIGN_KEY_CHECKS = 0');
@@ -235,10 +239,29 @@ class DialectHelper {
         await db.raw('PRAGMA foreign_keys = ON');
         break;
       case 'pg':
-        await db.raw("SET session_replication_role = 'origin'");
+        // No-op: see disableForeignKeyChecks().
         break;
       default:
         await db.raw('SET FOREIGN_KEY_CHECKS = 1');
+    }
+  }
+
+  /**
+   * Truncate a single table in a dialect-safe way.
+   * Use this inside a disableForeignKeyChecks / enableForeignKeyChecks block.
+   *
+   * PostgreSQL: issues TRUNCATE ... RESTART IDENTITY CASCADE so that
+   *   self-referential FKs (e.g. categories.parent_id) are handled without
+   *   needing session_replication_role privileges.
+   * MySQL / SQLite: delegates to Knex's built-in .truncate(), which is
+   *   safe while foreign-key checks are disabled by the surrounding block.
+   */
+  async truncateTable(db: Knex, tableName: string): Promise<void> {
+    if (this.client === 'pg') {
+      // ?? = Knex identifier binding (quotes the table name correctly).
+      await db.raw('TRUNCATE ?? RESTART IDENTITY CASCADE', [tableName]);
+    } else {
+      await db(tableName).truncate();
     }
   }
 }

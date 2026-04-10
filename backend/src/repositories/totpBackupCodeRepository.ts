@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { getDatabase } from '@config/database';
 import type { TotpBackupCode } from '@typings/auth.types';
 
@@ -19,7 +20,7 @@ class TotpBackupCodeRepository {
   }
 
   async createBatch(userId: string, codeHashes: string[]): Promise<void> {
-    const rows = codeHashes.map((codeHash) => ({ user_id: userId, code_hash: codeHash }));
+    const rows = codeHashes.map((codeHash) => ({ id: randomUUID(), user_id: userId, code_hash: codeHash }));
     await this.db('totp_backup_codes').insert(rows);
   }
 

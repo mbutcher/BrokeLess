@@ -1,7 +1,7 @@
 # PRD — Navigation: Sidebar (Desktop)
 
 **Version:** v0.4
-**Status:** Pending
+**Status:** Complete
 **Component:** Navigation
 **File:** [frontend/src/components/layout/AppLayout.tsx](../../../../frontend/src/components/layout/AppLayout.tsx)
 
@@ -15,13 +15,13 @@ Fixed 56-unit wide sidebar with a logo at top, 9 nav links (Dashboard, Accounts,
 
 ## Problems / Observations
 
-_To be defined._
 
 ---
 
 ## Proposed Changes
 
-_To be defined._
+- Reorder: Dashboard, Budget, Transactions, Savings Goals, Liabilities, Reports, Accounts
+- Avatar menu should be at the top of the list
 
 ---
 

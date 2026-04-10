@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import axios from 'axios';
 import { getDatabase } from '@config/database';
 import { AppError } from '@middleware/errorHandler';
@@ -73,19 +74,19 @@ class ExchangeRateService {
     // Fetch fresh rate from Frankfurter (ECB-sourced)
     const freshRate = await this.fetchFromFrankfurter(db, fromUpper, toUpper);
 
-    // Upsert into DB
-    if (cached) {
-      await db('exchange_rates')
-        .where({ from_currency: fromUpper, to_currency: toUpper })
-        .update({ rate: freshRate, fetched_date: today, updated_at: db.fn.now() });
-    } else {
-      await db('exchange_rates').insert({
+    // Atomic upsert — handles concurrent requests for the same pair gracefully.
+    // Two concurrent callers that both see no cached row would both try to INSERT;
+    // the second would crash on the UNIQUE(from_currency, to_currency) constraint.
+    await db('exchange_rates')
+      .insert({
+        id: randomUUID(),
         from_currency: fromUpper,
         to_currency: toUpper,
         rate: freshRate,
         fetched_date: today,
-      });
-    }
+      })
+      .onConflict(['from_currency', 'to_currency'])
+      .merge({ rate: freshRate, fetched_date: today, updated_at: db.fn.now() });
 
     return {
       fromCurrency: fromUpper,

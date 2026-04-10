@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { getDatabase } from '@config/database';
 import type { Passkey, CreatePasskeyData } from '@typings/auth.types';
 
@@ -51,7 +52,9 @@ class PasskeyRepository {
   }
 
   async create(data: CreatePasskeyData): Promise<Passkey> {
+    const id = randomUUID();
     await this.db('passkeys').insert({
+      id,
       user_id: data.userId,
       credential_id: data.credentialId,
       public_key: data.publicKey,
@@ -60,9 +63,7 @@ class PasskeyRepository {
       device_name: data.deviceName,
       transports: data.transports ? JSON.stringify(data.transports) : null,
     });
-    const row: unknown = await this.db('passkeys')
-      .where({ credential_id: data.credentialId })
-      .first();
+    const row: unknown = await this.db('passkeys').where({ id }).first();
     return rowToPasskey(row as Record<string, unknown>);
   }
 

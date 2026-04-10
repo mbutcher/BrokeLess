@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import type { Knex } from 'knex';
 import { getDatabase } from '@config/database';
 import type { TransactionLink, LinkType } from '@typings/core.types';
@@ -24,7 +25,9 @@ class TransactionLinkRepository {
     trx?: Knex.Transaction
   ): Promise<TransactionLink> {
     const db = trx ?? this.db;
-    const [id] = await db('transaction_links').insert({
+    const id = randomUUID();
+    await db('transaction_links').insert({
+      id,
       from_transaction_id: fromId,
       to_transaction_id: toId,
       link_type: linkType,

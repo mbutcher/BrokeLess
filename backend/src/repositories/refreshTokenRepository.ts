@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { getDatabase } from '@config/database';
 import type { RefreshToken, CreateRefreshTokenData, SessionInfo } from '@typings/auth.types';
 
@@ -24,7 +25,9 @@ class RefreshTokenRepository {
   }
 
   async create(data: CreateRefreshTokenData): Promise<RefreshToken> {
+    const id = randomUUID();
     await this.db('refresh_tokens').insert({
+      id,
       user_id: data.userId,
       token_hash: data.tokenHash,
       device_fingerprint: data.deviceFingerprint,
@@ -34,9 +37,7 @@ class RefreshTokenRepository {
       expires_at: data.expiresAt,
       last_used_at: data.lastUsedAt ?? null,
     });
-    const row: unknown = await this.db('refresh_tokens')
-      .where({ token_hash: data.tokenHash })
-      .first();
+    const row: unknown = await this.db('refresh_tokens').where({ id }).first();
     return rowToRefreshToken(row as Record<string, unknown>);
   }
 

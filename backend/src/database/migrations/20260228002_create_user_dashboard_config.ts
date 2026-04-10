@@ -2,8 +2,11 @@ import type { Knex } from 'knex';
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('user_dashboard_config', (table) => {
+    // Use .uuid() so Knex maps to the correct type per dialect:
+    //   PostgreSQL → UUID (matches users.id UUID, enabling the FK constraint)
+    //   MySQL/SQLite → CHAR(36)
     table
-      .specificType('user_id', 'CHAR(36)')
+      .uuid('user_id')
       .notNullable()
       .primary()
       .references('id')

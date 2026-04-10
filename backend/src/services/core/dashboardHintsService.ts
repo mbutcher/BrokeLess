@@ -26,7 +26,11 @@ interface CategoryAvgRow {
 }
 
 interface AnchorRow {
-  cnt: string | number;
+  frequency: string;
+  anchor_date: Date | string;
+  frequency_interval: number | null;
+  day_of_month_1: number | null;
+  day_of_month_2: number | null;
 }
 
 interface FlexibleLineCountRow {
@@ -52,7 +56,7 @@ class DashboardHintsService {
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
 
     // Run all hint queries in parallel
-    const [uncatCount, overAvgCategories, anchorCount, flexibleLineCount, dashboardRow] =
+    const [uncatCount, overAvgCategories, anchorRow, flexibleLineCount, dashboardRow] =
       await Promise.all([
         // Uncategorised transactions this month
         db('transactions')
@@ -81,7 +85,7 @@ class DashboardHintsService {
             SUM(ABS(t2.amount)) AS monthly_spend
           FROM transactions t2
           WHERE t2.user_id = ?
-            AND t2.is_transfer = 0
+            AND t2.is_transfer = false
             AND t2.amount < 0
             AND t2.category_id IS NOT NULL
             AND t2.date >= ${dialectHelper.dateSubSQL('?', 4, 'MONTH')}
@@ -93,7 +97,7 @@ class DashboardHintsService {
           SELECT category_id, SUM(ABS(amount)) AS current_total
           FROM transactions
           WHERE user_id = ?
-            AND is_transfer = 0
+            AND is_transfer = false
             AND amount < 0
             AND category_id IS NOT NULL
             AND date >= ?
@@ -101,7 +105,9 @@ class DashboardHintsService {
           GROUP BY category_id
         ) AS curr ON curr.category_id = monthly_totals.category_id
         GROUP BY c.id, c.name, curr.current_total
-        HAVING current_total > 0 AND avg_past > 0 AND (current_total / avg_past) > 1.15
+        HAVING current_total > 0
+          AND AVG(monthly_totals.monthly_spend) > 0
+          AND (current_total / AVG(monthly_totals.monthly_spend)) > 1.15
         LIMIT 3
         `,
             [userId, monthStart, monthStart, userId, monthStart, monthEnd]
@@ -109,10 +115,10 @@ class DashboardHintsService {
           .then((result: unknown) => dialectHelper.rawRows<CategoryAvgRow>(result))
           .catch(() => [] as CategoryAvgRow[]),
 
-        // Whether a pay-period anchor budget line exists
+        // Fetch the pay-period anchor budget line (if one exists)
         db('budget_lines')
           .where({ user_id: userId, is_pay_period_anchor: true, is_active: true })
-          .count({ cnt: '*' })
+          .select('frequency', 'anchor_date', 'frequency_interval', 'day_of_month_1', 'day_of_month_2')
           .first() as Promise<AnchorRow | undefined>,
 
         // Count of active flexible expense budget lines (needed for rollover + annual review hints)
@@ -160,8 +166,7 @@ class DashboardHintsService {
     }
 
     // 3. No pay-period anchor set
-    const anchorNum = Number(anchorCount?.cnt ?? 0);
-    if (anchorNum === 0) {
+    if (!anchorRow) {
       hints.push({
         id: 'no-pay-period-anchor',
         type: 'info',
@@ -173,60 +178,50 @@ class DashboardHintsService {
     const flexibleNum = Number(flexibleLineCount?.cnt ?? 0);
 
     // 4. Unreviewed rollover — only if anchor + flexible lines exist
-    if (anchorNum > 0 && flexibleNum > 0) {
-      // Find the anchor line to compute periods
-      const anchorRow = (await db('budget_lines')
-        .where({ user_id: userId, is_pay_period_anchor: true, is_active: true })
-        .first()) as Record<string, unknown> | undefined;
+    if (anchorRow && flexibleNum > 0) {
+      // Build a minimal BudgetLine from the anchor row to pass to computeCurrentPayPeriod
+      const anchorLine = {
+        frequency: String(anchorRow.frequency) as BudgetLine['frequency'],
+        anchorDate:
+          anchorRow.anchor_date instanceof Date
+            ? anchorRow.anchor_date.toISOString().slice(0, 10)
+            : String(anchorRow.anchor_date).slice(0, 10),
+        frequencyInterval:
+          anchorRow.frequency_interval != null ? Number(anchorRow.frequency_interval) : null,
+        dayOfMonth1: anchorRow.day_of_month_1 != null ? Number(anchorRow.day_of_month_1) : null,
+        dayOfMonth2: anchorRow.day_of_month_2 != null ? Number(anchorRow.day_of_month_2) : null,
+      } as BudgetLine;
 
-      if (anchorRow) {
-        // Build a minimal BudgetLine from the anchor row to pass to computeCurrentPayPeriod
-        const anchorLine = {
-          frequency: String(anchorRow['frequency']) as BudgetLine['frequency'],
-          anchorDate:
-            anchorRow['anchor_date'] instanceof Date
-              ? anchorRow['anchor_date'].toISOString().slice(0, 10)
-              : String(anchorRow['anchor_date']).slice(0, 10),
-          frequencyInterval:
-            anchorRow['frequency_interval'] != null
-              ? Number(anchorRow['frequency_interval'])
-              : null,
-          dayOfMonth1:
-            anchorRow['day_of_month_1'] != null ? Number(anchorRow['day_of_month_1']) : null,
-          dayOfMonth2:
-            anchorRow['day_of_month_2'] != null ? Number(anchorRow['day_of_month_2']) : null,
-        } as BudgetLine;
+      // Current period
+      const current = computeCurrentPayPeriod(anchorLine, now);
+      // Previous period = period containing the day before the current period started
+      const dayBeforeCurrent = new Date(current.start.getTime() - 86_400_000);
+      const previous = computeCurrentPayPeriod(anchorLine, dayBeforeCurrent);
 
-        // Current period
-        const current = computeCurrentPayPeriod(anchorLine, now);
-        // Previous period = period containing the day before the current period started
-        const dayBeforeCurrent = new Date(current.start.getTime() - 86_400_000);
-        const previous = computeCurrentPayPeriod(anchorLine, dayBeforeCurrent);
+      const prevStart = previous.start.toISOString().slice(0, 10);
+      const prevEnd = previous.end.toISOString().slice(0, 10);
+      const rolloverKey = `${prevStart}_${prevEnd}`;
 
-        const prevStart = previous.start.toISOString().slice(0, 10);
-        const prevEnd = previous.end.toISOString().slice(0, 10);
-        const rolloverKey = `${prevStart}_${prevEnd}`;
-
-        let acknowledgedRollovers: Record<string, string> = {};
-        if (dashboardRow?.acknowledged_rollovers) {
-          try {
-            acknowledgedRollovers = JSON.parse(
-              String(dashboardRow.acknowledged_rollovers)
-            ) as Record<string, string>;
-          } catch {
-            // Corrupt JSON — treat as empty (no acknowledged rollovers)
-          }
+      let acknowledgedRollovers: Record<string, string> = {};
+      if (dashboardRow?.acknowledged_rollovers) {
+        try {
+          const raw = dashboardRow.acknowledged_rollovers;
+          acknowledgedRollovers = (
+            typeof raw === 'string' ? JSON.parse(raw) : raw
+          ) as Record<string, string>;
+        } catch {
+          // Corrupt JSON — treat as empty (no acknowledged rollovers)
         }
+      }
 
-        if (!acknowledgedRollovers[rolloverKey]) {
-          hints.push({
-            id: 'unreviewed-rollover',
-            type: 'warning',
-            message: `Budget period ${prevStart} – ${prevEnd} ended without a rollover review`,
-            linkTo: '/budget',
-            meta: { previousStart: prevStart, previousEnd: prevEnd },
-          });
-        }
+      if (!acknowledgedRollovers[rolloverKey]) {
+        hints.push({
+          id: 'unreviewed-rollover',
+          type: 'warning',
+          message: `Budget period ${prevStart} – ${prevEnd} ended without a rollover review`,
+          linkTo: '/budget',
+          meta: { previousStart: prevStart, previousEnd: prevEnd },
+        });
       }
     }
 

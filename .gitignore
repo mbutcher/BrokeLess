@@ -115,3 +115,4 @@ user-uploads/
 
 # Claude Code
 .claude/plans/*.md
+.claude/ralph-loop.local.md

@@ -1,7 +1,7 @@
 # PRD — Navigation: User Avatar Menu
 
 **Version:** v0.4
-**Status:** Pending
+**Status:** Complete
 **Component:** Navigation
 **File:** [frontend/src/components/layout/UserAvatarMenu.tsx](../../../../frontend/src/components/layout/UserAvatarMenu.tsx)
 
@@ -15,13 +15,15 @@ Initials-based avatar button (bg-blue-600, rounded-full) that opens a dropdown m
 
 ## Problems / Observations
 
-_To be defined._
+- Allow profile pic to replace initials
+- Dislike the submenu.
 
 ---
 
 ## Proposed Changes
 
-_To be defined._
+- Shift submenu links to tabs on settings screen. (Need an acceptable option for mobile!)
+- Reorder: Account, Security, Household, Integrations, Sign Out.
 
 ---
 

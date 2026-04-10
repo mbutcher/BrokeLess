@@ -564,7 +564,7 @@ export async function seed(knex: Knex): Promise<void> {
   console.log('[dev_seed] Truncating tables...');
   await dialectHelper.disableForeignKeyChecks(knex);
   for (const table of TRUNCATE_TABLES) {
-    await knex(table).truncate();
+    await dialectHelper.truncateTable(knex, table);
   }
   await dialectHelper.enableForeignKeyChecks(knex);
 

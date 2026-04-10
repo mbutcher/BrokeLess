@@ -1,13 +1,23 @@
 import { randomUUID } from 'crypto';
 import { getDatabase } from '@config/database';
 import { encryptionService } from '@services/encryption/encryptionService';
+import { logger } from '@utils/logger';
 import type { SimplefinPendingReview } from '@typings/core.types';
 import type { SimplefinTransaction } from '@typings/simplefin.types';
 
 function rowToReview(row: Record<string, unknown>): SimplefinPendingReview {
-  const rawData = JSON.parse(
-    encryptionService.decrypt(row['raw_data_encrypted'] as string)
-  ) as SimplefinTransaction;
+  let rawData: SimplefinTransaction;
+  try {
+    rawData = JSON.parse(
+      encryptionService.decrypt(row['raw_data_encrypted'] as string)
+    ) as SimplefinTransaction;
+  } catch (err) {
+    logger.warn('simplefinPendingReview: failed to decrypt/parse raw_data_encrypted', {
+      id: row['id'],
+      err,
+    });
+    throw new Error(`Corrupt pending review row ${String(row['id'])}: decrypt/parse failed`);
+  }
 
   return {
     id: row['id'] as string,
