@@ -19,6 +19,10 @@ function buildConfig(): Knex.Config {
     directory: migrationsDir,
     tableName: 'knex_migrations',
     extension: migrationExt,
+    // Without this, Knex's default loadExtensions includes '.ts', which also
+    // matches '.d.ts' declaration files emitted alongside compiled migrations.
+    // Loading a .d.ts as JS throws "Unexpected token '{'" on `import type {...}`.
+    loadExtensions: [`.${migrationExt}`],
   };
 
   if (client === 'sqlite3') {

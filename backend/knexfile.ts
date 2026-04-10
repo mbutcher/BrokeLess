@@ -24,6 +24,7 @@ function buildDevConfig(): Knex.Config {
     directory: './src/database/migrations',
     tableName: 'knex_migrations',
     extension: 'ts',
+    loadExtensions: ['.ts'],
   };
   const seeds = {
     directory: './src/database/seeds',
@@ -81,6 +82,8 @@ function buildProdConfig(): Knex.Config {
     directory: './dist/database/migrations',
     tableName: 'knex_migrations',
     extension: 'js',
+    // Exclude .d.ts declaration files that sit alongside compiled migrations.
+    loadExtensions: ['.js'],
   };
   const seeds = {
     directory: './dist/database/seeds',
