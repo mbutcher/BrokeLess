@@ -58,14 +58,23 @@
   body {
     @apply bg-background text-foreground;
   }
+}
 
-  /* Prevent iOS Safari from auto-zooming when a form control is focused.
-     Triggered whenever the focused control's font-size is < 16px. */
-  @media (max-width: 767px) {
-    input,
-    select,
-    textarea {
-      font-size: 16px;
-    }
+/* Prevent iOS Safari from auto-zooming when a form control is focused.
+   Triggered whenever the focused control's font-size is < 16px.
+   Outside @layer base so it beats Tailwind utility classes like `text-sm`. */
+@media (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea {
+    font-size: 16px !important;
   }
+}
+
+/* Kill iOS pinch-zoom gestures inside the app as well. Combined with the
+   viewport meta (maximum-scale=1, user-scalable=no), this makes the app
+   behave like a native app in PWA standalone mode. */
+html {
+  touch-action: pan-x pan-y;
+  -webkit-text-size-adjust: 100%;
 }
