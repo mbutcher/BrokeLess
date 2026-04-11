@@ -1,15 +1,13 @@
-# Staging deployment — mirrors production but with NODE_ENV=staging,
-# isolated data/logs/uploads, separate host port, and seed reset capability.
+# Staging deployment — deploys from GHCR, auto-updated by Watchtower.
+# CI (.github/workflows/staging-deploy.yml) builds and pushes on every push
+# to the `staging` branch. Watchtower polls the registry and recreates the
+# running container when a new image tag appears.
+#
 # Point your proxy at http://<host>:${STAGING_APP_PORT:-13912}
 
 services:
   budget_app_staging:
-    build:
-      context: ../
-      dockerfile: docker/Dockerfile
-      args:
-        - VITE_API_URL=/api/v1
-    image: docker-budget_app_staging
+    image: ghcr.io/mbutcher/budgetapp-staging:latest
     container_name: budget_app_staging
     restart: unless-stopped
     ports:
@@ -30,12 +28,41 @@ services:
       - reset_token
     environment:
       - NODE_ENV=staging
+    labels:
+      # Opt-in to Watchtower updates
+      - "com.centurylinklabs.watchtower.enable=true"
+      # After Watchtower replaces the container with a new image, wait for
+      # the health endpoint to respond, then POST /api/v1/admin/reset-seeds
+      # so every deploy comes up with a fresh, reseeded database.
+      - "com.centurylinklabs.watchtower.lifecycle.post-update=/bin/sh -c 'for i in 1 2 3 4 5 6 7 8 9 10 11 12; do sleep 5; wget -q --spider http://127.0.0.1/health && break; done; wget -qO- --post-data= --header=\"X-Reset-Token: $$(cat /run/secrets/reset_token)\" http://127.0.0.1/api/v1/admin/reset-seeds'"
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: budget_app_staging_watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # If you make the GHCR package private, uncomment the next line and
+      # run `docker login ghcr.io` on the host first so Watchtower can pull:
+      # - /root/.docker/config.json:/config.json:ro
+    environment:
+      # Only manage containers that set watchtower.enable=true
+      - WATCHTOWER_LABEL_ENABLE=true
+      # Poll every 5 minutes
+      - WATCHTOWER_POLL_INTERVAL=300
+      # Remove old images after successful update
+      - WATCHTOWER_CLEANUP=true
+      # Required for lifecycle hooks (post-update seed reset)
+      - WATCHTOWER_LIFECYCLE_HOOKS=true
+      # Include stopped containers when checking
+      - WATCHTOWER_INCLUDE_STOPPED=false
+      - TZ=America/Toronto
 
 secrets:
   db_password:
