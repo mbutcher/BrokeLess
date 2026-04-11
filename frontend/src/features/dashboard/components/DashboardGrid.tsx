@@ -33,15 +33,20 @@ interface Props {
 function WidgetWrapper({
   children,
   isEditMode,
+  collapsed,
 }: {
   children: React.ReactNode;
   isEditMode: boolean;
+  collapsed: boolean;
 }) {
+  // Collapsed widgets shrink to their header height so the card doesn't paint
+  // empty space below it. Edit mode always uses the full cell so drag/resize work.
+  const shrink = collapsed && !isEditMode;
   return (
     <div
-      className={`bg-card rounded-xl border border-border overflow-hidden h-full relative ${
-        isEditMode ? 'ring-2 ring-primary/40 ring-offset-1' : ''
-      }`}
+      className={`bg-card rounded-xl border border-border overflow-hidden relative ${
+        shrink ? 'h-fit' : 'h-full'
+      } ${isEditMode ? 'ring-2 ring-primary/40 ring-offset-1' : ''}`}
     >
       {isEditMode && (
         <div className="drag-handle absolute top-0 left-0 right-0 h-7 bg-primary/5 border-b border-primary/20 cursor-grab flex items-center justify-center z-10">
@@ -52,7 +57,7 @@ function WidgetWrapper({
           </div>
         </div>
       )}
-      <div className={`h-full ${isEditMode ? 'pt-7' : ''}`}>{children}</div>
+      <div className={`${shrink ? '' : 'h-full'} ${isEditMode ? 'pt-7' : ''}`}>{children}</div>
     </div>
   );
 }
@@ -188,7 +193,7 @@ export function DashboardGrid({ config, isEditMode, onLayoutChange }: Props) {
           >
             {visibleIds.map((id) => (
               <div key={id}>
-                <WidgetWrapper isEditMode={isEditMode}>
+                <WidgetWrapper isEditMode={isEditMode} collapsed={collapsed[id] === true}>
                   {renderWidget(id, excludedAccountIds)}
                 </WidgetWrapper>
               </div>

@@ -1,20 +1,19 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ChevronRight } from 'lucide-react';
 import { useTransactions } from '@features/core/hooks/useTransactions';
 import { useFormatters } from '@lib/i18n/useFormatters';
 import { WidgetShell } from '../components/WidgetShell';
 import type { Transaction } from '@features/core/types';
 
 function TransactionRow({ tx }: { tx: Transaction }) {
+  const { t } = useTranslation();
   const { currency: fmt, date: fmtDate } = useFormatters();
   const isCredit = tx.amount > 0;
 
   return (
-    <Link
-      to={`/transactions?highlight=${tx.id}`}
-      className="flex items-center justify-between py-2.5 border-b border-border last:border-0 hover:bg-muted/50 -mx-2 px-2 rounded transition-colors"
-    >
-      <div className="flex items-center gap-2 min-w-0">
+    <div className="flex items-center justify-between py-2.5 border-b border-border last:border-0">
+      <div className="flex items-center gap-2 min-w-0 flex-1">
         <div className="min-w-0">
           <p className="text-sm font-medium text-foreground truncate">
             {tx.payee ?? tx.description ?? '—'}
@@ -23,14 +22,21 @@ function TransactionRow({ tx }: { tx: Transaction }) {
         </div>
       </div>
       <p
-        className={`ml-4 text-sm font-semibold tabular-nums flex-shrink-0 ${
+        className={`ml-3 text-sm font-semibold tabular-nums flex-shrink-0 ${
           isCredit ? 'text-success' : 'text-destructive'
         }`}
       >
         {isCredit ? '+' : ''}
         {fmt(Math.abs(tx.amount))}
       </p>
-    </Link>
+      <Link
+        to={`/transactions?highlight=${tx.id}`}
+        className="ml-1 flex-shrink-0 p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        aria-label={t('dashboard.viewAll')}
+      >
+        <ChevronRight className="h-4 w-4" />
+      </Link>
+    </div>
   );
 }
 
