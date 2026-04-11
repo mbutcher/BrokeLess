@@ -21,9 +21,9 @@ echo "🔐 Generating secrets for $ENVIRONMENT environment..."
 echo ""
 
 # Validate environment
-if [[ "$ENVIRONMENT" != "development" && "$ENVIRONMENT" != "production" ]]; then
-  echo "❌ Error: Environment must be 'development' or 'production'"
-  echo "Usage: ./generate-keys.sh <development|production>"
+if [[ "$ENVIRONMENT" != "development" && "$ENVIRONMENT" != "production" && "$ENVIRONMENT" != "staging" ]]; then
+  echo "❌ Error: Environment must be 'development', 'staging', or 'production'"
+  echo "Usage: ./generate-keys.sh <development|staging|production>"
   exit 1
 fi
 
@@ -97,6 +97,16 @@ generate_production_secrets() {
 
   write_secret "backup_encryption_key.txt" "$(derive_base64  'budgetapp:backup-encryption-key')"
   echo "✅ Derived: backup_encryption_key.txt"
+
+  # Reset token — only generated for staging environment (used by /api/admin/reset-seeds)
+  if [[ "$ENVIRONMENT" == "staging" ]]; then
+    write_secret "reset_token.txt" "$(derive_alnum32 'budgetapp:reset-token')"
+    echo "✅ Derived: reset_token.txt"
+  fi
+
+  # db_password — also derived so docker secrets mounting succeeds even for sqlite
+  write_secret "db_password.txt"           "$(derive_alnum32 'budgetapp:db-password')"
+  echo "✅ Derived: db_password.txt"
 }
 
 # ─── Development: independent random secrets ──────────────────────────────────
@@ -140,7 +150,7 @@ generate_development_secrets() {
 
 # ─── Run ──────────────────────────────────────────────────────────────────────
 
-if [[ "$ENVIRONMENT" == "production" ]]; then
+if [[ "$ENVIRONMENT" == "production" || "$ENVIRONMENT" == "staging" ]]; then
   generate_production_secrets
 else
   generate_development_secrets
@@ -161,6 +171,13 @@ if [[ ! -f "$ENV_FILE" ]]; then
     sed -i.bak 's/WEBAUTHN_RP_ID=.*/WEBAUTHN_RP_ID=localhost/' "$ENV_FILE"
     sed -i.bak 's|WEBAUTHN_ORIGIN=.*|WEBAUTHN_ORIGIN=http://localhost:3000|' "$ENV_FILE"
     sed -i.bak 's/LOG_LEVEL=.*/LOG_LEVEL=debug/' "$ENV_FILE"
+  elif [[ "$ENVIRONMENT" == "staging" ]]; then
+    sed -i.bak 's/NODE_ENV=.*/NODE_ENV=staging/' "$ENV_FILE"
+    sed -i.bak 's|APP_URL=.*|APP_URL=https://squishy-staging.thebutchers.ca|' "$ENV_FILE"
+    sed -i.bak 's|CORS_ORIGIN=.*|CORS_ORIGIN=https://squishy-staging.thebutchers.ca|' "$ENV_FILE"
+    sed -i.bak 's/WEBAUTHN_RP_ID=.*/WEBAUTHN_RP_ID=squishy-staging.thebutchers.ca/' "$ENV_FILE"
+    sed -i.bak 's|WEBAUTHN_ORIGIN=.*|WEBAUTHN_ORIGIN=https://squishy-staging.thebutchers.ca|' "$ENV_FILE"
+    sed -i.bak 's/LOG_LEVEL=.*/LOG_LEVEL=info/' "$ENV_FILE"
   else
     sed -i.bak 's/NODE_ENV=.*/NODE_ENV=production/' "$ENV_FILE"
     sed -i.bak 's|APP_URL=.*|APP_URL=https://budget.local|' "$ENV_FILE"

@@ -1,0 +1,54 @@
+# Staging deployment — mirrors production but with NODE_ENV=staging,
+# isolated data/logs/uploads, separate host port, and seed reset capability.
+# Point your proxy at http://<host>:${STAGING_APP_PORT:-13912}
+
+services:
+  budget_app_staging:
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+      args:
+        - VITE_API_URL=/api/v1
+    image: docker-budget_app_staging
+    container_name: budget_app_staging
+    restart: unless-stopped
+    ports:
+      - "${STAGING_APP_PORT:-13912}:80"
+    volumes:
+      - /mnt/user/appdata/budget-app-staging/logs:/app/logs
+      - /mnt/user/appdata/budget-app-staging/uploads:/app/uploads
+      - /mnt/user/appdata/budget-app-staging/data:/app/data
+    env_file:
+      - ../secrets/staging/.env
+    secrets:
+      - db_password
+      - jwt_secret
+      - encryption_key
+      - password_pepper
+      - master_secret
+      - backup_encryption_key
+      - reset_token
+    environment:
+      - NODE_ENV=staging
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+secrets:
+  db_password:
+    file: ../secrets/staging/db_password.txt
+  jwt_secret:
+    file: ../secrets/staging/jwt_secret.txt
+  encryption_key:
+    file: ../secrets/staging/encryption_key.txt
+  password_pepper:
+    file: ../secrets/staging/password_pepper.txt
+  master_secret:
+    file: ../secrets/staging/master_secret.txt
+  backup_encryption_key:
+    file: ../secrets/staging/backup_encryption_key.txt
+  reset_token:
+    file: ../secrets/staging/reset_token.txt

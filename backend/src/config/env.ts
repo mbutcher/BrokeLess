@@ -112,9 +112,15 @@ export const env = {
     vapidEmail: e['VAPID_EMAIL'] ?? '',
   },
 
+  // Staging — seed reset endpoint
+  reset: {
+    token: readSecret('reset_token.txt') ?? e['RESET_TOKEN'] ?? '',
+  },
+
   // Feature Flags
   isDevelopment: e['NODE_ENV'] === 'development',
   isProduction: e['NODE_ENV'] === 'production',
+  isStaging: e['NODE_ENV'] === 'staging',
   isTest: e['NODE_ENV'] === 'test',
 };
 

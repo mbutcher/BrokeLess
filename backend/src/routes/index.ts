@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { apiRateLimiter } from '@middleware/rateLimiter';
+import { env } from '@config/env';
 import authRoutes from './authRoutes';
+import adminRoutes from './adminRoutes';
 import setupRoutes from './setupRoutes';
 import accountRoutes from './accountRoutes';
 import categoryRoutes from './categoryRoutes';
@@ -43,5 +45,11 @@ router.use('/recurring-transactions', recurringTransactionRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/push', pushRoutes);
 router.use('/household', householdRoutes);
+
+// Staging-only admin routes — not registered in production or development.
+// The reset-seeds endpoint is gated by both this check AND an X-Reset-Token header.
+if (env.isStaging) {
+  router.use('/admin', adminRoutes);
+}
 
 export default router;

@@ -6,11 +6,13 @@ import { logger } from '../utils/logger';
 
 let db: Knex | null = null;
 
-const migrationsDir = env.isProduction
+// Production and staging both run from the compiled dist/ tree.
+const isCompiledBuild = env.isProduction || env.isStaging;
+const migrationsDir = isCompiledBuild
   ? path.join(__dirname, '..', 'database', 'migrations')
   : path.join(__dirname, '..', '..', 'src', 'database', 'migrations');
 
-const migrationExt = env.isProduction ? 'js' : 'ts';
+const migrationExt = isCompiledBuild ? 'js' : 'ts';
 
 function buildConfig(): Knex.Config {
   const client = env.db.client;

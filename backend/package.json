@@ -21,7 +21,7 @@
     "migrate:status": "knex migrate:status",
     "seed": "node -r ts-node/register -r tsconfig-paths/register node_modules/.bin/knex seed:run",
     "seed:dev": "node -r ts-node/register -r tsconfig-paths/register node_modules/.bin/knex seed:run",
-    "seed:fresh": "node -e \"const e=process.env.NODE_ENV;if(['production','staging'].includes(e))throw new Error('[seed:fresh] Refusing to run in NODE_ENV='+e)\" && knex migrate:rollback --all && knex migrate:latest && node -r ts-node/register -r tsconfig-paths/register node_modules/.bin/knex seed:run",
+    "seed:fresh": "node -e \"if(process.env.NODE_ENV==='production')throw new Error('[seed:fresh] Refusing to run in NODE_ENV=production')\" && knex migrate:rollback --all && knex migrate:latest && node -r ts-node/register -r tsconfig-paths/register node_modules/.bin/knex seed:run",
     "search:backfill": "ts-node -r tsconfig-paths/register src/scripts/backfillSearchIndex.ts"
   },
   "keywords": [

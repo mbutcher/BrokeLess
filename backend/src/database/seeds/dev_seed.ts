@@ -10,7 +10,8 @@
  *   mike+alpha@thebutchers.ca / test123  — Canadian user, CAD, en-CA, Toronto timezone
  *   mike+beta@thebutchers.ca  / test123  — American user, USD, en-US, New York timezone
  *
- * SAFETY: Refuses to run in production or staging environments.
+ * SAFETY: Refuses to run in production. Staging is permitted so integration
+ * tests can reset and reseed via the /api/admin/reset-seeds endpoint.
  */
 
 import type { Knex } from 'knex';
@@ -22,11 +23,10 @@ import { dialectHelper } from '../../utils/db/dialectHelper';
 // ─── Environment Guard ────────────────────────────────────────────────────────
 
 function assertSeedableEnvironment(): void {
-  const blocked = ['production', 'staging'];
-  if (blocked.includes(env.nodeEnv)) {
+  if (env.nodeEnv === 'production') {
     throw new Error(
-      `[dev_seed] Refusing to run in NODE_ENV="${env.nodeEnv}". ` +
-        `Seeds are only permitted in development and test environments.`
+      `[dev_seed] Refusing to run in NODE_ENV="production". ` +
+        `Seeds are only permitted in development, test, and staging environments.`
     );
   }
 }
