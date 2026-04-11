@@ -1,9 +1,12 @@
+import { useTranslation } from 'react-i18next';
 import { UpcomingExpenses } from '../components/UpcomingExpenses';
+import { WidgetShell } from '../components/WidgetShell';
 
 export function UpcomingExpensesWidget() {
+  const { t } = useTranslation();
   return (
-    <div className="h-full overflow-auto p-5">
+    <WidgetShell id="upcoming-expenses" title={t('dashboard.upcomingTitle')} scrollable>
       <UpcomingExpenses />
-    </div>
+    </WidgetShell>
   );
 }

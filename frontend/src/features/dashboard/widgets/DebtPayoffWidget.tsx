@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useAccounts } from '@features/core/hooks/useAccounts';
 import { useDebtSchedule, useAmortizationSchedule } from '@features/core/hooks/useDebt';
 import { useFormatters } from '@lib/i18n/useFormatters';
+import { WidgetShell } from '../components/WidgetShell';
 import type { Account } from '@features/core/types';
 
 function DebtCard({ account }: { account: Account }) {
@@ -55,10 +56,7 @@ export function DebtPayoffWidget() {
   );
 
   return (
-    <div className="h-full flex flex-col p-5">
-      <div className="flex items-center justify-between mb-3 flex-shrink-0">
-        <h2 className="text-base font-semibold text-foreground">{t('dashboard.debtPayoff')}</h2>
-      </div>
+    <WidgetShell id="debt-payoff" title={t('dashboard.debtPayoff')} scrollable>
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 2 }).map((_, i) => (
@@ -66,16 +64,16 @@ export function DebtPayoffWidget() {
           ))}
         </div>
       ) : debtAccounts.length === 0 ? (
-        <div className="flex items-center justify-center flex-1 text-sm text-muted-foreground">
+        <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
           {t('dashboard.noDebtAccounts')}
         </div>
       ) : (
-        <div className="flex-1 overflow-auto space-y-3">
+        <div className="space-y-3">
           {debtAccounts.map((account) => (
             <DebtCard key={account.id} account={account} />
           ))}
         </div>
       )}
-    </div>
+    </WidgetShell>
   );
 }

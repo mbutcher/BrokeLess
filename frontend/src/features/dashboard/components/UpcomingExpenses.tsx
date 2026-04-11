@@ -90,7 +90,6 @@ export function UpcomingExpenses() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
         <div className="flex items-center gap-3">
-          <h2 className="text-base font-semibold text-foreground">{t('dashboard.upcomingTitle')}</h2>
           <select
             value={selectedPeriod}
             onChange={(e) => setSelectedPeriod(e.target.value as PeriodKey)}

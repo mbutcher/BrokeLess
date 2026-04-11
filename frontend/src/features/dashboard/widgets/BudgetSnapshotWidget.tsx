@@ -4,6 +4,7 @@ import { useBudgetView } from '@features/core/hooks/useBudgetView';
 import { isOfflineError } from '@lib/db/offlineHelpers';
 import { monthWindow, toISODate } from '@lib/budget/budgetViewUtils';
 import { useFormatters } from '@lib/i18n/useFormatters';
+import { WidgetShell } from '../components/WidgetShell';
 
 export function BudgetSnapshotWidget() {
   const { t } = useTranslation();
@@ -13,14 +14,16 @@ export function BudgetSnapshotWidget() {
   const { data: view, isLoading, isError, error } = useBudgetView(toISODate(start), toISODate(end));
 
   return (
-    <div className="h-full flex flex-col p-5">
-      <div className="flex items-center justify-between mb-3 flex-shrink-0">
-        <h2 className="text-base font-semibold text-foreground">{t('dashboard.budgetThisMonth')}</h2>
+    <WidgetShell
+      id="budget-snapshot"
+      title={t('dashboard.budgetThisMonth')}
+      scrollable
+      actions={
         <Link to="/budget" className="text-sm text-primary hover:underline">
           {t('dashboard.viewBudget')}
         </Link>
-      </div>
-
+      }
+    >
       {isLoading ? (
         <div className="space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -39,7 +42,7 @@ export function BudgetSnapshotWidget() {
           </Link>
         </p>
       ) : (
-        <div className="flex-1 overflow-auto space-y-2">
+        <div className="space-y-2">
           {view.lines
             .filter((l) => l.budgetLine.classification === 'expense' && l.proratedAmount > 0)
             .sort((a, b) => b.proratedAmount - a.proratedAmount)
@@ -92,6 +95,6 @@ export function BudgetSnapshotWidget() {
           })()}
         </div>
       )}
-    </div>
+    </WidgetShell>
   );
 }

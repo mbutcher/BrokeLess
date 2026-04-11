@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Landmark, CreditCard, TrendingDown } from 'lucide-react';
 import { useAccounts } from '@features/core/hooks/useAccounts';
 import { useFormatters } from '@lib/i18n/useFormatters';
+import { WidgetShell } from '../components/WidgetShell';
 import type { Account } from '@features/core/types';
 
 interface Props {
@@ -49,13 +50,16 @@ export function AccountBalancesWidget({ excludedAccountIds }: Props) {
   const liabilities = visible.filter((a) => !a.isAsset && a.type !== 'credit_card');
 
   return (
-    <div className="h-full flex flex-col p-5">
-      <div className="flex items-center justify-between mb-3 flex-shrink-0">
-        <h2 className="text-base font-semibold text-foreground">{t('dashboard.accounts')}</h2>
+    <WidgetShell
+      id="account-balances"
+      title={t('dashboard.accounts')}
+      scrollable
+      actions={
         <Link to="/accounts" className="text-sm text-primary hover:underline">
           {t('dashboard.viewAll')}
         </Link>
-      </div>
+      }
+    >
       {isLoading ? (
         <div className="space-y-2">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -65,7 +69,7 @@ export function AccountBalancesWidget({ excludedAccountIds }: Props) {
       ) : visible.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-4">{t('dashboard.noAccounts')}</p>
       ) : (
-        <div className="flex-1 overflow-auto">
+        <>
           {assets.length > 0 && (
             <div className="mb-3">
               {assets.map((a) => (
@@ -87,8 +91,8 @@ export function AccountBalancesWidget({ excludedAccountIds }: Props) {
               ))}
             </div>
           )}
-        </div>
+        </>
       )}
-    </div>
+    </WidgetShell>
   );
 }

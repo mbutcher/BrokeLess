@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useTransactions } from '@features/core/hooks/useTransactions';
 import { useFormatters } from '@lib/i18n/useFormatters';
+import { WidgetShell } from '../components/WidgetShell';
 import type { Transaction } from '@features/core/types';
 
 function TransactionRow({ tx }: { tx: Transaction }) {
@@ -39,13 +40,16 @@ export function RecentTransactionsWidget() {
   const transactions = txData?.data ?? [];
 
   return (
-    <div className="h-full flex flex-col p-5">
-      <div className="flex items-center justify-between mb-3 flex-shrink-0">
-        <h2 className="text-base font-semibold text-foreground">{t('dashboard.recentTransactions')}</h2>
+    <WidgetShell
+      id="recent-transactions"
+      title={t('dashboard.recentTransactions')}
+      scrollable
+      actions={
         <Link to="/transactions" className="text-sm text-primary hover:underline">
           {t('dashboard.viewAll')}
         </Link>
-      </div>
+      }
+    >
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -55,12 +59,12 @@ export function RecentTransactionsWidget() {
       ) : transactions.length === 0 ? (
         <p className="text-sm text-muted-foreground py-6 text-center">{t('dashboard.noTransactions')}</p>
       ) : (
-        <div className="flex-1 overflow-auto">
+        <>
           {transactions.map((tx) => (
             <TransactionRow key={tx.id} tx={tx} />
           ))}
-        </div>
+        </>
       )}
-    </div>
+    </WidgetShell>
   );
 }

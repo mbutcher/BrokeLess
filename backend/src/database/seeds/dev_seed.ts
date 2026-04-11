@@ -52,6 +52,30 @@ async function hashPassword(password: string): Promise<string> {
 const uid = (type: string, seq: number): string =>
   `00000000-${type}-4000-0000-${seq.toString(16).padStart(12, '0')}`;
 
+// ─── Date Shifting ────────────────────────────────────────────────────────────
+// The seed data was originally written with hard-coded dates covering
+// roughly 2025-09 → 2026-02. To keep the dataset relevant as time moves on,
+// every ISO date in the seed is shifted by a single offset at runtime so the
+// latest transaction lands a few days before today. This preserves all
+// relative date relationships (budget anchors, goal targets, transaction
+// spacing) while keeping "this month" reports populated.
+
+const ORIGINAL_DATA_END = '2026-02-24'; // newest hard-coded transaction date
+const RECENCY_BUFFER_DAYS = 3; // leave a small gap between latest tx and today
+const _dateOffsetMs = (() => {
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const origEnd = new Date(`${ORIGINAL_DATA_END}T00:00:00Z`);
+  return today.getTime() - origEnd.getTime() - RECENCY_BUFFER_DAYS * 86_400_000;
+})();
+
+/** Shift a hard-coded YYYY-MM-DD string by the global seed offset. */
+function d(iso: string): string {
+  const dt = new Date(`${iso}T00:00:00Z`);
+  dt.setTime(dt.getTime() + _dateOffsetMs);
+  return dt.toISOString().slice(0, 10);
+}
+
 // ─── Entity IDs ───────────────────────────────────────────────────────────────
 
 // Users
@@ -488,7 +512,7 @@ function addTx(
     amount,
     payee: encryptionService.encrypt(payee),
     description: description ? encryptionService.encrypt(description) : null,
-    date,
+    date: d(date),
     category_id: categoryId,
     is_transfer: isTransfer,
     is_cleared: isCleared,
@@ -897,7 +921,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 3200.0,
       frequency: 'biweekly',
       frequency_interval: null,
-      anchor_date: '2026-02-18',
+      anchor_date: d('2026-02-18'),
       is_pay_period_anchor: true,
       is_active: true,
       notes: 'Net pay after deductions',
@@ -913,7 +937,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 850.0,
       frequency: 'monthly',
       frequency_interval: null,
-      anchor_date: '2026-02-01',
+      anchor_date: d('2026-02-01'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: null,
@@ -929,7 +953,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 1800.0,
       frequency: 'monthly',
       frequency_interval: null,
-      anchor_date: '2026-02-01',
+      anchor_date: d('2026-02-01'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: null,
@@ -945,7 +969,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 548.0,
       frequency: 'monthly',
       frequency_interval: null,
-      anchor_date: '2026-02-15',
+      anchor_date: d('2026-02-15'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: 'Toyota Financing — 5.9% APR',
@@ -961,7 +985,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 115.0,
       frequency: 'monthly',
       frequency_interval: null,
-      anchor_date: '2026-02-01',
+      anchor_date: d('2026-02-01'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: 'Varies seasonally',
@@ -977,7 +1001,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 85.0,
       frequency: 'monthly',
       frequency_interval: null,
-      anchor_date: '2026-02-15',
+      anchor_date: d('2026-02-15'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: null,
@@ -993,7 +1017,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 175.0,
       frequency: 'weekly',
       frequency_interval: null,
-      anchor_date: '2026-02-17',
+      anchor_date: d('2026-02-17'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: null,
@@ -1009,7 +1033,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 60.0,
       frequency: 'every_n_days',
       frequency_interval: 10,
-      anchor_date: '2026-02-14',
+      anchor_date: d('2026-02-14'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: 'Fill-up roughly every 10 days',
@@ -1025,7 +1049,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 17.99,
       frequency: 'monthly',
       frequency_interval: null,
-      anchor_date: '2026-02-08',
+      anchor_date: d('2026-02-08'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: null,
@@ -1041,7 +1065,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 10.99,
       frequency: 'monthly',
       frequency_interval: null,
-      anchor_date: '2026-02-09',
+      anchor_date: d('2026-02-09'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: null,
@@ -1057,7 +1081,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 45.0,
       frequency: 'monthly',
       frequency_interval: null,
-      anchor_date: '2026-02-01',
+      anchor_date: d('2026-02-01'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: null,
@@ -1073,7 +1097,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 420.0,
       frequency: 'annually',
       frequency_interval: null,
-      anchor_date: '2026-01-15',
+      anchor_date: d('2026-01-15'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: null,
@@ -1089,7 +1113,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 95.0,
       frequency: 'semi_monthly',
       frequency_interval: null,
-      anchor_date: '2026-02-01',
+      anchor_date: d('2026-02-01'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: 'Due 1st and 15th',
@@ -1105,7 +1129,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 250.0,
       frequency: 'annually',
       frequency_interval: null,
-      anchor_date: '2026-06-01',
+      anchor_date: d('2026-06-01'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: null,
@@ -1121,7 +1145,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 35.0,
       frequency: 'every_n_days',
       frequency_interval: 42,
-      anchor_date: '2026-02-20',
+      anchor_date: d('2026-02-20'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: 'Every 6 weeks',
@@ -1137,7 +1161,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 200.0,
       frequency: 'monthly',
       frequency_interval: null,
-      anchor_date: '2026-02-01',
+      anchor_date: d('2026-02-01'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: null,
@@ -1153,7 +1177,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 25.0,
       frequency: 'weekly',
       frequency_interval: null,
-      anchor_date: '2026-02-17',
+      anchor_date: d('2026-02-17'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: null,
@@ -1169,7 +1193,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 500.0,
       frequency: 'one_time',
       frequency_interval: null,
-      anchor_date: '2026-12-01',
+      anchor_date: d('2026-12-01'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: 'Christmas gifts',
@@ -1186,7 +1210,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 4800.0,
       frequency: 'semi_monthly',
       frequency_interval: null,
-      anchor_date: '2026-02-15',
+      anchor_date: d('2026-02-15'),
       is_pay_period_anchor: true,
       is_active: true,
       notes: 'Net pay',
@@ -1202,7 +1226,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 600.0,
       frequency: 'monthly',
       frequency_interval: null,
-      anchor_date: '2026-02-01',
+      anchor_date: d('2026-02-01'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: null,
@@ -1218,7 +1242,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 2150.0,
       frequency: 'monthly',
       frequency_interval: null,
-      anchor_date: '2026-02-01',
+      anchor_date: d('2026-02-01'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: null,
@@ -1234,7 +1258,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 145.0,
       frequency: 'monthly',
       frequency_interval: null,
-      anchor_date: '2026-02-01',
+      anchor_date: d('2026-02-01'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: null,
@@ -1250,7 +1274,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 90.0,
       frequency: 'monthly',
       frequency_interval: null,
-      anchor_date: '2026-02-15',
+      anchor_date: d('2026-02-15'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: null,
@@ -1266,7 +1290,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 220.0,
       frequency: 'weekly',
       frequency_interval: null,
-      anchor_date: '2026-02-16',
+      anchor_date: d('2026-02-16'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: null,
@@ -1282,7 +1306,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 363.0,
       frequency: 'monthly',
       frequency_interval: null,
-      anchor_date: '2026-02-01',
+      anchor_date: d('2026-02-01'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: '4.5% APR federal loan',
@@ -1298,7 +1322,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 25.0,
       frequency: 'monthly',
       frequency_interval: null,
-      anchor_date: '2026-02-01',
+      anchor_date: d('2026-02-01'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: null,
@@ -1314,7 +1338,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 70.0,
       frequency: 'every_n_days',
       frequency_interval: 12,
-      anchor_date: '2026-02-13',
+      anchor_date: d('2026-02-13'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: null,
@@ -1330,7 +1354,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 30.0,
       frequency: 'weekly',
       frequency_interval: null,
-      anchor_date: '2026-02-16',
+      anchor_date: d('2026-02-16'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: null,
@@ -1346,7 +1370,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 15.99,
       frequency: 'monthly',
       frequency_interval: null,
-      anchor_date: '2026-02-08',
+      anchor_date: d('2026-02-08'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: null,
@@ -1362,7 +1386,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 10.99,
       frequency: 'monthly',
       frequency_interval: null,
-      anchor_date: '2026-02-09',
+      anchor_date: d('2026-02-09'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: null,
@@ -1378,7 +1402,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 139.0,
       frequency: 'annually',
       frequency_interval: null,
-      anchor_date: '2026-03-15',
+      anchor_date: d('2026-03-15'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: null,
@@ -1394,7 +1418,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 195.0,
       frequency: 'semi_monthly',
       frequency_interval: null,
-      anchor_date: '2026-02-01',
+      anchor_date: d('2026-02-01'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: null,
@@ -1410,7 +1434,7 @@ export async function seed(knex: Knex): Promise<void> {
       amount: 250.0,
       frequency: 'monthly',
       frequency_interval: null,
-      anchor_date: '2026-02-01',
+      anchor_date: d('2026-02-01'),
       is_pay_period_anchor: false,
       is_active: true,
       notes: null,
@@ -1426,7 +1450,7 @@ export async function seed(knex: Knex): Promise<void> {
       account_id: A_EMERGENCY,
       name: 'Emergency Fund (6 months)',
       target_amount: 15000.0,
-      target_date: '2026-12-31',
+      target_date: d('2026-12-31'),
     },
     {
       id: A_GOAL_VACATION,
@@ -1434,7 +1458,7 @@ export async function seed(knex: Knex): Promise<void> {
       account_id: A_TFSA,
       name: 'Summer Vacation',
       target_amount: 3500.0,
-      target_date: '2026-06-01',
+      target_date: d('2026-06-01'),
     },
     {
       id: B_GOAL_DOWN_PMT,
@@ -1442,7 +1466,7 @@ export async function seed(knex: Knex): Promise<void> {
       account_id: B_SAVINGS,
       name: 'House Down Payment',
       target_amount: 50000.0,
-      target_date: '2027-09-01',
+      target_date: d('2027-09-01'),
     },
     {
       id: B_GOAL_EMERGENCY,
@@ -1464,7 +1488,7 @@ export async function seed(knex: Knex): Promise<void> {
       principal: 28500.0,
       annual_rate: 0.059, // 5.9% APR
       term_months: 60,
-      origination_date: '2024-08-01',
+      origination_date: d('2024-08-01'),
       payment_amount: 548.0,
     },
     {
@@ -1474,7 +1498,7 @@ export async function seed(knex: Knex): Promise<void> {
       principal: 35000.0,
       annual_rate: 0.045, // 4.5% APR
       term_months: 120,
-      origination_date: '2022-09-01',
+      origination_date: d('2022-09-01'),
       payment_amount: 363.0,
     },
   ]);

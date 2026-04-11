@@ -58,4 +58,14 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Prevent iOS Safari from auto-zooming when a form control is focused.
+     Triggered whenever the focused control's font-size is < 16px. */
+  @media (max-width: 767px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px;
+    }
+  }
 }

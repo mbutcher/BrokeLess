@@ -4,6 +4,7 @@ import { Lightbulb } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchDashboardHints } from '../api/dashboardApi';
 import { useNetworkStore } from '@stores/networkStore';
+import { WidgetShell } from '../components/WidgetShell';
 
 export function HintsWidget() {
   const { t } = useTranslation();
@@ -17,11 +18,16 @@ export function HintsWidget() {
   });
 
   return (
-    <div className="h-full flex flex-col p-5">
-      <div className="flex items-center gap-2 mb-3 flex-shrink-0">
-        <Lightbulb className="h-4 w-4 text-primary" />
-        <h2 className="text-base font-semibold text-foreground">{t('dashboard.hints')}</h2>
-      </div>
+    <WidgetShell
+      id="hints"
+      scrollable
+      title={
+        <span className="flex items-center gap-2">
+          <Lightbulb className="h-4 w-4 text-primary" />
+          {t('dashboard.hints')}
+        </span>
+      }
+    >
       {isLoading ? (
         <div className="space-y-2">
           <div className="h-4 bg-muted animate-pulse rounded w-3/4" />
@@ -30,7 +36,7 @@ export function HintsWidget() {
       ) : hints.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t('dashboard.noHints')}</p>
       ) : (
-        <div className="space-y-2 flex-1 overflow-auto">
+        <div className="space-y-2">
           {hints.map((hint) => (
             <div key={hint.id} className="text-sm text-foreground">
               {hint.linkTo ? (
@@ -44,6 +50,6 @@ export function HintsWidget() {
           ))}
         </div>
       )}
-    </div>
+    </WidgetShell>
   );
 }

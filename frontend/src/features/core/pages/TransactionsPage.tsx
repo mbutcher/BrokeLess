@@ -1,6 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Calendar } from 'lucide-react';
+
+function DateFilterInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="relative">
+      <Calendar className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      <input
+        type="date"
+        className="w-full border border-border rounded-lg pl-8 pr-2 py-1.5 text-sm bg-background text-foreground"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </div>
+  );
+}
 import { useAccounts } from '../hooks/useAccounts';
 import { useCategories } from '../hooks/useCategories';
 import { useAllTags } from '../hooks/useTransactions';
@@ -55,7 +70,7 @@ export function TransactionsPage() {
 
       {/* Filters */}
       <div className="bg-card border border-border rounded-xl p-4 mb-4 space-y-3">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
           <div>
             <label className="block text-xs text-muted-foreground mb-1">{t('transactions.filterAccount')}</label>
             <select
@@ -82,22 +97,18 @@ export function TransactionsPage() {
               ))}
             </select>
           </div>
-          <div>
+          <div className="min-w-0">
             <label className="block text-xs text-muted-foreground mb-1">{t('transactions.filterFrom')}</label>
-            <input
-              type="date"
-              className="w-full border border-border rounded-lg px-2 py-1.5 text-sm bg-background text-foreground"
+            <DateFilterInput
               value={filters.startDate ?? ''}
-              onChange={(e) => setFilters((f) => ({ ...f, startDate: e.target.value || undefined, page: 1 }))}
+              onChange={(v) => setFilters((f) => ({ ...f, startDate: v || undefined, page: 1 }))}
             />
           </div>
-          <div>
+          <div className="min-w-0">
             <label className="block text-xs text-muted-foreground mb-1">{t('transactions.filterTo')}</label>
-            <input
-              type="date"
-              className="w-full border border-border rounded-lg px-2 py-1.5 text-sm bg-background text-foreground"
+            <DateFilterInput
               value={filters.endDate ?? ''}
-              onChange={(e) => setFilters((f) => ({ ...f, endDate: e.target.value || undefined, page: 1 }))}
+              onChange={(v) => setFilters((f) => ({ ...f, endDate: v || undefined, page: 1 }))}
             />
           </div>
         </div>
