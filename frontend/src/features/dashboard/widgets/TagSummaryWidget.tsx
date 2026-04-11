@@ -12,6 +12,7 @@ import {
 import { useTagSummary } from '@features/core/hooks/useReports';
 import { useFormatters } from '@lib/i18n/useFormatters';
 import { monthWindow, toISODate } from '@lib/budget/budgetViewUtils';
+import { WidgetShell } from '../components/WidgetShell';
 
 const BAR_COLORS = [
   '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#ec4899',
@@ -32,11 +33,8 @@ export function TagSummaryWidget() {
   const chartData = [...tags].reverse();
 
   return (
-    <div className="h-full flex flex-col p-5">
-      <h2 className="text-base font-semibold text-foreground mb-4 flex-shrink-0">
-        {t('dashboard.tagSummary')}
-      </h2>
-      <div className="flex-1 min-h-0">
+    <WidgetShell id="tag-summary" title={t('dashboard.tagSummary')}>
+      <div className="h-full min-h-0">
         {isLoading ? (
           <div className="h-full bg-muted animate-pulse rounded-lg" />
         ) : chartData.length === 0 ? (
@@ -92,6 +90,6 @@ export function TagSummaryWidget() {
           </ResponsiveContainer>
         )}
       </div>
-    </div>
+    </WidgetShell>
   );
 }

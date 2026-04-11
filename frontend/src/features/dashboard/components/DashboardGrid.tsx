@@ -1,9 +1,10 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { ResponsiveGridLayout, useContainerWidth } from 'react-grid-layout';
 import type { Layout, LayoutItem, ResponsiveLayouts } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import type { DashboardConfig, WidgetId, GridLayoutItem } from '../types/dashboard';
+import { useWidgetCollapseState, WidgetCollapseProvider } from '../hooks/useWidgetCollapse';
 import { WarningsWidget } from '../widgets/WarningsWidget';
 import { NetWorthWidget } from '../widgets/NetWorthWidget';
 import { AccountBalancesWidget } from '../widgets/AccountBalancesWidget';
@@ -21,6 +22,7 @@ const ROW_HEIGHT = 80; // px per row unit
 const BREAKPOINTS = { xl: 1440, lg: 1024, sm: 640, xs: 0 };
 const COLS = { xl: 8, lg: 6, sm: 4, xs: 2 };
 const MARGIN: [number, number] = [16, 16];
+const COLLAPSED_H = 1; // rows consumed by a collapsed widget (title bar only)
 
 interface Props {
   config: DashboardConfig;
@@ -106,15 +108,55 @@ function toLayoutItem(item: GridLayoutItem): LayoutItem {
 export function DashboardGrid({ config, isEditMode, onLayoutChange }: Props) {
   const { widgetVisibility, excludedAccountIds, layouts } = config;
   const { width, containerRef, mounted } = useContainerWidth({ initialWidth: 1280 });
+  const collapseState = useWidgetCollapseState();
+  const { collapsed } = collapseState;
 
-  const rglLayouts: ResponsiveLayouts = useMemo(
-    () => ({
-      xs: layouts.xs.filter((item) => widgetVisibility[item.i]).map(toLayoutItem),
-      sm: layouts.sm.filter((item) => widgetVisibility[item.i]).map(toLayoutItem),
-      lg: layouts.lg.filter((item) => widgetVisibility[item.i]).map(toLayoutItem),
-      xl: layouts.xl.filter((item) => widgetVisibility[item.i]).map(toLayoutItem),
-    }),
-    [layouts, widgetVisibility],
+  const anyCollapsed = useMemo(() => Object.values(collapsed).some(Boolean), [collapsed]);
+
+  const rglLayouts: ResponsiveLayouts = useMemo(() => {
+    // Collapse is a view-only state — edit mode always works on real heights.
+    const applyCollapse = (item: GridLayoutItem): LayoutItem => {
+      const base = toLayoutItem(item);
+      if (isEditMode || collapsed[item.i] !== true) return base;
+      return { ...base, h: COLLAPSED_H, minH: COLLAPSED_H, maxH: COLLAPSED_H, isResizable: false };
+    };
+    return {
+      xs: layouts.xs.filter((item) => widgetVisibility[item.i]).map(applyCollapse),
+      sm: layouts.sm.filter((item) => widgetVisibility[item.i]).map(applyCollapse),
+      lg: layouts.lg.filter((item) => widgetVisibility[item.i]).map(applyCollapse),
+      xl: layouts.xl.filter((item) => widgetVisibility[item.i]).map(applyCollapse),
+    };
+  }, [layouts, widgetVisibility, collapsed, isEditMode]);
+
+  // Strip our collapse override before the layout reaches the persistence layer,
+  // so the saved config always holds the true expanded height for each widget.
+  const handleLayoutChange = useCallback(
+    (current: Layout, all: ResponsiveLayouts) => {
+      if (!onLayoutChange) return;
+      if (!anyCollapsed) {
+        onLayoutChange(current, all);
+        return;
+      }
+      const originalH = new Map<string, number>();
+      for (const bp of ['xl', 'lg', 'sm', 'xs'] as const) {
+        for (const l of layouts[bp]) {
+          if (!originalH.has(l.i)) originalH.set(l.i, l.h);
+        }
+      }
+      const restoreItem = (item: LayoutItem): LayoutItem => {
+        if (collapsed[item.i as WidgetId] !== true) return item;
+        const h = originalH.get(item.i);
+        return h !== undefined ? { ...item, h } : item;
+      };
+      const restored: ResponsiveLayouts = {
+        xs: (all['xs'] ?? []).map(restoreItem),
+        sm: (all['sm'] ?? []).map(restoreItem),
+        lg: (all['lg'] ?? []).map(restoreItem),
+        xl: (all['xl'] ?? []).map(restoreItem),
+      };
+      onLayoutChange(current.map(restoreItem), restored);
+    },
+    [onLayoutChange, collapsed, layouts, anyCollapsed],
   );
 
   // 'warnings' is rendered as a full-width banner above the grid, not inside the layout
@@ -127,31 +169,33 @@ export function DashboardGrid({ config, isEditMode, onLayoutChange }: Props) {
   const divRef = containerRef as React.RefObject<HTMLDivElement>;
 
   return (
-    <div ref={divRef}>
-      {/* Warnings banner — always full width, auto height, hidden when empty */}
-      <WarningsWidget excludedAccountIds={excludedAccountIds} />
-      {mounted && (
-        <ResponsiveGridLayout
-          width={width}
-          layouts={rglLayouts}
-          breakpoints={BREAKPOINTS}
-          cols={COLS}
-          rowHeight={ROW_HEIGHT}
-          margin={MARGIN}
-          containerPadding={[0, 0]}
-          dragConfig={{ enabled: isEditMode, handle: '.drag-handle', bounded: false, threshold: 3 }}
-          resizeConfig={{ enabled: isEditMode, handles: ['se'] }}
-          onLayoutChange={onLayoutChange}
-        >
-          {visibleIds.map((id) => (
-            <div key={id}>
-              <WidgetWrapper isEditMode={isEditMode}>
-                {renderWidget(id, excludedAccountIds)}
-              </WidgetWrapper>
-            </div>
-          ))}
-        </ResponsiveGridLayout>
-      )}
-    </div>
+    <WidgetCollapseProvider value={collapseState}>
+      <div ref={divRef}>
+        {/* Warnings banner — always full width, auto height, hidden when empty */}
+        <WarningsWidget excludedAccountIds={excludedAccountIds} />
+        {mounted && (
+          <ResponsiveGridLayout
+            width={width}
+            layouts={rglLayouts}
+            breakpoints={BREAKPOINTS}
+            cols={COLS}
+            rowHeight={ROW_HEIGHT}
+            margin={MARGIN}
+            containerPadding={[0, 0]}
+            dragConfig={{ enabled: isEditMode, handle: '.drag-handle', bounded: false, threshold: 3 }}
+            resizeConfig={{ enabled: isEditMode, handles: ['se'] }}
+            onLayoutChange={handleLayoutChange}
+          >
+            {visibleIds.map((id) => (
+              <div key={id}>
+                <WidgetWrapper isEditMode={isEditMode}>
+                  {renderWidget(id, excludedAccountIds)}
+                </WidgetWrapper>
+              </div>
+            ))}
+          </ResponsiveGridLayout>
+        )}
+      </div>
+    </WidgetCollapseProvider>
   );
 }

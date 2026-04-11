@@ -14,6 +14,7 @@ import {
 import { useSpendingByCategory } from '@features/core/hooks/useReports';
 import { useFormatters } from '@lib/i18n/useFormatters';
 import { monthWindow, toISODate } from '@lib/budget/budgetViewUtils';
+import { WidgetShell } from '../components/WidgetShell';
 
 const CHART_COLORS = [
   'var(--color-chart-1)',
@@ -45,9 +46,10 @@ export function SpendingByCategoryWidget() {
   }));
 
   return (
-    <div className="h-full flex flex-col p-5">
-      <div className="flex items-center justify-between mb-4 flex-shrink-0">
-        <h2 className="text-base font-semibold text-foreground">{t('dashboard.spendingByCategory')}</h2>
+    <WidgetShell
+      id="spending-by-category"
+      title={t('dashboard.spendingByCategory')}
+      actions={
         <div className="flex items-center gap-0.5 bg-muted rounded-lg p-0.5">
           <button
             onClick={() => setChartType('pie')}
@@ -70,9 +72,9 @@ export function SpendingByCategoryWidget() {
             {t('dashboard.barChart')}
           </button>
         </div>
-      </div>
-
-      <div className="flex-1 min-h-0">
+      }
+    >
+      <div className="h-full min-h-0">
         {isLoading ? (
           <div className="h-full bg-muted animate-pulse rounded-lg" />
         ) : chartData.length === 0 ? (
@@ -107,7 +109,7 @@ export function SpendingByCategoryWidget() {
                 />
               </PieChart>
             </ResponsiveContainer>
-            <div className="flex-1 overflow-auto space-y-1.5 py-1">
+            <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden space-y-1.5 py-1">
               {chartData.map((entry, i) => (
                 <div key={i} className="flex items-center gap-2 text-xs">
                   <span
@@ -161,6 +163,6 @@ export function SpendingByCategoryWidget() {
           </ResponsiveContainer>
         )}
       </div>
-    </div>
+    </WidgetShell>
   );
 }

@@ -10,6 +10,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { useMonthlySummary } from '@features/core/hooks/useReports';
+import { WidgetShell } from '../components/WidgetShell';
 
 type Period = 3 | 6 | 12;
 
@@ -44,9 +45,10 @@ export function MonthlyChartWidget() {
   };
 
   return (
-    <div className="h-full flex flex-col p-5">
-      <div className="flex items-center justify-between mb-4 flex-shrink-0">
-        <h2 className="text-base font-semibold text-foreground">{t('dashboard.incomeVsExpenses')}</h2>
+    <WidgetShell
+      id="monthly-chart"
+      title={t('dashboard.incomeVsExpenses')}
+      actions={
         <div className="flex items-center gap-0.5 bg-muted rounded-lg p-0.5">
           {PERIODS.map((p) => (
             <button
@@ -62,8 +64,9 @@ export function MonthlyChartWidget() {
             </button>
           ))}
         </div>
-      </div>
-      <div className="flex-1 min-h-0">
+      }
+    >
+      <div className="h-full min-h-0">
         {isLoading ? (
           <div className="h-full bg-muted animate-pulse rounded-lg" />
         ) : chartData.length === 0 ? (
@@ -127,6 +130,6 @@ export function MonthlyChartWidget() {
           </ResponsiveContainer>
         )}
       </div>
-    </div>
+    </WidgetShell>
   );
 }

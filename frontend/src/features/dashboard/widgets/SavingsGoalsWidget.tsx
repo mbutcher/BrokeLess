@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSavingsGoals, useSavingsGoalProgress } from '@features/core/hooks/useSavingsGoals';
 import { useFormatters } from '@lib/i18n/useFormatters';
+import { WidgetShell } from '../components/WidgetShell';
 import type { SavingsGoal } from '@features/core/types';
 
 function GoalMiniCard({ goal }: { goal: SavingsGoal }) {
@@ -59,18 +60,21 @@ export function SavingsGoalsWidget() {
   if (topGoals.length === 0) return null;
 
   return (
-    <div className="h-full flex flex-col p-5">
-      <div className="flex items-center justify-between mb-4 flex-shrink-0">
-        <h2 className="text-base font-semibold text-foreground">{t('dashboard.savingsGoals')}</h2>
+    <WidgetShell
+      id="savings-goals"
+      title={t('dashboard.savingsGoals')}
+      scrollable
+      actions={
         <Link to="/savings-goals" className="text-sm text-primary hover:underline">
           {t('dashboard.viewAll')}
         </Link>
-      </div>
-      <div className="space-y-3 flex-1 overflow-hidden">
+      }
+    >
+      <div className="space-y-3">
         {topGoals.map((goal) => (
           <GoalMiniCard key={goal.id} goal={goal} />
         ))}
       </div>
-    </div>
+    </WidgetShell>
   );
 }

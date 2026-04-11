@@ -14,14 +14,12 @@ import {
   MoreHorizontal,
   X,
   WifiOff,
-  Plus,
 } from 'lucide-react';
 import { useSimplefinStatus, usePendingReviewCount, useUnmappedAccounts } from '@features/integrations/hooks/useSimplefin';
 import { useNetworkStore } from '@stores/networkStore';
 import { OfflineBanner } from './OfflineBanner';
 import { SyncNotification } from './SyncNotification';
 import { UserAvatarMenu } from './UserAvatarMenu';
-import { QuickAddSheet } from '@features/core/components/QuickAddSheet';
 
 // Desktop sidebar nav order: Dashboard first, Accounts last
 const navItems = [
@@ -298,9 +296,7 @@ function MobileMoreSheet({
 }
 
 export function AppLayout() {
-  const { t } = useTranslation();
   const [moreOpen, setMoreOpen] = useState(false);
-  const [quickAddOpen, setQuickAddOpen] = useState(false);
 
   return (
     <div className="flex h-screen bg-muted/40">
@@ -332,17 +328,6 @@ export function AppLayout() {
 
       {/* Mobile "more" slide-up sheet */}
       <MobileMoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
-
-      {/* Mobile quick-add FAB — positioned above the bottom nav bar */}
-      <button
-        onClick={() => setQuickAddOpen(true)}
-        className="fixed bottom-20 right-4 z-50 flex items-center justify-center w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors md:hidden"
-        aria-label={t('quickAdd.title')}
-      >
-        <Plus className="h-6 w-6" />
-      </button>
-
-      <QuickAddSheet open={quickAddOpen} onClose={() => setQuickAddOpen(false)} />
 
       <SyncNotification />
     </div>
