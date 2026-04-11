@@ -3,15 +3,16 @@ import rateLimit from 'express-rate-limit';
 import { env } from '@config/env';
 import { TooManyRequestsError } from './errorHandler';
 
-// In development, rate limiting is disabled so repeated logins don't block local work.
+// Rate limiting is only enforced in production. Dev and staging use a noop so
+// repeated logins / reseeds / test runs don't lock the test user out.
 const noopLimiter: RequestHandler = (_req, _res, next) => next();
 
 /**
  * Rate limiter for credential-based auth endpoints (login, register, WebAuthn authenticate).
  * 5 requests per 15 minutes per IP address.
- * Disabled in development.
+ * Disabled outside production (dev, staging, test).
  */
-export const authRateLimiter: RequestHandler = env.isDevelopment
+export const authRateLimiter: RequestHandler = !env.isProduction
   ? noopLimiter
   : rateLimit({
       windowMs: env.rateLimit.loginWindowMs,
@@ -29,9 +30,9 @@ export const authRateLimiter: RequestHandler = env.isDevelopment
  * by the frontend whenever an access token expires — it is not a user-initiated
  * credential attempt.
  * 30 requests per 15 minutes per IP address.
- * Disabled in development.
+ * Disabled outside production (dev, staging, test).
  */
-export const refreshRateLimiter: RequestHandler = env.isDevelopment
+export const refreshRateLimiter: RequestHandler = !env.isProduction
   ? noopLimiter
   : rateLimit({
       windowMs: env.rateLimit.loginWindowMs,
@@ -46,9 +47,9 @@ export const refreshRateLimiter: RequestHandler = env.isDevelopment
 /**
  * Rate limiter for WebAuthn authenticate endpoints (options + verify).
  * 15 requests per 15 minutes per IP address.
- * Disabled in development.
+ * Disabled outside production (dev, staging, test).
  */
-export const webauthnRateLimiter: RequestHandler = env.isDevelopment
+export const webauthnRateLimiter: RequestHandler = !env.isProduction
   ? noopLimiter
   : rateLimit({
       windowMs: env.rateLimit.loginWindowMs,
@@ -63,9 +64,9 @@ export const webauthnRateLimiter: RequestHandler = env.isDevelopment
 /**
  * General API rate limiter for all other endpoints.
  * 100 requests per 15 minutes per IP address.
- * Disabled in development.
+ * Disabled outside production (dev, staging, test).
  */
-export const apiRateLimiter: RequestHandler = env.isDevelopment
+export const apiRateLimiter: RequestHandler = !env.isProduction
   ? noopLimiter
   : rateLimit({
       windowMs: env.rateLimit.windowMs,
