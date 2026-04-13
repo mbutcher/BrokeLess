@@ -20,6 +20,7 @@ import { useNetworkStore } from '@stores/networkStore';
 import { OfflineBanner } from './OfflineBanner';
 import { SyncNotification } from './SyncNotification';
 import { UserAvatarMenu } from './UserAvatarMenu';
+import { WarningsIndicator } from './WarningsIndicator';
 
 // Desktop sidebar nav order: Dashboard first, Accounts last
 const navItems = [
@@ -65,6 +66,9 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
         <div className="flex items-center gap-2 px-2">
           <UserAvatarMenu onNav={onNav} />
           <span className="text-sm text-muted-foreground">{t('nav.settings')}</span>
+          <div className="ml-auto">
+            <WarningsIndicator />
+          </div>
         </div>
       </div>
 
@@ -310,7 +314,8 @@ export function AppLayout() {
         {/* Mobile top bar — minimal: app name + avatar */}
         <header className="flex items-center h-14 px-4 border-b border-border bg-background md:hidden">
           <span className="text-sm font-bold text-foreground">BudgetApp</span>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            <WarningsIndicator />
             <UserAvatarMenu />
           </div>
         </header>
