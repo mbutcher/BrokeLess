@@ -26,17 +26,18 @@ export function BudgetLineGroup({ category, viewLines, allCategories }: BudgetLi
       <button
         type="button"
         onClick={() => setCollapsed(!collapsed)}
-        className="w-full flex items-center gap-2 px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+        className="w-full flex flex-wrap items-center gap-2 px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
       >
         {collapsed ? (
           <ChevronRight className="h-4 w-4 text-gray-400 shrink-0" />
         ) : (
           <ChevronDown className="h-4 w-4 text-gray-400 shrink-0" />
         )}
-        <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 flex-1">
+        <span className="text-xs font-semibold uppercase tracking-wider text-gray-500 flex-1 min-w-0">
           {category.name}
         </span>
-        <div className="flex items-center gap-4 text-sm shrink-0">
+        {/* On sm+, planned/actual sit inline. On mobile, they wrap below the title. */}
+        <div className="flex items-center gap-4 text-sm shrink-0 max-sm:basis-full max-sm:pl-6 max-sm:pt-1">
           <span className="text-gray-500">
             Planned <span className="font-semibold text-gray-700">{formatCurrency(groupPlanned)}</span>
           </span>
