@@ -27,13 +27,13 @@ class BudgetLineController {
 
   create = asyncHandler(async (req: Request, res: Response) => {
     const input = req.body as Omit<CreateBudgetLineData, 'userId'>;
-    const line = await budgetLineService.createBudgetLine(req.user!.id, input);
+    const line = await budgetLineService.createBudgetLine(req.user!.id, input, req.user!.householdId);
     res.status(201).json({ status: 'success', data: { budgetLine: line } });
   });
 
   update = asyncHandler(async (req: Request, res: Response) => {
     const input = req.body as UpdateBudgetLineData;
-    const line = await budgetLineService.updateBudgetLine(req.user!.id, req.params['id']!, input);
+    const line = await budgetLineService.updateBudgetLine(req.user!.id, req.params['id']!, input, req.user!.householdId);
     res.json({ status: 'success', data: { budgetLine: line } });
   });
 

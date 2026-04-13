@@ -1,13 +1,15 @@
 import { Router } from 'express';
 import { authenticateAny } from '@middleware/authenticate';
+import { loadHousehold } from '@middleware/requireHousehold';
 import { validateRequest } from '@middleware/validateRequest';
 import { budgetLineController } from '@controllers/budgetLineController';
 import { createBudgetLineSchema, updateBudgetLineSchema } from '@validators/coreValidators';
 
 const router = Router();
 
-// All budget-line routes require authentication
+// All budget-line routes require authentication + household context
 router.use(authenticateAny);
+router.use(loadHousehold);
 
 // ─── Budget Lines ─────────────────────────────────────────────────────────────
 router.get('/', budgetLineController.list);

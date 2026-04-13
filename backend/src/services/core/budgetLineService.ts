@@ -232,18 +232,18 @@ class BudgetLineService {
    * provided, that subcategoryId is a direct child of that Category.
    */
   private async validateCategoryHierarchy(
-    userId: string,
+    householdId: string,
     categoryId: string,
     subcategoryId?: string | null
   ): Promise<void> {
-    const category = await categoryRepository.findById(categoryId, userId);
+    const category = await categoryRepository.findById(categoryId, householdId);
     if (!category) throw new AppError('Category not found', 404);
     if (category.parentId !== null) {
       throw new AppError('categoryId must be a top-level Category (not a Subcategory)', 400);
     }
 
     if (subcategoryId) {
-      const sub = await categoryRepository.findById(subcategoryId, userId);
+      const sub = await categoryRepository.findById(subcategoryId, householdId);
       if (!sub) throw new AppError('Subcategory not found', 404);
       if (sub.parentId !== categoryId) {
         throw new AppError('subcategoryId must be a child of the specified categoryId', 400);
@@ -263,9 +263,12 @@ class BudgetLineService {
 
   async createBudgetLine(
     userId: string,
-    input: Omit<CreateBudgetLineData, 'userId'>
+    input: Omit<CreateBudgetLineData, 'userId'>,
+    householdId?: string
   ): Promise<BudgetLine> {
-    await this.validateCategoryHierarchy(userId, input.categoryId, input.subcategoryId);
+    if (householdId) {
+      await this.validateCategoryHierarchy(householdId, input.categoryId, input.subcategoryId);
+    }
     await this.validateAccountOwnership(userId, input.accountId);
 
     if (input.isPayPeriodAnchor && input.classification === 'expense') {
@@ -286,14 +289,15 @@ class BudgetLineService {
   async updateBudgetLine(
     userId: string,
     id: string,
-    input: UpdateBudgetLineData
+    input: UpdateBudgetLineData,
+    householdId?: string
   ): Promise<BudgetLine> {
     const existing = await budgetLineRepository.findById(id, userId);
     if (!existing) throw new AppError('Budget line not found', 404);
 
-    if (input.categoryId !== undefined || input.subcategoryId !== undefined) {
+    if (householdId && (input.categoryId !== undefined || input.subcategoryId !== undefined)) {
       await this.validateCategoryHierarchy(
-        userId,
+        householdId,
         input.categoryId ?? existing.categoryId,
         input.subcategoryId
       );
