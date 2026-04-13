@@ -28,8 +28,13 @@ export const adminController = {
     }
 
     const db = getDatabase();
+    const isSqlite = env.db.client === 'sqlite3';
     const t0 = Date.now();
     try {
+      // SQLite foreign-key constraints block DROP TABLE during rollback.
+      // Temporarily disable them for the rollback+migrate cycle.
+      if (isSqlite) await db.raw('PRAGMA foreign_keys = OFF');
+
       const t1 = Date.now();
       await db.migrate.rollback(undefined, true);
       const rollbackMs = Date.now() - t1;
@@ -38,10 +43,18 @@ export const adminController = {
       await db.migrate.latest();
       const migrateMs = Date.now() - t2;
 
+      if (isSqlite) await db.raw('PRAGMA foreign_keys = ON');
+
       const ext = env.isProduction || env.isStaging ? 'js' : 'ts';
+      // Bust Node's require cache for the seed file so date-shifting
+      // recalculates relative to the current timestamp on every reset.
+      const seedDir = seedsDirectory();
+      const seedFile = path.join(seedDir, `dev_seed.${ext}`);
+      delete require.cache[require.resolve(seedFile)];
+
       const t3 = Date.now();
       await db.seed.run({
-        directory: seedsDirectory(),
+        directory: seedDir,
         extension: ext,
         loadExtensions: [`.${ext}`],
       });
