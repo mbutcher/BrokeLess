@@ -5,6 +5,8 @@ import { NetworkFirst, CacheFirst } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 
+import { clientsClaim } from 'workbox-core';
+
 declare const self: ServiceWorkerGlobalScope & { __WB_MANIFEST: unknown[] };
 
 // Background Sync API — not yet in standard TypeScript DOM lib
@@ -12,6 +14,11 @@ interface SyncEvent extends ExtendableEvent {
   readonly tag: string;
   readonly lastChance: boolean;
 }
+
+// Activate new service worker immediately on install and claim all open tabs,
+// ensuring deployments bust the PWA cache without user interaction.
+self.skipWaiting();
+clientsClaim();
 
 precacheAndRoute(self.__WB_MANIFEST);
 
