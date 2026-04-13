@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { MoreHorizontal, Star, ChevronDown, ChevronUp } from 'lucide-react';
+import { Star, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { Button } from '@components/ui/button';
 import { FrequencyBadge } from './FrequencyBadge';
 import { FlexibilityBadge } from './FlexibilityBadge';
@@ -61,19 +61,7 @@ type EditFormValues = z.infer<typeof editSchema>;
 export function BudgetLineRow({ viewLine, subcategoryName }: BudgetLineRowProps) {
   const { budgetLine: line, proratedAmount, actualAmount, variance } = viewLine;
   const [expanded, setExpanded] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    function handleClickOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [menuOpen]);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const { currency: formatCurrency } = useFormatters();
   const updateLine = useUpdateBudgetLine();
   const deleteLine = useDeleteBudgetLine();
@@ -125,10 +113,7 @@ export function BudgetLineRow({ viewLine, subcategoryName }: BudgetLineRowProps)
   };
 
   const handleDelete = () => {
-    if (confirm(`Delete "${line.name}"? This cannot be undone.`)) {
-      deleteLine.mutate(line.id);
-    }
-    setMenuOpen(false);
+    deleteLine.mutate(line.id, { onSuccess: () => setExpanded(false) });
   };
 
   // Progress bar: actual vs prorated (capped at 100% for display)
@@ -197,42 +182,14 @@ export function BudgetLineRow({ viewLine, subcategoryName }: BudgetLineRowProps)
           )}
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center gap-1 shrink-0">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setMenuOpen(!menuOpen);
-            }}
-            className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-opacity"
-            aria-label="More options"
-          >
-            <MoreHorizontal className="h-4 w-4" />
-          </button>
+        {/* Expand/collapse indicator */}
+        <div className="shrink-0">
           {expanded ? (
-            <ChevronUp className="h-4 w-4 text-gray-400 shrink-0" />
+            <ChevronUp className="h-4 w-4 text-gray-400" />
           ) : (
-            <ChevronDown className="h-4 w-4 text-gray-400 shrink-0" />
+            <ChevronDown className="h-4 w-4 text-gray-400" />
           )}
         </div>
-
-        {/* Dropdown menu */}
-        {menuOpen && (
-          <div
-            ref={menuRef}
-            className="absolute right-4 top-10 w-40 rounded-md shadow-lg bg-white ring-1 ring-black/5 z-10"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="py-1">
-              <button
-                onClick={handleDelete}
-                className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Inline edit form */}
@@ -365,6 +322,41 @@ export function BudgetLineRow({ viewLine, subcategoryName }: BudgetLineRowProps)
             >
               Cancel
             </Button>
+            <div className="ml-auto">
+              {confirmDelete ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-red-600">Delete this item?</span>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDelete}
+                    isLoading={deleteLine.isPending}
+                  >
+                    Confirm
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setConfirmDelete(false)}
+                  >
+                    No
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                  onClick={() => setConfirmDelete(true)}
+                >
+                  <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                  Delete
+                </Button>
+              )}
+            </div>
           </div>
         </form>
       )}
