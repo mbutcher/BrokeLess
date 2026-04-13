@@ -4,7 +4,6 @@ import type { WidgetId, DashboardConfig, DashboardLayouts, GridLayoutItem, Widge
 
 export const WIDGET_META: WidgetMeta[] = [
   // Overview
-  { id: 'warnings', labelKey: 'dashboard.widgets.warnings', category: 'overview', minW: 2, minH: 2, alwaysOn: true, defaultH: 2 },
   { id: 'net-worth', labelKey: 'dashboard.widgets.netWorth', category: 'overview', minW: 2, minH: 2, defaultH: 3 },
   { id: 'account-balances', labelKey: 'dashboard.widgets.accountBalances', category: 'overview', minW: 2, minH: 2, defaultH: 4 },
   { id: 'hints', labelKey: 'dashboard.widgets.hints', category: 'overview', minW: 2, minH: 2, defaultH: 3 },
@@ -25,7 +24,6 @@ export const WIDGET_META: WidgetMeta[] = [
 // ─── Default visibility ───────────────────────────────────────────────────────
 
 export const DEFAULT_WIDGET_VISIBILITY: Record<WidgetId, boolean> = {
-  warnings: true,
   'net-worth': true,
   'account-balances': true,
   'budget-snapshot': true,
@@ -42,7 +40,7 @@ export const DEFAULT_WIDGET_VISIBILITY: Record<WidgetId, boolean> = {
 // ─── Default layouts ──────────────────────────────────────────────────────────
 
 function buildDefaultLayouts(): DashboardLayouts {
-  // 'warnings' is rendered as a full-width banner outside the grid — not included in layouts
+  // Warnings are shown in the header bar (WarningsIndicator) — not part of the grid
   const xs = (): GridLayoutItem[] => [
     { i: 'net-worth', x: 0, y: 0, w: 2, h: 3, minW: 2, minH: 2 },
     { i: 'account-balances', x: 0, y: 3, w: 2, h: 4, minW: 2, minH: 2 },

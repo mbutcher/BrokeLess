@@ -5,7 +5,6 @@ import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import type { DashboardConfig, WidgetId, GridLayoutItem } from '../types/dashboard';
 import { useWidgetCollapseState, WidgetCollapseProvider } from '../hooks/useWidgetCollapse';
-import { WarningsWidget } from '../widgets/WarningsWidget';
 import { NetWorthWidget } from '../widgets/NetWorthWidget';
 import { AccountBalancesWidget } from '../widgets/AccountBalancesWidget';
 import { BudgetSnapshotWidget } from '../widgets/BudgetSnapshotWidget';
@@ -64,8 +63,6 @@ function WidgetWrapper({
 
 function renderWidget(id: WidgetId, excludedAccountIds: string[]) {
   switch (id) {
-    case 'warnings':
-      return <WarningsWidget excludedAccountIds={excludedAccountIds} />;
     case 'net-worth':
       return <NetWorthWidget excludedAccountIds={excludedAccountIds} />;
     case 'account-balances':
@@ -164,9 +161,8 @@ export function DashboardGrid({ config, isEditMode, onLayoutChange }: Props) {
     [onLayoutChange, collapsed, layouts, anyCollapsed],
   );
 
-  // 'warnings' is rendered as a full-width banner above the grid, not inside the layout
   const visibleIds = (Object.entries(widgetVisibility) as [WidgetId, boolean][])
-    .filter(([id, v]) => v && id !== 'warnings')
+    .filter(([, v]) => v)
     .map(([id]) => id);
 
   // Cast needed: useContainerWidth returns RefObject<HTMLDivElement | null> (React 19 style),
@@ -176,8 +172,6 @@ export function DashboardGrid({ config, isEditMode, onLayoutChange }: Props) {
   return (
     <WidgetCollapseProvider value={collapseState}>
       <div ref={divRef}>
-        {/* Warnings banner — always full width, auto height, hidden when empty */}
-        <WarningsWidget excludedAccountIds={excludedAccountIds} />
         {mounted && (
           <ResponsiveGridLayout
             width={width}

@@ -1,5 +1,4 @@
 export type WidgetId =
-  | 'warnings'
   | 'net-worth'
   | 'account-balances'
   | 'budget-snapshot'
