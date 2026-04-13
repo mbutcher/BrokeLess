@@ -173,10 +173,25 @@ export function DashboardGrid({ config, isEditMode, onLayoutChange }: Props) {
   // but JSX ref expects RefObject<HTMLDivElement> (React 18 style).
   const divRef = containerRef as React.RefObject<HTMLDivElement>;
 
+  // On mobile (< sm breakpoint), bypass the grid engine entirely and render a
+  // simple vertical stack. The grid's fixed row-height positioning creates large
+  // gaps when widgets auto-size to their content.
+  const isMobile = mounted && width < BREAKPOINTS.sm;
+
   return (
     <WidgetCollapseProvider value={collapseState}>
       <div ref={divRef}>
-        {mounted && (
+        {mounted && isMobile ? (
+          <div className="flex flex-col gap-4">
+            {visibleIds.map((id) => (
+              <div key={id} style={{ maxHeight: '70vh' }}>
+                <WidgetWrapper isEditMode={isEditMode} collapsed={collapsed[id] === true}>
+                  {renderWidget(id, excludedAccountIds)}
+                </WidgetWrapper>
+              </div>
+            ))}
+          </div>
+        ) : mounted ? (
           <ResponsiveGridLayout
             width={width}
             layouts={rglLayouts}
@@ -197,7 +212,7 @@ export function DashboardGrid({ config, isEditMode, onLayoutChange }: Props) {
               </div>
             ))}
           </ResponsiveGridLayout>
-        )}
+        ) : null}
       </div>
     </WidgetCollapseProvider>
   );

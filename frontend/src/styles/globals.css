@@ -94,19 +94,6 @@
   }
 }
 
-/* On mobile, let dashboard widgets size to their content instead of fixed
-   row-height cells. Cap at 70vh to prevent any single widget from
-   dominating the viewport. */
-@media (max-width: 639px) {
-  .react-grid-item {
-    height: auto !important;
-    max-height: 70vh;
-  }
-  .react-grid-item > div {
-    height: auto !important;
-  }
-}
-
 /* Prevent iOS Safari from auto-zooming when a form control is focused.
    Triggered whenever the focused control's font-size is < 16px.
    Outside @layer base so it beats Tailwind utility classes like `text-sm`. */
