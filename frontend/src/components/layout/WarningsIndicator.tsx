@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, X } from 'lucide-react';
 import { useAccounts } from '@features/core/hooks/useAccounts';
 import { useSavingsGoals, useSavingsGoalProgress } from '@features/core/hooks/useSavingsGoals';
 import { useDashboardHints } from '@features/dashboard/hooks/useDashboardConfig';
@@ -43,12 +43,16 @@ function GoalWarningRow({
   goalId,
   goalName,
   targetDate,
+  dismissed,
   onActiveChange,
+  onDismiss,
 }: {
   goalId: string;
   goalName: string;
   targetDate: string;
+  dismissed: boolean;
   onActiveChange: (id: string, active: boolean) => void;
+  onDismiss: (id: string) => void;
 }): React.ReactElement | null {
   const { t } = useTranslation();
   const { data: progress } = useSavingsGoalProgress(goalId);
@@ -59,17 +63,26 @@ function GoalWarningRow({
   const expectedPct = daysLeft <= 30 ? ((30 - daysLeft) / 30) * 100 : Infinity;
   const isActive = Boolean(progress && daysLeft <= 30 && daysLeft >= 0 && pct < expectedPct);
 
-  useEffect(() => {
-    onActiveChange(goalId, isActive);
-    return () => onActiveChange(goalId, false);
-  }, [goalId, isActive, onActiveChange]);
+  const warningId = `goal-${goalId}`;
 
-  if (!isActive) return null;
+  useEffect(() => {
+    onActiveChange(warningId, isActive && !dismissed);
+    return () => onActiveChange(warningId, false);
+  }, [warningId, isActive, dismissed, onActiveChange]);
+
+  if (!isActive || dismissed) return null;
 
   return (
-    <div className="flex items-center gap-2 text-warning text-sm">
+    <div className="flex items-center gap-2 text-warning text-sm group">
       <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-      <span>{t('dashboard.warningGoalBehindPace', { name: goalName, count: daysLeft })}</span>
+      <span className="flex-1">{t('dashboard.warningGoalBehindPace', { name: goalName, count: daysLeft })}</span>
+      <button
+        onClick={() => onDismiss(warningId)}
+        className="flex-shrink-0 p-0.5 rounded hover:bg-warning/20 opacity-0 group-hover:opacity-100 transition-opacity"
+        aria-label="Dismiss"
+      >
+        <X className="h-3 w-3" />
+      </button>
     </div>
   );
 }
@@ -84,6 +97,7 @@ export function WarningsIndicator(): React.ReactElement | null {
   const goalsWithDeadlines = goals.filter((g) => g.targetDate);
 
   const [open, setOpen] = useState(false);
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [activeGoalWarnings, setActiveGoalWarnings] = useState<Set<string>>(new Set());
   const [rolloverPeriod, setRolloverPeriod] = useState<{ start: string; end: string } | null>(
     null,
@@ -103,8 +117,28 @@ export function WarningsIndicator(): React.ReactElement | null {
     });
   }, []);
 
-  const hintCount = (rolloverHint ? 1 : 0) + (annualReviewHint ? 1 : 0);
-  const totalCount = accountWarnings.length + activeGoalWarnings.size + hintCount;
+  const dismiss = useCallback((id: string) => {
+    setDismissed((prev) => new Set(prev).add(id));
+  }, []);
+
+  const dismissAll = useCallback(() => {
+    const all = new Set<string>();
+    for (const w of accountWarnings) all.add(w.id);
+    for (const id of activeGoalWarnings) all.add(id);
+    if (rolloverHint) all.add('rollover');
+    if (annualReviewHint) all.add('annual-review');
+    setDismissed(all);
+    setOpen(false);
+  }, [accountWarnings, activeGoalWarnings, rolloverHint, annualReviewHint]);
+
+  // Filter account warnings by dismissed state
+  const visibleAccountWarnings = accountWarnings.filter((w) => !dismissed.has(w.id));
+
+  const showRollover = !!rolloverHint && !dismissed.has('rollover');
+  const showAnnualReview = !!annualReviewHint && !dismissed.has('annual-review');
+
+  const hintCount = (showRollover ? 1 : 0) + (showAnnualReview ? 1 : 0);
+  const totalCount = visibleAccountWarnings.length + activeGoalWarnings.size + hintCount;
 
   if (totalCount === 0) return null;
 
@@ -126,13 +160,28 @@ export function WarningsIndicator(): React.ReactElement | null {
         <DropdownMenuContent align="end" side="bottom" className="w-80 p-3 space-y-2">
           <div className="flex items-center gap-2 text-warning font-medium text-sm pb-1 border-b border-border mb-1">
             <AlertTriangle className="h-4 w-4" />
-            <span>{t('dashboard.warningsTitle')}</span>
+            <span className="flex-1">{t('dashboard.warningsTitle')}</span>
+            {totalCount > 1 && (
+              <button
+                onClick={dismissAll}
+                className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Dismiss all
+              </button>
+            )}
           </div>
 
-          {accountWarnings.map((w) => (
-            <div key={w.id} className="flex items-center gap-2 text-warning text-sm">
+          {visibleAccountWarnings.map((w) => (
+            <div key={w.id} className="flex items-center gap-2 text-warning text-sm group">
               <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-              <span>{w.message}</span>
+              <span className="flex-1">{w.message}</span>
+              <button
+                onClick={() => dismiss(w.id)}
+                className="flex-shrink-0 p-0.5 rounded hover:bg-warning/20 opacity-0 group-hover:opacity-100 transition-opacity"
+                aria-label="Dismiss"
+              >
+                <X className="h-3 w-3" />
+              </button>
             </div>
           ))}
 
@@ -142,46 +191,66 @@ export function WarningsIndicator(): React.ReactElement | null {
               goalId={g.id}
               goalName={g.name}
               targetDate={g.targetDate!}
+              dismissed={dismissed.has(`goal-${g.id}`)}
               onActiveChange={handleGoalActiveChange}
+              onDismiss={dismiss}
             />
           ))}
 
-          {rolloverHint && (
-            <div className="flex items-center justify-between gap-2 text-warning text-sm">
-              <div className="flex items-center gap-2">
+          {showRollover && (
+            <div className="flex items-center justify-between gap-2 text-warning text-sm group">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
                 <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-                <span>{t('dashboard.warningRolloverPending')}</span>
+                <span className="truncate">{t('dashboard.warningRolloverPending')}</span>
               </div>
-              <button
-                onClick={() => {
-                  setOpen(false);
-                  setRolloverPeriod({
-                    start: rolloverHint.meta?.['previousStart'] ?? '',
-                    end: rolloverHint.meta?.['previousEnd'] ?? '',
-                  });
-                }}
-                className="text-xs text-primary hover:underline whitespace-nowrap"
-              >
-                {t('dashboard.reviewRollover')}
-              </button>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    setRolloverPeriod({
+                      start: rolloverHint!.meta?.['previousStart'] ?? '',
+                      end: rolloverHint!.meta?.['previousEnd'] ?? '',
+                    });
+                  }}
+                  className="text-xs text-primary hover:underline whitespace-nowrap"
+                >
+                  {t('dashboard.reviewRollover')}
+                </button>
+                <button
+                  onClick={() => dismiss('rollover')}
+                  className="p-0.5 rounded hover:bg-warning/20 opacity-0 group-hover:opacity-100 transition-opacity"
+                  aria-label="Dismiss"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
             </div>
           )}
 
-          {annualReviewHint && (
-            <div className="flex items-center justify-between gap-2 text-warning text-sm">
-              <div className="flex items-center gap-2">
+          {showAnnualReview && (
+            <div className="flex items-center justify-between gap-2 text-warning text-sm group">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
                 <AlertTriangle className="h-4 w-4 flex-shrink-0" />
-                <span>{t('dashboard.warningAnnualReviewDue')}</span>
+                <span className="truncate">{t('dashboard.warningAnnualReviewDue')}</span>
               </div>
-              <button
-                onClick={() => {
-                  setOpen(false);
-                  setAnnualReviewOpen(true);
-                }}
-                className="text-xs text-primary hover:underline whitespace-nowrap"
-              >
-                {t('dashboard.reviewBudget')}
-              </button>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    setAnnualReviewOpen(true);
+                  }}
+                  className="text-xs text-primary hover:underline whitespace-nowrap"
+                >
+                  {t('dashboard.reviewBudget')}
+                </button>
+                <button
+                  onClick={() => dismiss('annual-review')}
+                  className="p-0.5 rounded hover:bg-warning/20 opacity-0 group-hover:opacity-100 transition-opacity"
+                  aria-label="Dismiss"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
             </div>
           )}
         </DropdownMenuContent>

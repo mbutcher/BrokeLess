@@ -26,6 +26,23 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
     --radius: 0.5rem;
+
+    /* Chart palette */
+    --color-chart-1: hsl(221 83% 53%);
+    --color-chart-2: hsl(160 60% 45%);
+    --color-chart-3: hsl(30 80% 55%);
+    --color-chart-4: hsl(280 65% 60%);
+    --color-chart-5: hsl(350 70% 55%);
+
+    /* Semantic aliases for Recharts (need resolved values, not HSL channels) */
+    --color-primary: hsl(221.2 83.2% 53.3%);
+    --color-destructive: hsl(0 84.2% 60.2%);
+    --color-success: hsl(142 71% 45%);
+    --color-warning: hsl(38 92% 50%);
+    --color-foreground: hsl(222.2 84% 4.9%);
+    --color-muted-foreground: hsl(215.4 16.3% 46.9%);
+    --color-border: hsl(214.3 31.8% 91.4%);
+    --color-surface-raised: hsl(0 0% 100%);
   }
 
   .dark {
@@ -48,6 +65,23 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 224.3 76.3% 48%;
+
+    /* Chart palette */
+    --color-chart-1: hsl(217 91% 60%);
+    --color-chart-2: hsl(160 60% 50%);
+    --color-chart-3: hsl(35 85% 60%);
+    --color-chart-4: hsl(280 65% 65%);
+    --color-chart-5: hsl(350 70% 60%);
+
+    /* Semantic aliases */
+    --color-primary: hsl(217.2 91.2% 59.8%);
+    --color-destructive: hsl(0 62.8% 30.6%);
+    --color-success: hsl(142 71% 45%);
+    --color-warning: hsl(38 92% 50%);
+    --color-foreground: hsl(210 40% 98%);
+    --color-muted-foreground: hsl(215 20.2% 65.1%);
+    --color-border: hsl(217.2 32.6% 17.5%);
+    --color-surface-raised: hsl(222.2 84% 7%);
   }
 }
 
@@ -57,6 +91,19 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* On mobile, let dashboard widgets size to their content instead of fixed
+   row-height cells. Cap at 70vh to prevent any single widget from
+   dominating the viewport. */
+@media (max-width: 639px) {
+  .react-grid-item {
+    height: auto !important;
+    max-height: 70vh;
+  }
+  .react-grid-item > div {
+    height: auto !important;
   }
 }
 

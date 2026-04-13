@@ -4,7 +4,7 @@ import type { WidgetId, DashboardConfig, DashboardLayouts, GridLayoutItem, Widge
 
 export const WIDGET_META: WidgetMeta[] = [
   // Overview
-  { id: 'net-worth', labelKey: 'dashboard.widgets.netWorth', category: 'overview', minW: 2, minH: 2, defaultH: 3 },
+  { id: 'net-worth', labelKey: 'dashboard.widgets.netWorth', category: 'overview', minW: 2, minH: 1, defaultH: 1 },
   { id: 'account-balances', labelKey: 'dashboard.widgets.accountBalances', category: 'overview', minW: 2, minH: 2, defaultH: 4 },
   { id: 'hints', labelKey: 'dashboard.widgets.hints', category: 'overview', minW: 2, minH: 2, defaultH: 3 },
   // Budgeting
@@ -42,7 +42,7 @@ export const DEFAULT_WIDGET_VISIBILITY: Record<WidgetId, boolean> = {
 function buildDefaultLayouts(): DashboardLayouts {
   // Warnings are shown in the header bar (WarningsIndicator) — not part of the grid
   const xs = (): GridLayoutItem[] => [
-    { i: 'net-worth', x: 0, y: 0, w: 2, h: 3, minW: 2, minH: 2 },
+    { i: 'net-worth', x: 0, y: 0, w: 2, h: 1, minW: 2, minH: 1 },
     { i: 'account-balances', x: 0, y: 3, w: 2, h: 4, minW: 2, minH: 2 },
     { i: 'monthly-chart', x: 0, y: 7, w: 2, h: 5, minW: 2, minH: 3 },
     { i: 'upcoming-expenses', x: 0, y: 12, w: 2, h: 5, minW: 2, minH: 3 },
@@ -55,7 +55,7 @@ function buildDefaultLayouts(): DashboardLayouts {
     { i: 'tag-summary', x: 0, y: 44, w: 2, h: 4, minW: 2, minH: 2 },
   ];
   const sm = (): GridLayoutItem[] => [
-    { i: 'net-worth', x: 0, y: 0, w: 2, h: 3, minW: 2, minH: 2 },
+    { i: 'net-worth', x: 0, y: 0, w: 2, h: 1, minW: 2, minH: 1 },
     { i: 'savings-goals', x: 2, y: 0, w: 2, h: 3, minW: 2, minH: 3 },
     { i: 'account-balances', x: 0, y: 3, w: 4, h: 4, minW: 2, minH: 2 },
     { i: 'monthly-chart', x: 0, y: 7, w: 4, h: 5, minW: 4, minH: 3 },
@@ -68,7 +68,7 @@ function buildDefaultLayouts(): DashboardLayouts {
     { i: 'tag-summary', x: 0, y: 40, w: 4, h: 4, minW: 3, minH: 2 },
   ];
   const lg = (): GridLayoutItem[] => [
-    { i: 'net-worth', x: 0, y: 0, w: 2, h: 3, minW: 2, minH: 2 },
+    { i: 'net-worth', x: 0, y: 0, w: 2, h: 1, minW: 2, minH: 1 },
     { i: 'savings-goals', x: 2, y: 0, w: 2, h: 3, minW: 2, minH: 3 },
     { i: 'hints', x: 4, y: 0, w: 2, h: 3, minW: 2, minH: 2 },
     { i: 'account-balances', x: 0, y: 3, w: 4, h: 4, minW: 2, minH: 2 },
@@ -81,7 +81,7 @@ function buildDefaultLayouts(): DashboardLayouts {
     { i: 'tag-summary', x: 0, y: 28, w: 4, h: 4, minW: 3, minH: 2 },
   ];
   const xl = (): GridLayoutItem[] => [
-    { i: 'net-worth', x: 0, y: 0, w: 2, h: 3, minW: 2, minH: 2 },
+    { i: 'net-worth', x: 0, y: 0, w: 2, h: 1, minW: 2, minH: 1 },
     { i: 'savings-goals', x: 2, y: 0, w: 2, h: 3, minW: 2, minH: 3 },
     { i: 'hints', x: 4, y: 0, w: 2, h: 3, minW: 2, minH: 2 },
     { i: 'account-balances', x: 0, y: 3, w: 4, h: 4, minW: 2, minH: 2 },

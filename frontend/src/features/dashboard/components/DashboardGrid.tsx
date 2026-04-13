@@ -4,6 +4,7 @@ import type { Layout, LayoutItem, ResponsiveLayouts } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import type { DashboardConfig, WidgetId, GridLayoutItem } from '../types/dashboard';
+import { WIDGET_META } from '../widgetRegistry';
 import { useWidgetCollapseState, WidgetCollapseProvider } from '../hooks/useWidgetCollapse';
 import { NetWorthWidget } from '../widgets/NetWorthWidget';
 import { AccountBalancesWidget } from '../widgets/AccountBalancesWidget';
@@ -161,8 +162,11 @@ export function DashboardGrid({ config, isEditMode, onLayoutChange }: Props) {
     [onLayoutChange, collapsed, layouts, anyCollapsed],
   );
 
+  // Filter to known widget IDs so stale config entries (e.g. removed 'warnings') don't
+  // render empty shells in the grid.
+  const knownIds = new Set(WIDGET_META.map((m) => m.id));
   const visibleIds = (Object.entries(widgetVisibility) as [WidgetId, boolean][])
-    .filter(([, v]) => v)
+    .filter(([id, v]) => v && knownIds.has(id))
     .map(([id]) => id);
 
   // Cast needed: useContainerWidth returns RefObject<HTMLDivElement | null> (React 19 style),

@@ -61,7 +61,7 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
   return (
     <div className="flex flex-col h-full">
       {/* Logo + avatar */}
-      <div className="px-4 py-4 border-b border-border space-y-3">
+      <div className="px-4 py-5 border-b border-border space-y-3">
         <span className="block text-lg font-bold tracking-tight text-foreground px-2">BudgetApp</span>
         <div className="flex items-center gap-2 px-2">
           <UserAvatarMenu onNav={onNav} />
@@ -312,7 +312,7 @@ export function AppLayout() {
       {/* Main content */}
       <div className="flex flex-col flex-1 min-w-0 overflow-auto">
         {/* Mobile top bar — minimal: app name + avatar */}
-        <header className="flex items-center h-14 px-4 border-b border-border bg-background md:hidden">
+        <header className="flex items-center h-16 px-4 border-b border-border bg-background md:hidden">
           <span className="text-sm font-bold text-foreground">BudgetApp</span>
           <div className="ml-auto flex items-center gap-2">
             <WarningsIndicator />
