@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@components/ui/dialog';
 import { useAccounts } from '../hooks/useAccounts';
 import { useBudgetLines } from '../hooks/useBudgetLines';
 import {
@@ -274,33 +275,50 @@ function GoalCard({ goal, onEdit }: { goal: SavingsGoal; onEdit: (goal: SavingsG
 export function SavingsGoalsPage() {
   const { t } = useTranslation();
   const { data: goals = [], isLoading } = useSavingsGoals();
-  const [showForm, setShowForm] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<SavingsGoal | null>(null);
+
+  function openCreate() {
+    setEditing(null);
+    setModalOpen(true);
+  }
+
+  function openEdit(goal: SavingsGoal) {
+    setEditing(goal);
+    setModalOpen(true);
+  }
+
+  function closeModal() {
+    setModalOpen(false);
+    setEditing(null);
+  }
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">{t('savingsGoals.title')}</h1>
         <button
-          onClick={() => { setEditing(null); setShowForm(true); }}
+          onClick={openCreate}
           className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700"
         >
           {t('savingsGoals.add')}
         </button>
       </div>
 
-      {(showForm || editing) && (
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-4">
-            {editing ? t('savingsGoals.edit') : t('savingsGoals.new')}
-          </h2>
+      <Dialog open={modalOpen} onOpenChange={(open) => { if (!open) closeModal(); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editing ? t('savingsGoals.edit') : t('savingsGoals.new')}
+            </DialogTitle>
+          </DialogHeader>
           <GoalForm
             goal={editing ?? undefined}
-            onSuccess={() => { setShowForm(false); setEditing(null); }}
-            onCancel={() => { setShowForm(false); setEditing(null); }}
+            onSuccess={closeModal}
+            onCancel={closeModal}
           />
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {isLoading ? (
         <div className="space-y-3">
@@ -308,7 +326,7 @@ export function SavingsGoalsPage() {
             <div key={i} className="h-24 bg-gray-100 animate-pulse rounded-xl" />
           ))}
         </div>
-      ) : goals.length === 0 && !showForm ? (
+      ) : goals.length === 0 ? (
         <div className="text-center py-12 text-gray-400">
           <p className="text-sm">{t('savingsGoals.empty')}</p>
         </div>
@@ -318,7 +336,7 @@ export function SavingsGoalsPage() {
             <GoalCard
               key={goal.id}
               goal={goal}
-              onEdit={(g) => { setEditing(g); setShowForm(false); }}
+              onEdit={openEdit}
             />
           ))}
         </div>

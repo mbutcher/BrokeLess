@@ -64,10 +64,10 @@ function SidebarContent({ onNav }: { onNav?: () => void }) {
       <div className="px-4 py-5 border-b border-border space-y-3">
         <span className="block text-lg font-bold tracking-tight text-foreground px-2">BudgetApp</span>
         <div className="flex items-center gap-2 px-2">
-          <UserAvatarMenu onNav={onNav} />
+          <UserAvatarMenu onNav={onNav} menuAlign="start" />
           <span className="text-sm text-muted-foreground">{t('nav.settings')}</span>
           <div className="ml-auto">
-            <WarningsIndicator />
+            <WarningsIndicator menuAlign="start" />
           </div>
         </div>
       </div>

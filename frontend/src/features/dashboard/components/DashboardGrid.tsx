@@ -18,6 +18,8 @@ import { SpendingByCategoryWidget } from '../widgets/SpendingByCategoryWidget';
 import { DebtPayoffWidget } from '../widgets/DebtPayoffWidget';
 import { TagSummaryWidget } from '../widgets/TagSummaryWidget';
 
+const KNOWN_WIDGET_IDS = new Set(WIDGET_META.map((m) => m.id));
+
 const ROW_HEIGHT = 80; // px per row unit
 const BREAKPOINTS = { xl: 1440, lg: 1024, sm: 640, xs: 0 };
 const COLS = { xl: 8, lg: 6, sm: 4, xs: 2 };
@@ -123,11 +125,12 @@ export function DashboardGrid({ config, isEditMode, onLayoutChange }: Props) {
       if (isEditMode || collapsed[item.i] !== true) return base;
       return { ...base, h: COLLAPSED_H, minH: COLLAPSED_H, maxH: COLLAPSED_H, isResizable: false };
     };
+    const inGrid = (item: GridLayoutItem) => item.i !== 'net-worth' && widgetVisibility[item.i];
     return {
-      xs: layouts.xs.filter((item) => widgetVisibility[item.i]).map(applyCollapse),
-      sm: layouts.sm.filter((item) => widgetVisibility[item.i]).map(applyCollapse),
-      lg: layouts.lg.filter((item) => widgetVisibility[item.i]).map(applyCollapse),
-      xl: layouts.xl.filter((item) => widgetVisibility[item.i]).map(applyCollapse),
+      xs: layouts.xs.filter(inGrid).map(applyCollapse),
+      sm: layouts.sm.filter(inGrid).map(applyCollapse),
+      lg: layouts.lg.filter(inGrid).map(applyCollapse),
+      xl: layouts.xl.filter(inGrid).map(applyCollapse),
     };
   }, [layouts, widgetVisibility, collapsed, isEditMode]);
 
@@ -164,9 +167,8 @@ export function DashboardGrid({ config, isEditMode, onLayoutChange }: Props) {
 
   // Filter to known widget IDs so stale config entries (e.g. removed 'warnings') don't
   // render empty shells in the grid.
-  const knownIds = new Set(WIDGET_META.map((m) => m.id));
   const visibleIds = (Object.entries(widgetVisibility) as [WidgetId, boolean][])
-    .filter(([id, v]) => v && knownIds.has(id))
+    .filter(([id, v]) => v && KNOWN_WIDGET_IDS.has(id) && id !== 'net-worth')
     .map(([id]) => id);
 
   // Cast needed: useContainerWidth returns RefObject<HTMLDivElement | null> (React 19 style),
@@ -180,6 +182,11 @@ export function DashboardGrid({ config, isEditMode, onLayoutChange }: Props) {
 
   return (
     <WidgetCollapseProvider value={collapseState}>
+      {widgetVisibility['net-worth'] && (
+        <div className="px-1 pt-1 pb-4">
+          <NetWorthWidget excludedAccountIds={excludedAccountIds} />
+        </div>
+      )}
       <div ref={divRef}>
         {mounted && isMobile ? (
           <div className="flex flex-col gap-4">

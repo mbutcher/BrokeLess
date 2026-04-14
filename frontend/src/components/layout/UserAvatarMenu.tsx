@@ -28,9 +28,10 @@ function getInitials(displayName: string | null | undefined, email: string | und
 interface UserAvatarMenuProps {
   /** Called after navigation — use to close a parent mobile drawer */
   onNav?: () => void;
+  menuAlign?: 'start' | 'end';
 }
 
-export function UserAvatarMenu({ onNav }: UserAvatarMenuProps = {}) {
+export function UserAvatarMenu({ onNav, menuAlign = 'end' }: UserAvatarMenuProps = {}) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -67,7 +68,7 @@ export function UserAvatarMenu({ onNav }: UserAvatarMenuProps = {}) {
           {initials}
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" side="bottom" className="w-48">
+      <DropdownMenuContent align={menuAlign} side="bottom" className="w-48">
         <DropdownMenuItem
           active={path.startsWith('/settings/account')}
           onClick={() => nav('/settings/account')}

@@ -81,6 +81,10 @@ npm run test-storybook  # Run Storybook interaction tests
 docker compose -f docker/docker-compose.dev.yml up -d
 docker compose -f docker/docker-compose.dev.yml down
 
+# Staging
+docker compose -f docker/docker-compose.staging.yml up -d
+docker compose -f docker/docker-compose.staging.yml down
+
 # Production (Unraid)
 docker compose -f docker/docker-compose.prod.yml up -d
 docker compose -f docker/docker-compose.prod.yml down
@@ -95,6 +99,27 @@ docker compose -f docker/docker-compose.prod.yml down
 # API Docs: http://localhost:3001/api-docs
 # Debugger: localhost:9229
 ```
+
+---
+
+## Branch & Deployment Workflow
+
+### Branch Rules
+- **Never commit directly to `staging` or `main`** — all work happens on feature branches (e.g. `feature/version-0.4`)
+- To test: merge feature branch → `staging`, then push `staging` to remote
+- To release: merge `staging` → `main`
+
+### Flow
+```
+feature/version-X.Y  →  staging  →  main
+     (dev work)          (test)    (production)
+```
+
+### Staging Auto-Deploy
+Pushing to `staging` triggers a GitHub Actions workflow (`.github/workflows/staging-deploy.yml`) that:
+1. Builds the Docker image
+2. Pushes it to GHCR (`ghcr.io/<owner>/budgetapp-staging:latest`)
+3. Watchtower on Unraid pulls the new image automatically
 
 ---
 

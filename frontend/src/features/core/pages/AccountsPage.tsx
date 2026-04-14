@@ -5,6 +5,7 @@ import { AccountCard } from '../components/AccountCard';
 import { AccountForm } from '../components/AccountForm';
 import { useExchangeRates } from '../hooks/useExchangeRate';
 import { useAuthStore } from '@features/auth/stores/authStore';
+import { Button } from '@components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@components/ui/dialog';
 import { ManageSharesDialog } from '@features/household/components/ManageSharesDialog';
 import type { Account, AccountType } from '../types';
@@ -25,6 +26,7 @@ export function AccountsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Account | null>(null);
   const [sharingAccount, setSharingAccount] = useState<Account | null>(null);
+  const [archivingAccount, setArchivingAccount] = useState<Account | null>(null);
 
   // Filter / sort state
   const [typeFilter, setTypeFilter] = useState<AccountType | 'all'>('all');
@@ -149,7 +151,11 @@ export function AccountsPage() {
   }
 
   function handleArchive(account: Account) {
-    archiveAccount.mutate(account.id);
+    setArchivingAccount(account);
+  }
+
+  function confirmArchive() {
+    archiveAccount.mutate(archivingAccount!.id, { onSuccess: () => setArchivingAccount(null) });
   }
 
   function handleRestore(account: Account) {
@@ -212,6 +218,26 @@ export function AccountsPage() {
             onSuccess={closeForm}
             onCancel={closeForm}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* Archive confirmation */}
+      <Dialog open={archivingAccount !== null} onOpenChange={(open) => { if (!open) setArchivingAccount(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{t('accounts.archiveConfirmTitle')}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {t('accounts.archiveConfirmBody', { name: archivingAccount?.name ?? '' })}
+          </p>
+          <div className="flex justify-end gap-3 mt-2">
+            <Button variant="outline" onClick={() => setArchivingAccount(null)}>
+              {t('common.cancel')}
+            </Button>
+            <Button variant="destructive" onClick={confirmArchive} isLoading={archiveAccount.isPending}>
+              {t('accounts.archiveConfirm')}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 

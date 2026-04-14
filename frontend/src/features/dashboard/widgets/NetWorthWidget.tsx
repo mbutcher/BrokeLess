@@ -3,7 +3,6 @@ import { TrendingUp, TrendingDown } from 'lucide-react';
 import { useAccounts } from '@features/core/hooks/useAccounts';
 import { useNetWorthHistory } from '@features/core/hooks/useReports';
 import { useFormatters } from '@lib/i18n/useFormatters';
-import { WidgetShell } from '../components/WidgetShell';
 
 interface Props {
   excludedAccountIds: string[];
@@ -29,31 +28,24 @@ export function NetWorthWidget({ excludedAccountIds }: Props) {
   const trend = prevSnapshot ? netWorth - prevSnapshot.netWorth : null;
 
   if (isLoading) {
-    return (
-      <WidgetShell id="net-worth" title={t('dashboard.netWorth')}>
-        <div className="h-full flex items-center">
-          <div className="h-8 w-36 bg-muted animate-pulse rounded" />
-        </div>
-      </WidgetShell>
-    );
+    return <div className="h-8 w-36 bg-muted animate-pulse rounded" />;
   }
 
   return (
-    <WidgetShell id="net-worth" title={t('dashboard.netWorth')}>
-      <div className="flex items-center gap-3">
-        <p className={`text-2xl font-bold tabular-nums ${netWorth >= 0 ? 'text-foreground' : 'text-destructive'}`}>
-          {fmt(netWorth)}
-        </p>
-        {trend !== null && (
-          <div className={`flex items-center gap-1 text-xs ${trend >= 0 ? 'text-success' : 'text-destructive'}`}>
-            {trend >= 0 ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
-            <span>
-              {trend >= 0 ? '+' : ''}
-              {fmt(trend)}
-            </span>
-          </div>
-        )}
-      </div>
-    </WidgetShell>
+    <div className="flex items-baseline gap-3">
+      <span className="text-sm font-medium text-muted-foreground">{t('dashboard.netWorth')}</span>
+      <p className={`text-3xl font-bold tabular-nums ${netWorth >= 0 ? 'text-foreground' : 'text-destructive'}`}>
+        {fmt(netWorth)}
+      </p>
+      {trend !== null && (
+        <div className={`flex items-center gap-1 text-sm ${trend >= 0 ? 'text-success' : 'text-destructive'}`}>
+          {trend >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+          <span>
+            {trend >= 0 ? '+' : ''}
+            {fmt(trend)}
+          </span>
+        </div>
+      )}
+    </div>
   );
 }

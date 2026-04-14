@@ -39,7 +39,8 @@
       "Bash(docker-compose:*)",
       "mcp__plugin_chrome-devtools-mcp_chrome-devtools__press_key",
       "Bash(grep -n \"\\\\.insert\\(\" /Users/butch/Repos/BudgetApp/backend/src/repositories/*.ts | grep -v \"randomUUID\\\\|id:\" | grep -v \"\\\\.ts-\" | head -40)",
-      "Bash(grep -n \"randomUUID\\\\|id,\" /Users/butch/Repos/BudgetApp/backend/src/repositories/householdRepository.ts | head -10\ngrep -n \"randomUUID\\\\|id,\" /Users/butch/Repos/BudgetApp/backend/src/repositories/householdMemberRepository.ts | head -10)"
+      "Bash(grep -n \"randomUUID\\\\|id,\" /Users/butch/Repos/BudgetApp/backend/src/repositories/householdRepository.ts | head -10\ngrep -n \"randomUUID\\\\|id,\" /Users/butch/Repos/BudgetApp/backend/src/repositories/householdMemberRepository.ts | head -10)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

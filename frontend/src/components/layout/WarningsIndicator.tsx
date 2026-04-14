@@ -89,7 +89,7 @@ function GoalWarningRow({
 
 // ─── WarningsIndicator ──────────────────────────────────────────────────────
 
-export function WarningsIndicator(): React.ReactElement | null {
+export function WarningsIndicator({ menuAlign = 'end' }: { menuAlign?: 'start' | 'end' } = {}): React.ReactElement | null {
   const { t } = useTranslation();
   const accountWarnings = useAccountWarnings();
   const { data: goals = [] } = useSavingsGoals();
@@ -157,7 +157,7 @@ export function WarningsIndicator(): React.ReactElement | null {
             </span>
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" side="bottom" className="w-80 p-3 space-y-2">
+        <DropdownMenuContent align={menuAlign} side="bottom" className="w-80 p-3 space-y-2">
           <div className="flex items-center gap-2 text-warning font-medium text-sm pb-1 border-b border-border mb-1">
             <AlertTriangle className="h-4 w-4" />
             <span className="flex-1">{t('dashboard.warningsTitle')}</span>

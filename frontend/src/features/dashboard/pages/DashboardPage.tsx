@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Settings, Save, RotateCcw } from 'lucide-react';
+import { Settings, Save, Plus } from 'lucide-react';
 import type { Layout, ResponsiveLayouts } from 'react-grid-layout';
 import { useDashboardConfig, useSaveDashboardConfig } from '../hooks/useDashboardConfig';
 import { DashboardGrid } from '../components/DashboardGrid';
@@ -64,7 +64,6 @@ export function DashboardPage() {
   const enterEditMode = () => {
     setDraftConfig(activeConfig);
     setIsEditMode(true);
-    setShowTray(true);
   };
 
   const exitEditMode = (save: boolean) => {
@@ -74,10 +73,6 @@ export function DashboardPage() {
     setDraftConfig(null);
     setIsEditMode(false);
     setShowTray(false);
-  };
-
-  const resetToDefaults = () => {
-    setDraftConfig(buildDefaultConfig(userId));
   };
 
   const handleLayoutChange = useCallback(
@@ -144,11 +139,11 @@ export function DashboardPage() {
           {isEditMode ? (
             <>
               <button
-                onClick={resetToDefaults}
+                onClick={() => setShowTray(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground border border-border rounded-lg hover:bg-muted transition-colors"
               >
-                <RotateCcw className="h-4 w-4" />
-                {t('dashboard.resetDefaults')}
+                <Plus className="h-4 w-4" />
+                {t('dashboard.addWidgets')}
               </button>
               <button
                 onClick={() => exitEditMode(false)}
