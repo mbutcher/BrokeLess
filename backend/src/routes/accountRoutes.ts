@@ -31,6 +31,8 @@ router.patch(
   accountController.update
 );
 router.delete('/:id', requireScope('accounts:write'), accountController.archive);
+router.get('/:id/transaction-count', requireScope('accounts:read'), accountController.transactionCount);
+router.post('/:id/delete', requireScope('accounts:write'), accountController.destroy);
 
 // ─── Account share management ─────────────────────────────────────────────────
 router.get('/:id/shares', requireScope('accounts:read'), accountShareController.getShares);

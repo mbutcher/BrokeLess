@@ -1,10 +1,11 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Settings, Save, Plus } from 'lucide-react';
+import { Settings, Save } from 'lucide-react';
 import type { Layout, ResponsiveLayouts } from 'react-grid-layout';
 import { useDashboardConfig, useSaveDashboardConfig } from '../hooks/useDashboardConfig';
 import { DashboardGrid } from '../components/DashboardGrid';
 import { WidgetTray } from '../components/WidgetTray';
+import { WidgetSettingsModal } from '../components/WidgetSettingsModal';
 import { buildDefaultConfig, DEFAULT_WIDGET_VISIBILITY, DEFAULT_LAYOUTS } from '../widgetRegistry';
 import { useAuthStore } from '@features/auth/stores/authStore';
 import type { DashboardConfig, WidgetId, GridLayoutItem } from '../types/dashboard';
@@ -53,6 +54,7 @@ export function DashboardPage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [showTray, setShowTray] = useState(false);
   const [draftConfig, setDraftConfig] = useState<DashboardConfig | null>(null);
+  const [settingsWidgetId, setSettingsWidgetId] = useState<WidgetId | null>(null);
 
   const baseConfig: DashboardConfig = useMemo(() => {
     if (savedConfig) return migrateConfig(savedConfig);
@@ -140,9 +142,8 @@ export function DashboardPage() {
             <>
               <button
                 onClick={() => setShowTray(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground border border-border rounded-lg hover:bg-muted transition-colors"
+                className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground border border-border rounded-lg hover:bg-muted transition-colors"
               >
-                <Plus className="h-4 w-4" />
                 {t('dashboard.addWidgets')}
               </button>
               <button
@@ -178,6 +179,7 @@ export function DashboardPage() {
           config={activeConfig}
           isEditMode={isEditMode}
           onLayoutChange={handleLayoutChange}
+          onOpenWidgetSettings={setSettingsWidgetId}
         />
       </div>
 
@@ -188,14 +190,17 @@ export function DashboardPage() {
             className="fixed inset-0 z-40 bg-black/20"
             onClick={() => setShowTray(false)}
           />
-          <WidgetTray
-            config={draftConfig ?? activeConfig}
-            onToggleWidget={handleToggleWidget}
-            onToggleAccount={handleToggleAccount}
-            onClose={() => setShowTray(false)}
-          />
+          <WidgetTray config={draftConfig ?? activeConfig} onToggleWidget={handleToggleWidget} onClose={() => setShowTray(false)} />
         </>
       )}
+
+      {/* Per-widget settings modal */}
+      <WidgetSettingsModal
+        widgetId={settingsWidgetId}
+        config={draftConfig ?? activeConfig}
+        onToggleAccount={handleToggleAccount}
+        onClose={() => setSettingsWidgetId(null)}
+      />
     </div>
   );
 }

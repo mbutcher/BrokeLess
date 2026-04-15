@@ -3,6 +3,7 @@ import { ResponsiveGridLayout, useContainerWidth } from 'react-grid-layout';
 import type { Layout, LayoutItem, ResponsiveLayouts } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
+import { Settings } from 'lucide-react';
 import type { DashboardConfig, WidgetId, GridLayoutItem } from '../types/dashboard';
 import { WIDGET_META } from '../widgetRegistry';
 import { useWidgetCollapseState, WidgetCollapseProvider } from '../hooks/useWidgetCollapse';
@@ -19,6 +20,7 @@ import { DebtPayoffWidget } from '../widgets/DebtPayoffWidget';
 import { TagSummaryWidget } from '../widgets/TagSummaryWidget';
 
 const KNOWN_WIDGET_IDS = new Set(WIDGET_META.map((m) => m.id));
+const WIDGETS_WITH_SETTINGS = new Set(WIDGET_META.filter((m) => m.hasSettings).map((m) => m.id));
 
 const ROW_HEIGHT = 80; // px per row unit
 const BREAKPOINTS = { xl: 1440, lg: 1024, sm: 640, xs: 0 };
@@ -30,20 +32,26 @@ interface Props {
   config: DashboardConfig;
   isEditMode: boolean;
   onLayoutChange?: (layout: Layout, allLayouts: ResponsiveLayouts) => void;
+  onOpenWidgetSettings?: (id: WidgetId) => void;
 }
 
 function WidgetWrapper({
+  id,
   children,
   isEditMode,
   collapsed,
+  onOpenSettings,
 }: {
+  id: WidgetId;
   children: React.ReactNode;
   isEditMode: boolean;
   collapsed: boolean;
+  onOpenSettings?: (id: WidgetId) => void;
 }) {
   // Collapsed widgets shrink to their header height so the card doesn't paint
   // empty space below it. Edit mode always uses the full cell so drag/resize work.
   const shrink = collapsed && !isEditMode;
+  const showCog = isEditMode && WIDGETS_WITH_SETTINGS.has(id);
   return (
     <div
       className={`bg-card rounded-xl border border-border overflow-hidden relative ${
@@ -52,6 +60,19 @@ function WidgetWrapper({
     >
       {isEditMode && (
         <div className="drag-handle absolute top-0 left-0 right-0 h-7 bg-primary/5 border-b border-primary/20 cursor-grab flex items-center justify-center z-10">
+          {showCog && (
+            <button
+              type="button"
+              className="absolute left-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-primary/10 text-primary/60 hover:text-primary cursor-pointer transition-colors"
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenSettings?.(id);
+              }}
+            >
+              <Settings className="h-3.5 w-3.5" />
+            </button>
+          )}
           <div className="flex gap-1">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="w-1 h-1 bg-primary/40 rounded-full" />
@@ -110,7 +131,7 @@ function toLayoutItem(item: GridLayoutItem): LayoutItem {
   };
 }
 
-export function DashboardGrid({ config, isEditMode, onLayoutChange }: Props) {
+export function DashboardGrid({ config, isEditMode, onLayoutChange, onOpenWidgetSettings }: Props) {
   const { widgetVisibility, excludedAccountIds, layouts } = config;
   const { width, containerRef, mounted } = useContainerWidth({ initialWidth: 1280 });
   const collapseState = useWidgetCollapseState();
@@ -192,7 +213,7 @@ export function DashboardGrid({ config, isEditMode, onLayoutChange }: Props) {
           <div className="flex flex-col gap-4">
             {visibleIds.map((id) => (
               <div key={id} style={{ maxHeight: '70vh' }}>
-                <WidgetWrapper isEditMode={isEditMode} collapsed={collapsed[id] === true}>
+                <WidgetWrapper id={id} isEditMode={isEditMode} collapsed={collapsed[id] === true} onOpenSettings={onOpenWidgetSettings}>
                   {renderWidget(id, excludedAccountIds)}
                 </WidgetWrapper>
               </div>
@@ -213,7 +234,7 @@ export function DashboardGrid({ config, isEditMode, onLayoutChange }: Props) {
           >
             {visibleIds.map((id) => (
               <div key={id}>
-                <WidgetWrapper isEditMode={isEditMode} collapsed={collapsed[id] === true}>
+                <WidgetWrapper id={id} isEditMode={isEditMode} collapsed={collapsed[id] === true} onOpenSettings={onOpenWidgetSettings}>
                   {renderWidget(id, excludedAccountIds)}
                 </WidgetWrapper>
               </div>

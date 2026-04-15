@@ -125,6 +125,20 @@ class AccountRepository {
     await this.db('accounts').where({ id, user_id: userId }).update({ is_active: false });
   }
 
+  async countTransactions(id: string): Promise<number> {
+    const result = await this.db('transactions').where({ account_id: id }).count('* as cnt').first();
+    return Number((result as Record<string, unknown>)?.['cnt'] ?? 0);
+  }
+
+  async hardDelete(id: string, userId: string): Promise<void> {
+    const db = this.db;
+    await db.transaction(async (trx) => {
+      await trx('account_shares').where({ account_id: id }).del();
+      await trx('transactions').where({ account_id: id }).del();
+      await trx('accounts').where({ id, user_id: userId }).del();
+    });
+  }
+
   async setSimplefinAccountId(
     id: string,
     userId: string,

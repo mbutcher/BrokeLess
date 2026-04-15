@@ -157,3 +157,24 @@ export function useArchiveAccount() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ACCOUNTS_KEY }),
   });
 }
+
+export function useAccountTransactionCount(id: string) {
+  return useQuery({
+    queryKey: [...ACCOUNTS_KEY, id, 'transaction-count'],
+    queryFn: async () => {
+      const res = await accountApi.transactionCount(id);
+      return res.data.data.count;
+    },
+    enabled: Boolean(id),
+  });
+}
+
+export function useDeleteAccount() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      return accountApi.destroy(id);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ACCOUNTS_KEY }),
+  });
+}

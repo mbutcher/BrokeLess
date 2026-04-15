@@ -32,6 +32,21 @@ class AccountService {
 
     await accountRepository.softDelete(id, userId);
   }
+
+  async getTransactionCount(userId: string, id: string): Promise<number> {
+    const existing = await accountRepository.findById(id, userId);
+    if (!existing) throw new AppError('Account not found', 404);
+    if (existing.userId !== userId) throw new AppError('Only the owner can delete an account', 403);
+    return accountRepository.countTransactions(id);
+  }
+
+  async deleteAccount(userId: string, id: string): Promise<void> {
+    const existing = await accountRepository.findById(id, userId);
+    if (!existing) throw new AppError('Account not found', 404);
+    if (existing.userId !== userId) throw new AppError('Only the owner can delete an account', 403);
+
+    await accountRepository.hardDelete(id, userId);
+  }
 }
 
 export const accountService = new AccountService();

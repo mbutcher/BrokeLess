@@ -30,6 +30,16 @@ class AccountController {
     await accountService.archiveAccount(req.user!.id, req.params['id']!);
     res.json({ status: 'success', data: null });
   });
+
+  transactionCount = asyncHandler(async (req: Request, res: Response) => {
+    const count = await accountService.getTransactionCount(req.user!.id, req.params['id']!);
+    res.json({ status: 'success', data: { count } });
+  });
+
+  destroy = asyncHandler(async (req: Request, res: Response) => {
+    await accountService.deleteAccount(req.user!.id, req.params['id']!);
+    res.json({ status: 'success', data: null });
+  });
 }
 
 export const accountController = new AccountController();

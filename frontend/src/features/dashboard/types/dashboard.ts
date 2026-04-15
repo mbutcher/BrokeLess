@@ -71,4 +71,6 @@ export interface WidgetMeta {
   defaultH: number;
   /** If set, widget is hidden in the tray unless this feature flag is enabled */
   featureFlag?: string;
+  /** True if the widget has its own settings modal */
+  hasSettings?: boolean;
 }

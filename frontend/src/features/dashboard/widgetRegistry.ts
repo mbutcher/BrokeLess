@@ -5,7 +5,7 @@ import type { WidgetId, DashboardConfig, DashboardLayouts, GridLayoutItem, Widge
 export const WIDGET_META: WidgetMeta[] = [
   // Overview
   { id: 'net-worth', labelKey: 'dashboard.widgets.netWorth', category: 'overview', minW: 2, minH: 1, defaultH: 1 },
-  { id: 'account-balances', labelKey: 'dashboard.widgets.accountBalances', category: 'overview', minW: 2, minH: 2, defaultH: 4 },
+  { id: 'account-balances', labelKey: 'dashboard.widgets.accountBalances', category: 'overview', minW: 2, minH: 2, defaultH: 4, hasSettings: true },
   { id: 'hints', labelKey: 'dashboard.widgets.hints', category: 'overview', minW: 2, minH: 2, defaultH: 3 },
   // Budgeting
   { id: 'budget-snapshot', labelKey: 'dashboard.widgets.budgetSnapshot', category: 'budgeting', minW: 3, minH: 3, defaultH: 5 },

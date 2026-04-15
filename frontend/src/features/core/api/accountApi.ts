@@ -25,4 +25,10 @@ export const accountApi = {
 
   archive: (id: string) =>
     apiClient.delete<ApiResponse<null>>(`/accounts/${id}`),
+
+  transactionCount: (id: string) =>
+    apiClient.get<ApiResponse<{ count: number }>>(`/accounts/${id}/transaction-count`),
+
+  destroy: (id: string) =>
+    apiClient.post<ApiResponse<null>>(`/accounts/${id}/delete`),
 };
