@@ -173,6 +173,7 @@ export function useDeleteAccount() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      if (!navigator.onLine) throw new Error('Accounts can only be deleted while online.');
       return accountApi.destroy(id);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ACCOUNTS_KEY }),

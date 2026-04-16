@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { ChevronDown, ChevronUp, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import type { Account, CreateAccountInput } from '../types';
+import type { Account, AccountType, CreateAccountInput } from '../types';
 import {
   useCreateAccount,
   useUpdateAccount,
@@ -30,7 +30,7 @@ const PALETTE = [
 
 const accountSchema = z.object({
   name: z.string().min(1, 'required').max(255),
-  type: z.enum(['checking', 'savings', 'credit_card', 'loan', 'line_of_credit', 'mortgage', 'investment', 'other']),
+  type: z.enum(ACCOUNT_TYPES as [AccountType, ...AccountType[]]),
   startingBalance: z.number().default(0),
   currency: z.string().length(3, 'Must be a 3-letter code (e.g. USD)').default('USD'),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().or(z.literal('')),
@@ -59,7 +59,6 @@ function ColorPalette({
 }) {
   return (
     <div className="grid grid-cols-8 gap-1.5">
-      {/* "None" swatch */}
       <button
         type="button"
         onClick={() => onChange('')}
@@ -186,8 +185,6 @@ export function AccountForm({ account, onSuccess, onCancel, onShare }: AccountFo
     await deleteAccount.mutateAsync(account.id);
     onSuccess();
   }
-
-  // ─── Shared field blocks ───────────────────────────────────────────────────
 
   const nameField = (
     <div>
@@ -405,10 +402,13 @@ export function AccountForm({ account, onSuccess, onCancel, onShare }: AccountFo
           </div>
         )}
       </div>
+      {deleteAccount.isError && (
+        <p className="text-destructive text-xs">
+          {(deleteAccount.error as Error).message}
+        </p>
+      )}
     </div>
   );
-
-  // ─── Render ────────────────────────────────────────────────────────────────
 
   if (isEditing) {
     // Edit mode: name, shared badge, color on top; details expandable
