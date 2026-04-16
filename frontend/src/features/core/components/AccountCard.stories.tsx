@@ -42,6 +42,13 @@ export const AssetAccount: Story = {
   },
 };
 
+export const Clickable: Story = {
+  args: {
+    account: { ...base, name: 'TD Chequing', type: 'checking', currentBalance: 3421.5 },
+    onClick: () => alert('Card clicked'),
+  },
+};
+
 export const SavingsAccount: Story = {
   args: {
     account: {
@@ -84,10 +91,22 @@ export const NegativeBalance: Story = {
   },
 };
 
-export const WithEditHandlers: Story = {
+export const Archived: Story = {
   args: {
-    account: { ...base, name: 'TD Chequing', type: 'checking', currentBalance: 3421.5 },
-    onEdit: () => alert('Edit clicked'),
-    onArchive: () => alert('Archive clicked'),
+    account: {
+      ...base,
+      id: 'acct-archived',
+      name: 'Old Savings',
+      type: 'savings',
+      currentBalance: 0,
+      isActive: false,
+      color: '#6b7280',
+    },
+  },
+};
+
+export const NoColor: Story = {
+  args: {
+    account: { ...base, name: 'No Colour Account', color: null },
   },
 };

@@ -9,6 +9,20 @@ import type { Account } from '../types';
 
 const mockAccount: Account = mockAccounts[0]!;
 
+const archivedAccount: Account = {
+  ...mockAccount,
+  id: 'acct-archived',
+  name: 'Old Chequing',
+  isActive: false,
+};
+
+const sharedAccount: Account = {
+  ...mockAccount,
+  id: 'acct-shared',
+  userId: 'other-user',
+  name: 'Shared Savings',
+};
+
 const meta: Meta<typeof AccountForm> = {
   component: AccountForm,
   title: 'Layout/AccountForm',
@@ -22,6 +36,10 @@ const meta: Meta<typeof AccountForm> = {
           isAuthenticated: true,
         });
         qc.setQueryData(['accounts'], mockAccounts);
+        // Seed a transaction count so the Delete button is enabled
+        qc.setQueryData(['accounts', mockAccount.id, 'transaction-count'], 12);
+        qc.setQueryData(['accounts', archivedAccount.id, 'transaction-count'], 0);
+        qc.setQueryData(['accounts', sharedAccount.id, 'transaction-count'], 5);
       }, [qc]);
       return (
         <Dialog open>
@@ -55,6 +73,15 @@ export const EditChequing: Story = {
   },
 };
 
+export const EditWithShare: Story = {
+  args: {
+    account: mockAccount,
+    onSuccess: () => {},
+    onCancel: () => {},
+    onShare: () => alert('Manage shares clicked'),
+  },
+};
+
 export const EditCreditCard: Story = {
   args: {
     account: {
@@ -85,6 +112,22 @@ export const EditMortgage: Story = {
       annualRate: 0.0549,
       institution: 'First National',
     },
+    onSuccess: () => {},
+    onCancel: () => {},
+  },
+};
+
+export const EditArchived: Story = {
+  args: {
+    account: archivedAccount,
+    onSuccess: () => {},
+    onCancel: () => {},
+  },
+};
+
+export const EditSharedAccount: Story = {
+  args: {
+    account: sharedAccount,
     onSuccess: () => {},
     onCancel: () => {},
   },
