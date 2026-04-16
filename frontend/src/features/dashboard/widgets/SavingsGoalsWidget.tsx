@@ -7,12 +7,10 @@ import type { SavingsGoal } from '@features/core/types';
 
 function GoalMiniCard({ goal }: { goal: SavingsGoal }) {
   const { data: progress } = useSavingsGoalProgress(goal.id);
-  const { currency: fmt, date: fmtDate } = useFormatters();
+  const { currency: fmt } = useFormatters();
   const { t } = useTranslation();
   const pct = progress?.percentComplete ?? 0;
-  const current = progress?.currentAmount ?? 0;
 
-  // Projected completion: if we have a target date, check if behind pace
   const targetDate = goal.targetDate ? new Date(goal.targetDate + 'T00:00:00') : null;
   const isBehindPace =
     targetDate !== null && progress !== undefined && progress.percentComplete < 100 &&
@@ -29,7 +27,7 @@ function GoalMiniCard({ goal }: { goal: SavingsGoal }) {
       <div className="flex items-center justify-between mb-1">
         <p className="text-sm font-medium text-foreground truncate">{goal.name}</p>
         <p className="ml-2 text-xs text-muted-foreground flex-shrink-0">
-          {fmt(current)} / {fmt(goal.targetAmount)}
+          {fmt(goal.targetAmount)}
         </p>
       </div>
       <div className="h-1.5 bg-muted rounded-full overflow-hidden mb-1">
@@ -38,14 +36,11 @@ function GoalMiniCard({ goal }: { goal: SavingsGoal }) {
           style={{ width: `${Math.min(pct, 100)}%` }}
         />
       </div>
-      <div className="flex items-center justify-between text-xs">
+      <div className="flex items-center text-xs">
         {isBehindPace ? (
           <span className="text-warning font-medium">{t('dashboard.behindPace')}</span>
         ) : (
           <span className="text-muted-foreground">{Math.round(pct)}%</span>
-        )}
-        {targetDate && (
-          <span className="text-muted-foreground">{t('dashboard.projectedCompletion', { date: fmtDate(goal.targetDate!) })}</span>
         )}
       </div>
     </div>
