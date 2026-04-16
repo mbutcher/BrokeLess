@@ -5,7 +5,8 @@ import type { CreateAccountData, UpdateAccountData } from '@typings/core.types';
 
 class AccountController {
   list = asyncHandler(async (req: Request, res: Response) => {
-    const accounts = await accountService.listAccounts(req.user!.id);
+    const includeArchived = req.query['includeArchived'] === 'true';
+    const accounts = await accountService.listAccounts(req.user!.id, includeArchived);
     res.json({ status: 'success', data: { accounts } });
   });
 

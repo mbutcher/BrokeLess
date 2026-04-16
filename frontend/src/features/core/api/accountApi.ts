@@ -11,8 +11,10 @@ interface ApiResponse<T> {
 }
 
 export const accountApi = {
-  list: () =>
-    apiClient.get<ApiResponse<{ accounts: Account[] }>>('/accounts'),
+  list: (includeArchived = false) =>
+    apiClient.get<ApiResponse<{ accounts: Account[] }>>('/accounts', {
+      params: includeArchived ? { includeArchived: 'true' } : undefined,
+    }),
 
   get: (id: string) =>
     apiClient.get<ApiResponse<{ account: Account }>>(`/accounts/${id}`),
@@ -30,5 +32,5 @@ export const accountApi = {
     apiClient.get<ApiResponse<{ count: number }>>(`/accounts/${id}/transaction-count`),
 
   destroy: (id: string) =>
-    apiClient.post<ApiResponse<null>>(`/accounts/${id}/delete`),
+    apiClient.delete<ApiResponse<null>>(`/accounts/${id}/permanent`),
 };

@@ -14,12 +14,12 @@ import type { Account, CreateAccountInput, UpdateAccountInput } from '../types';
 
 export const ACCOUNTS_KEY = ['accounts'] as const;
 
-export function useAccounts() {
+export function useAccounts(includeArchived = false) {
   return useQuery({
-    queryKey: ACCOUNTS_KEY,
+    queryKey: includeArchived ? [...ACCOUNTS_KEY, 'all'] : ACCOUNTS_KEY,
     queryFn: async () => {
       try {
-        const res = await accountApi.list();
+        const res = await accountApi.list(includeArchived);
         const accounts = res.data.data.accounts;
         // Background update to Dexie so offline reads are fresh
         void db.accounts.bulkPut(accounts);

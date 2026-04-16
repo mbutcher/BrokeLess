@@ -1,38 +1,30 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAccounts, useArchiveAccount, useUpdateAccount } from '../hooks/useAccounts';
+import { useAccounts } from '../hooks/useAccounts';
 import { AccountCard } from '../components/AccountCard';
 import { AccountForm } from '../components/AccountForm';
 import { useExchangeRates } from '../hooks/useExchangeRate';
 import { useAuthStore } from '@features/auth/stores/authStore';
-import { Button } from '@components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@components/ui/dialog';
 import { ManageSharesDialog } from '@features/household/components/ManageSharesDialog';
-import type { Account, AccountType } from '../types';
-import { ACCOUNT_TYPES } from '../constants';
+import type { Account } from '../types';
 
-type SortKey = 'name-asc' | 'name-desc' | 'balance-desc' | 'balance-asc' | 'type' | 'rate-desc' | 'rate-asc';
-type GroupBy = 'all' | 'assets' | 'liabilities';
+type SortKey = 'name' | 'type' | 'institution';
 
 const selectClass =
   'border border-border rounded-lg px-2 py-1.5 text-xs text-foreground bg-background focus:outline-none focus:ring-2 focus:ring-ring';
 
 export function AccountsPage() {
   const { t } = useTranslation();
-  const { data: accounts = [], isLoading } = useAccounts();
-  const archiveAccount = useArchiveAccount();
-  const updateAccount = useUpdateAccount();
+  const [showArchived, setShowArchived] = useState(false);
+  const { data: accounts = [], isLoading } = useAccounts(true);
 
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Account | null>(null);
   const [sharingAccount, setSharingAccount] = useState<Account | null>(null);
-  const [archivingAccount, setArchivingAccount] = useState<Account | null>(null);
 
-  // Filter / sort state
-  const [typeFilter, setTypeFilter] = useState<AccountType | 'all'>('all');
-  const [institutionFilter, setInstitutionFilter] = useState('all');
-  const [groupBy, setGroupBy] = useState<GroupBy>('all');
-  const [sortBy, setSortBy] = useState<SortKey>('name-asc');
+  // Sort state
+  const [sortBy, setSortBy] = useState<SortKey>('name');
 
   const activeAccounts = accounts.filter((a) => a.isActive);
   const archivedAccounts = accounts.filter((a) => !a.isActive);
@@ -71,74 +63,32 @@ export function AccountsPage() {
     return sum + (a.isAsset ? balance : -balance);
   }, 0);
 
-  // Unique institutions from all accounts
-  const institutions = useMemo(() => {
-    const seen = new Set<string>();
-    for (const a of accounts) {
-      if (a.institution) seen.add(a.institution);
-    }
-    return Array.from(seen).sort();
-  }, [accounts]);
-
-  // Apply filters + sort to active accounts
-  const filteredAccounts = useMemo(() => {
-    let list = [...activeAccounts];
-
-    if (typeFilter !== 'all') {
-      list = list.filter((a) => a.type === typeFilter);
-    }
-    if (institutionFilter !== 'all') {
-      list = list.filter((a) => a.institution === institutionFilter);
-    }
-    if (groupBy === 'assets') {
-      list = list.filter((a) => a.isAsset);
-    } else if (groupBy === 'liabilities') {
-      list = list.filter((a) => !a.isAsset);
-    }
-
+  function sortAccounts(list: Account[]): Account[] {
+    const sorted = [...list];
     switch (sortBy) {
-      case 'name-asc':
-        list.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      case 'name-desc':
-        list.sort((a, b) => b.name.localeCompare(a.name));
-        break;
-      case 'balance-desc':
-        list.sort((a, b) => b.currentBalance - a.currentBalance);
-        break;
-      case 'balance-asc':
-        list.sort((a, b) => a.currentBalance - b.currentBalance);
+      case 'name':
+        sorted.sort((a, b) => a.name.localeCompare(b.name));
         break;
       case 'type':
-        list.sort((a, b) => a.type.localeCompare(b.type) || a.name.localeCompare(b.name));
+        sorted.sort((a, b) => a.type.localeCompare(b.type) || a.name.localeCompare(b.name));
         break;
-      case 'rate-desc':
-        list.sort((a, b) => {
-          if (a.annualRate == null && b.annualRate == null) return a.name.localeCompare(b.name);
-          if (a.annualRate == null) return 1;
-          if (b.annualRate == null) return -1;
-          return b.annualRate - a.annualRate;
-        });
-        break;
-      case 'rate-asc':
-        list.sort((a, b) => {
-          if (a.annualRate == null && b.annualRate == null) return a.name.localeCompare(b.name);
-          if (a.annualRate == null) return 1;
-          if (b.annualRate == null) return -1;
-          return a.annualRate - b.annualRate;
+      case 'institution':
+        sorted.sort((a, b) => {
+          const instA = a.institution ?? '';
+          const instB = b.institution ?? '';
+          return instA.localeCompare(instB) || a.name.localeCompare(b.name);
         });
         break;
     }
+    return sorted;
+  }
 
-    return list;
-  }, [activeAccounts, typeFilter, institutionFilter, groupBy, sortBy]);
+  const sortedActive = useMemo(() => sortAccounts(activeAccounts), [activeAccounts, sortBy]);
+  const sortedArchived = useMemo(() => sortAccounts(archivedAccounts), [archivedAccounts, sortBy]);
 
-  const myAccounts = filteredAccounts.filter((a) => a.userId === currentUserId);
-  const sharedAccounts = filteredAccounts.filter((a) => a.userId !== currentUserId);
+  const myAccounts = sortedActive.filter((a) => a.userId === currentUserId);
+  const sharedAccounts = sortedActive.filter((a) => a.userId !== currentUserId);
   const hasSharedAccounts = sharedAccounts.length > 0;
-
-  const hasFilters =
-    typeFilter !== 'all' || institutionFilter !== 'all' || groupBy !== 'all' || sortBy !== 'name-asc';
 
   function openEdit(account: Account) {
     setEditing(account);
@@ -148,18 +98,6 @@ export function AccountsPage() {
   function closeForm() {
     setShowForm(false);
     setEditing(null);
-  }
-
-  function handleArchive(account: Account) {
-    setArchivingAccount(account);
-  }
-
-  function confirmArchive() {
-    archiveAccount.mutate(archivingAccount!.id, { onSuccess: () => setArchivingAccount(null) });
-  }
-
-  function handleRestore(account: Account) {
-    updateAccount.mutate({ id: account.id, data: { isActive: true } });
   }
 
   return (
@@ -217,97 +155,36 @@ export function AccountsPage() {
             account={editing ?? undefined}
             onSuccess={closeForm}
             onCancel={closeForm}
+            onShare={editing ? () => { setSharingAccount(editing); } : undefined}
           />
         </DialogContent>
       </Dialog>
 
-      {/* Archive confirmation */}
-      <Dialog open={archivingAccount !== null} onOpenChange={(open) => { if (!open) setArchivingAccount(null); }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>{t('accounts.archiveConfirmTitle')}</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            {t('accounts.archiveConfirmBody', { name: archivingAccount?.name ?? '' })}
-          </p>
-          <div className="flex justify-end gap-3 mt-2">
-            <Button variant="outline" onClick={() => setArchivingAccount(null)}>
-              {t('common.cancel')}
-            </Button>
-            <Button variant="destructive" onClick={confirmArchive} isLoading={archiveAccount.isPending}>
-              {t('accounts.archiveConfirm')}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Filter / Sort bar */}
+      {/* Sort bar + archived toggle */}
       {!isLoading && activeAccounts.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 mb-4">
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value as AccountType | 'all')}
-            className={selectClass}
-          >
-            <option value="all">{t('accounts.allTypes')}</option>
-            {ACCOUNT_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {t(`accounts.types.${type}`)}
-              </option>
-            ))}
-          </select>
-
-          {institutions.length > 0 && (
-            <select
-              value={institutionFilter}
-              onChange={(e) => setInstitutionFilter(e.target.value)}
-              className={selectClass}
-            >
-              <option value="all">{t('accounts.allInstitutions')}</option>
-              {institutions.map((inst) => (
-                <option key={inst} value={inst}>
-                  {inst}
-                </option>
-              ))}
-            </select>
-          )}
-
-          <select
-            value={groupBy}
-            onChange={(e) => setGroupBy(e.target.value as GroupBy)}
-            className={selectClass}
-          >
-            <option value="all">{t('accounts.assetsAndLiabilities')}</option>
-            <option value="assets">{t('accounts.assetsOnly')}</option>
-            <option value="liabilities">{t('accounts.liabilitiesOnly')}</option>
-          </select>
-
+        <div className="flex flex-wrap items-center gap-3 mb-4">
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortKey)}
             className={selectClass}
           >
-            <option value="name-asc">{t('accounts.nameAZ')}</option>
-            <option value="name-desc">{t('accounts.nameZA')}</option>
-            <option value="balance-desc">{t('accounts.balanceDesc')}</option>
-            <option value="balance-asc">{t('accounts.balanceAsc')}</option>
-            <option value="type">{t('common.type')}</option>
-            <option value="rate-desc">{t('accounts.rateDesc')}</option>
-            <option value="rate-asc">{t('accounts.rateAsc')}</option>
+            <option value="name">{t('accounts.sortName')}</option>
+            <option value="type">{t('accounts.sortType')}</option>
+            <option value="institution">{t('accounts.sortInstitution')}</option>
           </select>
 
-          {hasFilters && (
-            <button
-              onClick={() => {
-                setTypeFilter('all');
-                setInstitutionFilter('all');
-                setGroupBy('all');
-                setSortBy('name-asc');
-              }}
-              className="text-xs text-gray-400 hover:text-gray-600 underline"
-            >
-              {t('accounts.reset')}
-            </button>
+          {archivedAccounts.length > 0 && (
+            <label className="flex items-center gap-1.5 cursor-pointer ml-auto">
+              <input
+                type="checkbox"
+                checked={showArchived}
+                onChange={(e) => setShowArchived(e.target.checked)}
+                className="rounded border-border text-primary focus:ring-primary"
+              />
+              <span className="text-xs text-muted-foreground">
+                {t('accounts.showArchived', { count: archivedAccounts.length })}
+              </span>
+            </label>
           )}
         </div>
       )}
@@ -327,12 +204,6 @@ export function AccountsPage() {
             </div>
           )}
 
-          {myAccounts.length === 0 && sharedAccounts.length === 0 && activeAccounts.length > 0 && (
-            <div className="text-center py-8 text-gray-400">
-              <p className="text-sm">{t('accounts.noMatch')}</p>
-            </div>
-          )}
-
           {hasSharedAccounts && myAccounts.length > 0 && (
             <h2 className="text-sm font-medium text-muted-foreground mb-2">
               {t('household.share.myAccounts')}
@@ -343,9 +214,7 @@ export function AccountsPage() {
               <AccountCard
                 key={account.id}
                 account={account}
-                onEdit={() => openEdit(account)}
-                onArchive={() => handleArchive(account)}
-                onShare={() => setSharingAccount(account)}
+                onClick={() => openEdit(account)}
               />
             ))}
           </div>
@@ -357,28 +226,31 @@ export function AccountsPage() {
               </h2>
               <div className="space-y-3">
                 {sharedAccounts.map((account) => (
-                  <AccountCard key={account.id} account={account} />
+                  <AccountCard
+                    key={account.id}
+                    account={account}
+                    onClick={() => openEdit(account)}
+                  />
                 ))}
               </div>
             </div>
           )}
 
-          {archivedAccounts.length > 0 && (
-            <details className="mt-6">
-              <summary className="text-sm text-gray-400 cursor-pointer hover:text-gray-600">
-                {archivedAccounts.length} {t('accounts.archived').toLowerCase()}
-                {archivedAccounts.length !== 1 ? 's' : ''}
-              </summary>
-              <div className="space-y-3 mt-3">
-                {archivedAccounts.map((account) => (
+          {showArchived && sortedArchived.length > 0 && (
+            <div className="mt-6">
+              <h2 className="text-sm font-medium text-muted-foreground mb-2">
+                {t('accounts.archived')}
+              </h2>
+              <div className="space-y-3">
+                {sortedArchived.map((account) => (
                   <AccountCard
                     key={account.id}
                     account={account}
-                    onArchive={() => handleRestore(account)}
+                    onClick={() => openEdit(account)}
                   />
                 ))}
               </div>
-            </details>
+            </div>
           )}
         </>
       )}

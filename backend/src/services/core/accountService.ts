@@ -3,8 +3,8 @@ import { AppError } from '@middleware/errorHandler';
 import type { Account, CreateAccountData, UpdateAccountData } from '@typings/core.types';
 
 class AccountService {
-  async listAccounts(userId: string): Promise<Account[]> {
-    return accountRepository.findAllForUser(userId);
+  async listAccounts(userId: string, includeArchived = false): Promise<Account[]> {
+    return accountRepository.findAllForUser(userId, !includeArchived);
   }
 
   async getAccount(userId: string, id: string): Promise<Account> {

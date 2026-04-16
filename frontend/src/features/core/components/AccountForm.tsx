@@ -44,6 +44,7 @@ interface AccountFormProps {
   account?: Account;
   onSuccess: () => void;
   onCancel: () => void;
+  onShare?: () => void;
 }
 
 const inputClass =
@@ -57,7 +58,7 @@ function ColorPalette({
   onChange: (hex: string) => void;
 }) {
   return (
-    <div className="grid grid-cols-16 gap-1">
+    <div className="grid grid-cols-8 gap-1.5">
       {/* "None" swatch */}
       <button
         type="button"
@@ -88,7 +89,7 @@ function ColorPalette({
   );
 }
 
-export function AccountForm({ account, onSuccess, onCancel }: AccountFormProps) {
+export function AccountForm({ account, onSuccess, onCancel, onShare }: AccountFormProps) {
   const { t } = useTranslation();
   const isEditing = Boolean(account);
   const [showDetails, setShowDetails] = useState(false);
@@ -171,6 +172,12 @@ export function AccountForm({ account, onSuccess, onCancel }: AccountFormProps) 
   async function handleArchive() {
     if (!account) return;
     await archiveAccount.mutateAsync(account.id);
+    onSuccess();
+  }
+
+  async function handleRestore() {
+    if (!account) return;
+    await updateAccount.mutateAsync({ id: account.id, data: { isActive: true } });
     onSuccess();
   }
 
@@ -313,8 +320,34 @@ export function AccountForm({ account, onSuccess, onCancel }: AccountFormProps) 
     </div>
   );
 
-  const dangerZone = isEditing && account && (
+  const manageSection = isEditing && account && (
     <div className="border-t border-border pt-4 space-y-3">
+      {/* Share button */}
+      {onShare && account.isActive && (
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full text-sm"
+          onClick={onShare}
+        >
+          {t('household.share.manageTitle')}
+        </Button>
+      )}
+
+      {/* Restore for archived accounts */}
+      {!account.isActive && (
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full text-sm"
+          onClick={handleRestore}
+          isLoading={updateAccount.isPending}
+        >
+          {t('accounts.restoreAccount')}
+        </Button>
+      )}
+
+      {/* Archive / Delete */}
       <div className="flex gap-3">
         {account.isActive && (
           <Button
@@ -332,6 +365,7 @@ export function AccountForm({ account, onSuccess, onCancel }: AccountFormProps) 
             type="button"
             variant="destructive"
             className="flex-1 text-sm"
+            disabled={txCount === undefined}
             onClick={() => {
               if (txCount === 0) {
                 void handleDelete();
@@ -400,10 +434,11 @@ export function AccountForm({ account, onSuccess, onCancel }: AccountFormProps) 
               {institutionField}
               {currencyAndRateFields}
               {accountTypeField}
-              {dangerZone}
             </div>
           )}
         </div>
+
+        {manageSection}
 
         <div className="flex gap-3 pt-2">
           <button

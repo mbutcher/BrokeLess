@@ -1,4 +1,3 @@
-import { Pencil, Archive, RotateCcw, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@lib/utils';
@@ -10,13 +9,11 @@ import type { Account } from '../types';
 
 interface AccountCardProps {
   account: Account;
-  onEdit?: () => void;
-  onArchive?: () => void;
-  onShare?: () => void;
+  onClick?: () => void;
   className?: string;
 }
 
-export function AccountCard({ account, onEdit, onArchive, onShare, className }: AccountCardProps) {
+export function AccountCard({ account, onClick, className }: AccountCardProps) {
   const { t } = useTranslation();
   const currentUserId = useAuthStore((s) => s.user?.id);
   const defaultCurrency = useAuthStore((s) => s.user?.defaultCurrency ?? 'CAD');
@@ -31,10 +28,10 @@ export function AccountCard({ account, onEdit, onArchive, onShare, className }: 
     <div
       className={cn(
         'group bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-4',
-        onEdit && 'cursor-pointer hover:border-gray-300 hover:shadow-sm transition-all',
+        onClick && 'cursor-pointer hover:border-gray-300 hover:shadow-sm transition-all',
         className
       )}
-      onClick={onEdit}
+      onClick={onClick}
     >
       {/* Color indicator */}
       <div
@@ -43,7 +40,7 @@ export function AccountCard({ account, onEdit, onArchive, onShare, className }: 
       />
 
       <div className="flex-1 min-w-0">
-        {/* Row 1: name + actions + balance */}
+        {/* Row 1: name + balance */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 min-w-0">
             <p className="font-medium text-gray-900 truncate">{account.name}</p>
@@ -54,49 +51,12 @@ export function AccountCard({ account, onEdit, onArchive, onShare, className }: 
             )}
           </div>
 
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Action buttons — visible on hover for active accounts */}
-            {account.isActive && (onEdit || onArchive || onShare) && (
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                {onShare && (
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); onShare(); }}
-                    className="p-1.5 rounded-md text-gray-400 hover:text-primary hover:bg-primary/10 transition-colors"
-                    title={t('household.share.manageTitle')}
-                  >
-                    <Users size={14} />
-                  </button>
-                )}
-                {onEdit && (
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); onEdit(); }}
-                    className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-                    title={t('accounts.editAccount')}
-                  >
-                    <Pencil size={14} />
-                  </button>
-                )}
-                {onArchive && (
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); onArchive(); }}
-                    className="p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                    title={t('accounts.archiveAccount')}
-                  >
-                    <Archive size={14} />
-                  </button>
-                )}
-              </div>
-            )}
-            <p className={cn(
-              'font-semibold tabular-nums text-right',
-              account.currentBalance < 0 ? 'text-red-600' : 'text-gray-900'
-            )}>
-              {formatCurrency(account.currentBalance, account.currency)}
-            </p>
-          </div>
+          <p className={cn(
+            'font-semibold tabular-nums text-right flex-shrink-0',
+            account.currentBalance < 0 ? 'text-red-600' : 'text-gray-900'
+          )}>
+            {formatCurrency(account.currentBalance, account.currency)}
+          </p>
         </div>
 
         {/* Row 2: meta info + secondary balance */}
@@ -126,19 +86,7 @@ export function AccountCard({ account, onEdit, onArchive, onShare, className }: 
               </span>
             )}
             {!account.isActive && (
-              <>
-                <span className="bg-gray-100 px-1.5 py-0.5 rounded">{t('accounts.archived')}</span>
-                {onArchive && (
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); onArchive(); }}
-                    className="text-blue-600 hover:underline flex items-center gap-0.5"
-                  >
-                    <RotateCcw size={10} />
-                    {t('accounts.restore')}
-                  </button>
-                )}
-              </>
+              <span className="bg-gray-100 px-1.5 py-0.5 rounded">{t('accounts.archived')}</span>
             )}
           </div>
         </div>

@@ -41,7 +41,9 @@
       "Bash(grep -n \"\\\\.insert\\(\" /Users/butch/Repos/BudgetApp/backend/src/repositories/*.ts | grep -v \"randomUUID\\\\|id:\" | grep -v \"\\\\.ts-\" | head -40)",
       "Bash(grep -n \"randomUUID\\\\|id,\" /Users/butch/Repos/BudgetApp/backend/src/repositories/householdRepository.ts | head -10\ngrep -n \"randomUUID\\\\|id,\" /Users/butch/Repos/BudgetApp/backend/src/repositories/householdMemberRepository.ts | head -10)",
       "Bash(npx tsc:*)",
-      "Read(//config/.ssh/**)"
+      "Read(//config/.ssh/**)",
+      "mcp__claude_ai_Figma__generate_diagram",
+      "Bash(gh pr *)"
     ]
   }
 }

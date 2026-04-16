@@ -1,0 +1,446 @@
+erDiagram
+    %% ═══════════════════════════════════════════
+    %% BudgetApp — Entity Relationship Diagram
+    %% Generated 2026-04-16 from Knex migrations
+    %% ═══════════════════════════════════════════
+
+    %% ── Core: Users & Auth ──────────────────────
+
+    users {
+        uuid id PK
+        text email_encrypted
+        varchar email_hash UK
+        varchar password_hash
+        boolean is_active
+        boolean email_verified
+        boolean totp_enabled
+        text totp_secret_encrypted
+        boolean webauthn_enabled
+        int failed_login_attempts
+        timestamp locked_until
+        timestamp last_login_at
+        varchar display_name
+        varchar default_currency
+        varchar locale
+        varchar date_format
+        varchar time_format
+        varchar timezone
+        varchar week_start
+        varchar theme
+        boolean push_enabled
+        json push_preferences
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    refresh_tokens {
+        uuid id PK
+        uuid user_id FK
+        varchar token_hash UK
+        varchar device_fingerprint
+        varchar user_agent
+        varchar ip_address
+        boolean is_revoked
+        timestamp expires_at
+        varchar device_name
+        timestamp last_used_at
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    passkeys {
+        uuid id PK
+        uuid user_id FK
+        varchar credential_id UK
+        text public_key
+        bigint counter
+        varchar aaguid
+        varchar device_name
+        json transports
+        timestamp last_used_at
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    totp_backup_codes {
+        uuid id PK
+        uuid user_id FK
+        varchar code_hash
+        boolean is_used
+        timestamp used_at
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    webauthn_challenges {
+        uuid id PK
+        varchar challenge
+        varchar type
+        varchar user_id
+        datetime expires_at
+        datetime created_at
+    }
+
+    api_keys {
+        uuid id PK
+        uuid user_id FK
+        varchar label
+        varchar key_hash UK
+        json scopes
+        datetime last_used_at
+        datetime expires_at
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    push_subscriptions {
+        uuid id PK
+        uuid user_id FK
+        text endpoint
+        varchar p256dh
+        varchar auth
+        varchar device_name
+        datetime created_at
+    }
+
+    %% ── Household ───────────────────────────────
+
+    households {
+        uuid id PK
+        varchar name
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    household_members {
+        uuid id PK
+        uuid household_id FK
+        uuid user_id FK "UK"
+        varchar role "owner or member"
+        datetime joined_at
+    }
+
+    %% ── Accounts & Sharing ──────────────────────
+
+    accounts {
+        uuid id PK
+        uuid user_id FK
+        varchar name
+        varchar type "checking savings credit_card loan loc mortgage investment other"
+        boolean is_asset
+        decimal starting_balance
+        decimal current_balance
+        varchar currency
+        varchar color
+        varchar institution
+        boolean is_active
+        varchar simplefin_account_id
+        decimal annual_rate
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    account_shares {
+        uuid id PK
+        uuid account_id FK
+        uuid shared_with_user_id FK
+        varchar access_level "view or write"
+        timestamp created_at
+    }
+
+    %% ── Transactions ────────────────────────────
+
+    categories {
+        uuid id PK
+        uuid household_id FK
+        varchar name
+        varchar color
+        varchar icon
+        boolean is_income
+        uuid parent_id FK "self-ref"
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    transactions {
+        uuid id PK
+        uuid user_id FK
+        uuid account_id FK
+        decimal amount
+        text description
+        varchar payee
+        text notes
+        date date
+        uuid category_id FK
+        boolean is_transfer
+        boolean is_cleared
+        varchar simplefin_transaction_id
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    transaction_links {
+        uuid id PK
+        uuid from_transaction_id FK
+        uuid to_transaction_id FK
+        varchar link_type "transfer payment refund"
+        timestamp created_at
+    }
+
+    transaction_splits {
+        uuid id PK
+        uuid transaction_id FK "UK"
+        decimal principal_amount
+        decimal interest_amount
+        datetime created_at
+    }
+
+    transaction_tags {
+        varchar id PK
+        varchar transaction_id FK
+        varchar user_id FK
+        varchar tag
+        timestamp created_at
+    }
+
+    transaction_search_index {
+        uuid id PK
+        uuid transaction_id FK
+        uuid user_id FK
+        varchar search_token
+    }
+
+    %% ── Budgets ─────────────────────────────────
+
+    budgets {
+        uuid id PK
+        uuid user_id FK
+        varchar name
+        date start_date
+        date end_date
+        boolean is_active
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    budget_categories {
+        uuid id PK
+        uuid budget_id FK
+        uuid category_id FK
+        decimal allocated_amount
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    budget_lines {
+        uuid id PK
+        uuid user_id FK
+        varchar name
+        varchar classification "income or expense"
+        varchar flexibility "fixed or flexible"
+        uuid category_id FK
+        uuid subcategory_id FK
+        decimal amount
+        varchar frequency
+        int frequency_interval
+        tinyint day_of_month_1
+        tinyint day_of_month_2
+        date anchor_date
+        boolean is_pay_period_anchor
+        boolean is_active
+        varchar notes
+        uuid account_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    %% ── Debt & Savings ──────────────────────────
+
+    debt_schedules {
+        uuid id PK
+        uuid user_id FK
+        uuid account_id FK
+        decimal principal
+        decimal annual_rate
+        int term_months
+        date origination_date
+        decimal payment_amount
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    savings_goals {
+        uuid id PK
+        uuid user_id FK
+        uuid account_id FK
+        varchar name
+        decimal target_amount
+        date target_date
+        uuid budget_line_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    recurring_transactions {
+        uuid id PK
+        uuid user_id FK
+        uuid account_id FK
+        decimal amount
+        text description
+        text payee
+        text notes
+        uuid category_id FK
+        varchar frequency
+        int frequency_interval
+        date anchor_date
+        date next_due_date
+        date end_date
+        boolean is_active
+        timestamp last_generated_at
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    %% ── SimpleFIN ───────────────────────────────
+
+    simplefin_connections {
+        uuid id PK
+        uuid user_id FK "UK"
+        text access_url_encrypted
+        datetime last_sync_at
+        varchar last_sync_status
+        text last_sync_error
+        boolean auto_sync_enabled
+        tinyint auto_sync_interval_hours
+        tinyint auto_sync_window_start
+        tinyint auto_sync_window_end
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    simplefin_account_mappings {
+        uuid id PK
+        uuid user_id FK
+        varchar simplefin_account_id
+        varchar simplefin_org_name
+        varchar simplefin_account_name
+        varchar simplefin_account_type
+        uuid local_account_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    simplefin_pending_reviews {
+        uuid id PK
+        uuid user_id FK
+        varchar simplefin_transaction_id
+        text raw_data_encrypted
+        uuid candidate_transaction_id FK
+        decimal similarity_score
+        varchar local_account_id
+        datetime created_at
+    }
+
+    simplefin_discarded_ids {
+        uuid id PK
+        uuid user_id FK
+        varchar sfin_id
+        timestamp discarded_at
+    }
+
+    %% ── Dashboard & Misc ────────────────────────
+
+    user_dashboard_config {
+        uuid user_id PK "FK"
+        json widget_visibility
+        json excluded_account_ids
+        json layouts
+        json acknowledged_rollovers
+        datetime budget_lines_last_reviewed_at
+        datetime updated_at
+    }
+
+    exchange_rates {
+        uuid id PK
+        varchar from_currency
+        varchar to_currency
+        decimal rate
+        date fetched_date
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    net_worth_snapshots {
+        uuid id PK
+        uuid user_id FK
+        date snapshot_date
+        decimal total_assets
+        decimal total_liabilities
+        decimal net_worth
+        timestamp created_at
+    }
+
+    %% ═══════════════════════════════════════════
+    %% Relationships
+    %% ═══════════════════════════════════════════
+
+    %% Auth
+    users ||--o{ refresh_tokens : "has"
+    users ||--o{ passkeys : "has"
+    users ||--o{ totp_backup_codes : "has"
+    users ||--o{ api_keys : "has"
+    users ||--o{ push_subscriptions : "has"
+
+    %% Household
+    users ||--o| household_members : "belongs to"
+    households ||--o{ household_members : "has"
+    households ||--o{ categories : "owns"
+
+    %% Accounts
+    users ||--o{ accounts : "owns"
+    accounts ||--o{ account_shares : "shared via"
+    users ||--o{ account_shares : "receives"
+
+    %% Transactions
+    users ||--o{ transactions : "creates"
+    accounts ||--o{ transactions : "contains"
+    categories |o--o{ transactions : "classifies"
+    transactions ||--o| transaction_splits : "splits into"
+    transactions ||--o{ transaction_tags : "tagged with"
+    transactions ||--o{ transaction_search_index : "indexed by"
+    transactions ||--o{ transaction_links : "from"
+    transactions ||--o{ transaction_links : "to"
+    users ||--o{ transaction_tags : "owns"
+
+    %% Budgets
+    users ||--o{ budgets : "creates"
+    budgets ||--o{ budget_categories : "allocates"
+    categories ||--o{ budget_categories : "allocated in"
+    users ||--o{ budget_lines : "defines"
+    categories ||--o{ budget_lines : "categorised by"
+    categories |o--o{ budget_lines : "sub-categorised by"
+    accounts |o--o{ budget_lines : "linked to"
+
+    %% Debt & Savings
+    users ||--o{ debt_schedules : "tracks"
+    accounts ||--o{ debt_schedules : "for"
+    users ||--o{ savings_goals : "sets"
+    accounts ||--o{ savings_goals : "towards"
+    budget_lines |o--o{ savings_goals : "funds"
+    users ||--o{ recurring_transactions : "schedules"
+    accounts ||--o{ recurring_transactions : "from"
+    categories |o--o{ recurring_transactions : "categorised by"
+
+    %% SimpleFIN
+    users ||--o| simplefin_connections : "connects"
+    users ||--o{ simplefin_account_mappings : "maps"
+    accounts |o--o{ simplefin_account_mappings : "mapped to"
+    users ||--o{ simplefin_pending_reviews : "reviews"
+    transactions |o--o{ simplefin_pending_reviews : "candidate"
+    users ||--o{ simplefin_discarded_ids : "discards"
+
+    %% Dashboard & Misc
+    users ||--o| user_dashboard_config : "configures"
+    users ||--o{ net_worth_snapshots : "tracks"
+    categories |o--o{ categories : "parent of"
