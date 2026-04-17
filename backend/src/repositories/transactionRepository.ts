@@ -181,6 +181,20 @@ class TransactionRepository {
     await db('transactions').where({ id, user_id: userId }).update({ is_transfer: isTransfer });
   }
 
+  async setIsTransferBatch(
+    ids: string[],
+    userId: string,
+    isTransfer: boolean,
+    trx?: Knex.Transaction
+  ): Promise<void> {
+    if (ids.length === 0) return;
+    const db = trx ?? this.db;
+    await db('transactions')
+      .whereIn('id', ids)
+      .where('user_id', userId)
+      .update({ is_transfer: isTransfer });
+  }
+
   /**
    * Find transfer candidates for a given transaction:
    * - Same user, different account

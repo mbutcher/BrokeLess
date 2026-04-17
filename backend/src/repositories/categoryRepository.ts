@@ -36,6 +36,14 @@ class CategoryRepository {
     return rows.map(rowToCategory);
   }
 
+  async findManyByHousehold(ids: string[], householdId: string): Promise<Category[]> {
+    if (ids.length === 0) return [];
+    const rows = await this.db('categories')
+      .whereIn('id', ids)
+      .where({ household_id: householdId });
+    return rows.map(rowToCategory);
+  }
+
   async createBatch(rows: CreateCategoryData[]): Promise<void> {
     if (rows.length === 0) return;
     await this.db('categories').insert(

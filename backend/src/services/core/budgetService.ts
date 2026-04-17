@@ -1,4 +1,6 @@
 import { budgetRepository } from '@repositories/budgetRepository';
+import { categoryRepository } from '@repositories/categoryRepository';
+import { householdMemberRepository } from '@repositories/householdMemberRepository';
 import { AppError } from '@middleware/errorHandler';
 import type {
   Budget,
@@ -71,6 +73,18 @@ class BudgetService {
   ): Promise<void> {
     const budget = await budgetRepository.findById(budgetId, userId);
     if (!budget) throw new AppError('Budget not found', 404);
+
+    if (entries.length > 0) {
+      const householdId = await householdMemberRepository.getHouseholdId(userId);
+      if (!householdId) throw new AppError('Household not found', 404);
+
+      const categoryIds = entries.map((e) => e.categoryId);
+      const validCategories = await categoryRepository.findManyByHousehold(categoryIds, householdId);
+      if (validCategories.length !== categoryIds.length) {
+        throw new AppError('One or more categories not found', 404);
+      }
+    }
+
     await budgetRepository.upsertCategories(budgetId, entries);
   }
 }

@@ -190,6 +190,11 @@ class TransactionService {
       encryptedInput.notes = input.notes ? encryptionService.encrypt(input.notes) : null;
     }
 
+    if (input.accountId && input.accountId !== existing.accountId) {
+      const newAccount = await accountRepository.findById(input.accountId, userId);
+      if (!newAccount) throw new AppError('Account not found', 404);
+    }
+
     await this.db.transaction(async (trx) => {
       const newAccountId = input.accountId ?? existing.accountId;
       const newAmount = input.amount ?? existing.amount;
@@ -298,8 +303,7 @@ class TransactionService {
 
     await this.db.transaction(async (trx) => {
       await transactionLinkRepository.create(txId, targetId, linkType, trx);
-      await transactionRepository.setIsTransfer(txId, userId, true, trx);
-      await transactionRepository.setIsTransfer(targetId, userId, true, trx);
+      await transactionRepository.setIsTransferBatch([txId, targetId], userId, true, trx);
     });
   }
 
@@ -318,8 +322,7 @@ class TransactionService {
 
     await this.db.transaction(async (trx) => {
       await transactionLinkRepository.deleteByTransactionId(txId, trx);
-      await transactionRepository.setIsTransfer(txId, userId, false, trx);
-      await transactionRepository.setIsTransfer(linkedTxId, userId, false, trx);
+      await transactionRepository.setIsTransferBatch([txId, linkedTxId], userId, false, trx);
     });
   }
 }

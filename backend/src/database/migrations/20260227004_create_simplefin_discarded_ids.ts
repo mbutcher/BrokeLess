@@ -27,11 +27,17 @@ export async function up(knex: Knex): Promise<void> {
   const now = new Date();
   for (const conn of connections) {
     const raw = conn.discarded_ids_json;
-    const ids: string[] = Array.isArray(raw)
-      ? raw
-      : typeof raw === 'string'
-        ? (JSON.parse(raw) as string[])
-        : [];
+    let ids: string[] = [];
+    if (Array.isArray(raw)) {
+      ids = raw;
+    } else if (typeof raw === 'string') {
+      try {
+        const parsed: unknown = JSON.parse(raw);
+        ids = Array.isArray(parsed) ? (parsed as string[]) : [];
+      } catch {
+        ids = [];
+      }
+    }
 
     for (const sfinId of ids) {
       await dialectHelper.insertIgnore(knex, 'simplefin_discarded_ids', {
