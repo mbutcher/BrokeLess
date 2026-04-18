@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAccounts } from '../hooks/useAccounts';
 import { AccountCard } from '../components/AccountCard';
@@ -63,28 +63,34 @@ export function AccountsPage() {
     return sum + (a.isAsset ? balance : -balance);
   }, 0);
 
-  function sortAccounts(list: Account[]): Account[] {
-    const sorted = [...list];
-    switch (sortBy) {
-      case 'name':
-        sorted.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      case 'type':
-        sorted.sort((a, b) => a.type.localeCompare(b.type) || a.name.localeCompare(b.name));
-        break;
-      case 'institution':
-        sorted.sort((a, b) => {
-          const instA = a.institution ?? '';
-          const instB = b.institution ?? '';
-          return instA.localeCompare(instB) || a.name.localeCompare(b.name);
-        });
-        break;
-    }
-    return sorted;
-  }
+  const sortAccounts = useCallback(
+    (list: Account[]): Account[] => {
+      const sorted = [...list];
+      switch (sortBy) {
+        case 'name':
+          sorted.sort((a, b) => a.name.localeCompare(b.name));
+          break;
+        case 'type':
+          sorted.sort((a, b) => a.type.localeCompare(b.type) || a.name.localeCompare(b.name));
+          break;
+        case 'institution':
+          sorted.sort((a, b) => {
+            const instA = a.institution ?? '';
+            const instB = b.institution ?? '';
+            return instA.localeCompare(instB) || a.name.localeCompare(b.name);
+          });
+          break;
+      }
+      return sorted;
+    },
+    [sortBy]
+  );
 
-  const sortedActive = useMemo(() => sortAccounts(activeAccounts), [activeAccounts, sortBy]);
-  const sortedArchived = useMemo(() => sortAccounts(archivedAccounts), [archivedAccounts, sortBy]);
+  const sortedActive = useMemo(() => sortAccounts(activeAccounts), [activeAccounts, sortAccounts]);
+  const sortedArchived = useMemo(
+    () => sortAccounts(archivedAccounts),
+    [archivedAccounts, sortAccounts]
+  );
 
   const myAccounts = sortedActive.filter((a) => a.userId === currentUserId);
   const sharedAccounts = sortedActive.filter((a) => a.userId !== currentUserId);

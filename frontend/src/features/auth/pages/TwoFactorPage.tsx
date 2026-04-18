@@ -8,14 +8,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@comp
 export function TwoFactorPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { twoFactorState } = useAuthStore();
+  const { twoFactorState, isAuthenticated } = useAuthStore();
 
-  // If no pending 2FA state, redirect to login
+  // If no pending 2FA state and not already authenticated (e.g. after successful
+  // WebAuthn flow clears twoFactorState before the route change lands), redirect to login.
   useEffect(() => {
-    if (!twoFactorState) {
+    if (!twoFactorState && !isAuthenticated) {
       navigate('/login', { replace: true });
     }
-  }, [twoFactorState, navigate]);
+  }, [twoFactorState, isAuthenticated, navigate]);
 
   if (!twoFactorState) return null;
 

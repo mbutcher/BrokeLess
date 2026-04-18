@@ -30,7 +30,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
   setAccessToken: (accessToken) => set({ accessToken }),
 
   setTwoFactorRequired: (twoFactorToken, methods) =>
-    set({ twoFactorState: { twoFactorToken, methods }, isAuthenticated: false }),
+    set({ twoFactorState: { twoFactorToken, methods }, isAuthenticated: false, accessToken: null }),
 
   clearAuth: () => {
     // Clear the IndexedDB encryption key from memory on logout.

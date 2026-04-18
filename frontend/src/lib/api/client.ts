@@ -23,10 +23,12 @@ export function configureApiClient(
   clearAuth = authClearer;
 }
 
-// Request interceptor: attach Authorization header from in-memory store
+// Request interceptor: attach Authorization header from in-memory store.
+// Does NOT override an explicit Authorization header already set on the request
+// (e.g. the 2fa_pending token passed by totpVerify).
 apiClient.interceptors.request.use((config) => {
   const token = getAccessToken?.();
-  if (token) {
+  if (token && !config.headers.Authorization) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
