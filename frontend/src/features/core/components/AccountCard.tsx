@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@lib/utils';
 import { useAuthStore } from '@features/auth/stores/authStore';
@@ -10,10 +9,11 @@ import type { Account } from '../types';
 interface AccountCardProps {
   account: Account;
   onClick?: () => void;
+  onDebtDetailClick?: (accountId: string) => void;
   className?: string;
 }
 
-export function AccountCard({ account, onClick, className }: AccountCardProps) {
+export function AccountCard({ account, onClick, onDebtDetailClick, className }: AccountCardProps) {
   const { t } = useTranslation();
   const currentUserId = useAuthStore((s) => s.user?.id);
   const defaultCurrency = useAuthStore((s) => s.user?.defaultCurrency ?? 'CAD');
@@ -67,14 +67,14 @@ export function AccountCard({ account, onClick, className }: AccountCardProps) {
             {account.annualRate != null && (
               <span className="text-xs text-gray-400 shrink-0">· {(account.annualRate * 100).toFixed(2)}% APR</span>
             )}
-            {LIABILITY_TYPES.includes(account.type) && account.isActive && (
-              <Link
-                to={`/accounts/${account.id}/debt`}
-                className="text-xs text-blue-600 hover:underline shrink-0"
-                onClick={(e) => e.stopPropagation()}
+            {LIABILITY_TYPES.includes(account.type) && account.isActive && onDebtDetailClick && (
+              <button
+                type="button"
+                className="text-xs text-primary hover:underline shrink-0"
+                onClick={(e) => { e.stopPropagation(); onDebtDetailClick(account.id); }}
               >
                 · {t('accounts.debtDetail')}
-              </Link>
+              </button>
             )}
           </div>
 

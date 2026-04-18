@@ -550,6 +550,10 @@
     "totalOutstanding": "Total Outstanding",
     "estMonthlyInterest": "Est. Monthly Interest",
     "noRateWarning": "Some accounts have no rate set.",
+    "noRate": "No rate set —",
+    "addRate": "add via Debt Detail",
+    "debtDetail": "Debt detail",
+    "whatIfResult": "Pay off {{months}} months sooner · save ${{interest}} interest. New payoff: {{date}}",
     "rateDesc": "Rate ↓ (Avalanche)",
     "rateAsc": "Rate ↑",
     "balanceDesc": "Balance ↓",
@@ -620,6 +624,9 @@
     "whatIfDesc": "Enter an extra monthly payment to see how much sooner you'd pay off the loan.",
     "whatIfDescCC": "Enter an extra monthly payment above the minimum to see how much sooner you'd pay off the balance.",
     "extraMonthlyPlaceholder": "Extra monthly payment",
+    "extraMonthlyPlaceholderShort": "Extra/mo",
+    "setupPrompt": "Set up debt details",
+    "setupPromptSuffix": "to use the paydown calculator.",
     "whatIfResult": "Save {{months}} months and ${{interest}} in interest. Payoff: {{date}}"
   },
   "reports": {

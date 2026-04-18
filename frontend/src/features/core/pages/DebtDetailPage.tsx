@@ -1,9 +1,14 @@
 import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@components/ui/dialog';
 import { useAccounts } from '../hooks/useAccounts';
 import {
   useDebtSchedule,
@@ -250,7 +255,11 @@ function LoanScheduleForm({
             </div>
             <div>
               <label className={labelClass}>{t('debt.asOfDate')}</label>
-              <input {...simplifiedForm.register('asOfDate')} type="date" className={inputClass} />
+              <input
+                {...simplifiedForm.register('asOfDate')}
+                type="date"
+                className={inputClass}
+              />
               <FieldError message={simplifiedForm.formState.errors.asOfDate?.message} />
             </div>
             <div>
@@ -341,8 +350,10 @@ function CCScheduleForm({
   });
 
   const paymentType = watch('minimumPaymentType');
-  const showAmount = paymentType === 'fixed' || paymentType === 'greater_of' || paymentType === 'lesser_of';
-  const showPercent = paymentType === 'percentage' || paymentType === 'greater_of' || paymentType === 'lesser_of';
+  const showAmount =
+    paymentType === 'fixed' || paymentType === 'greater_of' || paymentType === 'lesser_of';
+  const showPercent =
+    paymentType === 'percentage' || paymentType === 'greater_of' || paymentType === 'lesser_of';
 
   const onSubmit = (values: CCValues) => {
     upsert.mutate(
@@ -355,7 +366,6 @@ function CCScheduleForm({
         minimumPaymentPercent:
           values.minimumPaymentPercent != null ? values.minimumPaymentPercent / 100 : null,
         creditLimit: values.creditLimit ?? null,
-        // Null out all loan fields
         principal: null,
         termMonths: null,
         originationDate: null,
@@ -385,7 +395,10 @@ function CCScheduleForm({
         <div>
           <label className={labelClass}>{t('debt.cashAdvanceRate')}</label>
           <input
-            {...register('cashAdvanceRatePct', { valueAsNumber: true, setValueAs: (v) => (v === '' || isNaN(v) ? null : v) })}
+            {...register('cashAdvanceRatePct', {
+              valueAsNumber: true,
+              setValueAs: (v) => (v === '' || isNaN(v) ? null : v),
+            })}
             type="number"
             step="0.001"
             min="0"
@@ -415,7 +428,10 @@ function CCScheduleForm({
           <div>
             <label className={labelClass}>{t('debt.minimumPaymentAmount')}</label>
             <input
-              {...register('minimumPaymentAmount', { valueAsNumber: true, setValueAs: (v) => (v === '' || isNaN(v) ? null : v) })}
+              {...register('minimumPaymentAmount', {
+                valueAsNumber: true,
+                setValueAs: (v) => (v === '' || isNaN(v) ? null : v),
+              })}
               type="number"
               step="0.01"
               min="0.01"
@@ -428,7 +444,10 @@ function CCScheduleForm({
           <div>
             <label className={labelClass}>{t('debt.minimumPaymentPercent')}</label>
             <input
-              {...register('minimumPaymentPercent', { valueAsNumber: true, setValueAs: (v) => (v === '' || isNaN(v) ? null : v) })}
+              {...register('minimumPaymentPercent', {
+                valueAsNumber: true,
+                setValueAs: (v) => (v === '' || isNaN(v) ? null : v),
+              })}
               type="number"
               step="0.1"
               min="0"
@@ -442,7 +461,10 @@ function CCScheduleForm({
         <div>
           <label className={labelClass}>{t('debt.creditLimit')}</label>
           <input
-            {...register('creditLimit', { valueAsNumber: true, setValueAs: (v) => (v === '' || isNaN(v) ? null : v) })}
+            {...register('creditLimit', {
+              valueAsNumber: true,
+              setValueAs: (v) => (v === '' || isNaN(v) ? null : v),
+            })}
             type="number"
             step="0.01"
             min="0"
@@ -465,7 +487,13 @@ function CCScheduleForm({
 
 // ─── AmortizationTable ────────────────────────────────────────────────────────
 
-function AmortizationTable({ accountId, isRevolving }: { accountId: string; isRevolving: boolean }) {
+function AmortizationTable({
+  accountId,
+  isRevolving,
+}: {
+  accountId: string;
+  isRevolving: boolean;
+}) {
   const { data: scheduleData } = useDebtSchedule(accountId);
   const { data: amortData, isLoading } = useAmortizationSchedule(accountId, !!scheduleData);
   const [showAll, setShowAll] = useState(false);
@@ -514,8 +542,12 @@ function AmortizationTable({ accountId, isRevolving }: { accountId: string; isRe
               <tr key={row.month} className="border-b border-border/40">
                 <td className="py-1.5 pr-4 text-muted-foreground">{row.month}</td>
                 <td className="py-1.5 pr-4 text-right tabular-nums">{fmt(row.payment)}</td>
-                <td className="py-1.5 pr-4 text-right tabular-nums text-success">{fmt(row.principal)}</td>
-                <td className="py-1.5 pr-4 text-right tabular-nums text-destructive">{fmt(row.interest)}</td>
+                <td className="py-1.5 pr-4 text-right tabular-nums text-success">
+                  {fmt(row.principal)}
+                </td>
+                <td className="py-1.5 pr-4 text-right tabular-nums text-destructive">
+                  {fmt(row.interest)}
+                </td>
                 <td className="py-1.5 text-right tabular-nums">{fmt(row.balance)}</td>
               </tr>
             ))}
@@ -545,45 +577,42 @@ function ExtraPaymentCalculator({ accountId }: { accountId: string }) {
   const { data: whatIf } = useWhatIf(accountId, isNaN(extraNum) ? null : extraNum);
 
   return (
-    <div>
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative">
-          <span className="absolute left-3 top-2 text-muted-foreground text-sm">$</span>
-          <input
-            type="number"
-            value={extra}
-            onChange={(e) => setExtra(e.target.value)}
-            min="0.01"
-            step="0.01"
-            placeholder={t('debt.extraMonthlyPlaceholder')}
-            className="pl-7 border border-border rounded-lg px-3 py-2 text-sm w-52 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-          />
-        </div>
-        {whatIf && (
-          <p className="text-sm text-foreground">
-            {t('debt.whatIfResult', {
-              months: whatIf.monthsSaved,
-              interest: whatIf.interestSaved.toFixed(2),
-              date: whatIf.newPayoffDate,
-            })}
-          </p>
-        )}
+    <div className="flex items-center gap-3 flex-wrap">
+      <div className="relative">
+        <span className="absolute left-3 top-2 text-muted-foreground text-sm">$</span>
+        <input
+          type="number"
+          value={extra}
+          onChange={(e) => setExtra(e.target.value)}
+          min="0.01"
+          step="0.01"
+          placeholder={t('debt.extraMonthlyPlaceholder')}
+          className="pl-7 border border-border rounded-lg px-3 py-2 text-sm w-52 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+        />
       </div>
+      {whatIf && (
+        <p className="text-sm text-foreground">
+          {t('debt.whatIfResult', {
+            months: whatIf.monthsSaved,
+            interest: whatIf.interestSaved.toFixed(2),
+            date: whatIf.newPayoffDate,
+          })}
+        </p>
+      )}
     </div>
   );
 }
 
-// ─── DebtDetailPage ───────────────────────────────────────────────────────────
+// ─── DebtDetailContent ────────────────────────────────────────────────────────
+// Inner content — reused by both the modal and (optionally) a standalone page.
 
-export function DebtDetailPage() {
+function DebtDetailContent({ accountId }: { accountId: string }) {
   const { t } = useTranslation();
-  const { accountId } = useParams<{ accountId: string }>();
   const { data: accounts = [] } = useAccounts();
-  const { data: schedule, isLoading, isError, error } = useDebtSchedule(accountId!);
-  const deleteSchedule = useDeleteDebtSchedule(accountId!);
+  const { data: schedule, isLoading, isError, error } = useDebtSchedule(accountId);
+  const deleteSchedule = useDeleteDebtSchedule(accountId);
 
   const account = accounts.find((a) => a.id === accountId);
-
   const [editing, setEditing] = useState(false);
 
   const hasSchedule = !!schedule;
@@ -591,7 +620,6 @@ export function DebtDetailPage() {
     isError && (error as { response?: { status: number } })?.response?.status === 404;
 
   const isCC = account?.type === 'credit_card' || account?.type === 'line_of_credit';
-  const isRevolving = isCC; // used for amortization table note
 
   const fmt = (n: number | null) =>
     n != null
@@ -599,8 +627,7 @@ export function DebtDetailPage() {
       : '—';
   const pct = (n: number | null) => (n != null ? `${(n * 100).toFixed(3)}%` : '—');
 
-  // Build defaultValues for edit mode
-  const loanDefaults =
+  const loanDefaults: LoanDefaults | undefined =
     schedule && !isCC
       ? {
           principal: schedule.principal ?? undefined,
@@ -612,7 +639,7 @@ export function DebtDetailPage() {
         }
       : undefined;
 
-  const ccDefaults =
+  const ccDefaults: Partial<CCValues> | undefined =
     schedule && isCC
       ? {
           annualRatePct: schedule.annualRate * 100,
@@ -621,45 +648,38 @@ export function DebtDetailPage() {
           minimumPaymentType: schedule.minimumPaymentType ?? undefined,
           minimumPaymentAmount: schedule.minimumPaymentAmount ?? null,
           minimumPaymentPercent:
-            schedule.minimumPaymentPercent != null ? schedule.minimumPaymentPercent * 100 : null,
+            schedule.minimumPaymentPercent != null
+              ? schedule.minimumPaymentPercent * 100
+              : null,
           creditLimit: schedule.creditLimit ?? null,
         }
       : undefined;
 
   const minPayLabel = (type: string | null) => {
     switch (type) {
-      case 'fixed': return t('debt.minPayFixed');
-      case 'percentage': return t('debt.minPayPercentage');
-      case 'greater_of': return t('debt.minPayGreaterOf');
-      case 'lesser_of': return t('debt.minPayLesserOf');
-      default: return '—';
+      case 'fixed':
+        return t('debt.minPayFixed');
+      case 'percentage':
+        return t('debt.minPayPercentage');
+      case 'greater_of':
+        return t('debt.minPayGreaterOf');
+      case 'lesser_of':
+        return t('debt.minPayLesserOf');
+      default:
+        return '—';
     }
   };
 
-  return (
-    <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
-      <div>
-        <Link to="/accounts" className="text-sm text-primary hover:underline">
-          {t('debt.backToAccounts')}
-        </Link>
-        <h1 className="mt-2 text-2xl font-bold text-foreground">
-          {account
-            ? t('debt.titleWithAccount', { name: account.name })
-            : t('debt.title')}
-        </h1>
-        {account && (
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {t(`accounts.types.${account.type}`)}
-          </p>
-        )}
-      </div>
+  const showForm = scheduleNotFound || editing;
 
-      {/* Schedule form / display */}
-      <section className="bg-card rounded-xl border border-border p-6">
+  return (
+    <div className="space-y-6">
+      {/* Schedule section */}
+      <section className="bg-muted/30 rounded-xl border border-border p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-foreground">
+          <h3 className="text-sm font-semibold text-foreground">
             {isCC ? t('debt.ccLOCDetails') : t('debt.loanSchedule')}
-          </h2>
+          </h3>
           {hasSchedule && !editing && (
             <div className="flex gap-3">
               <button
@@ -679,9 +699,9 @@ export function DebtDetailPage() {
         </div>
 
         {isLoading ? (
-          <div className="h-32 bg-muted animate-pulse rounded-lg" />
+          <div className="h-28 bg-muted animate-pulse rounded-lg" />
         ) : hasSchedule && !editing ? (
-          // ── Read-only summary ──────────────────────────────────────────────
+          // Read-only summary
           isCC ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
               <div>
@@ -707,7 +727,9 @@ export function DebtDetailPage() {
               {schedule.minimumPaymentPercent != null && (
                 <div>
                   <p className="text-muted-foreground">{t('debt.minimumPaymentPercent')}</p>
-                  <p className="font-medium">{(schedule.minimumPaymentPercent * 100).toFixed(2)}%</p>
+                  <p className="font-medium">
+                    {(schedule.minimumPaymentPercent * 100).toFixed(2)}%
+                  </p>
                 </div>
               )}
               {schedule.creditLimit != null && (
@@ -751,64 +773,89 @@ export function DebtDetailPage() {
               </div>
             </div>
           )
-        ) : (
-          // ── Edit / create form ─────────────────────────────────────────────
-          (scheduleNotFound || editing) && (
-            isCC ? (
+        ) : showForm ? (
+          // Form (create or edit)
+          <>
+            {scheduleNotFound && !editing && (
+              <p className="text-sm text-muted-foreground mb-4">{t('debt.noSchedule')}</p>
+            )}
+            {isCC ? (
               <CCScheduleForm
-                accountId={accountId!}
+                accountId={accountId}
                 defaultValues={ccDefaults}
                 onSuccess={() => setEditing(false)}
               />
             ) : (
               <LoanScheduleForm
-                accountId={accountId!}
+                accountId={accountId}
                 initialMode={schedule?.isSimplified ? 'simplified' : 'full'}
                 defaultValues={loanDefaults}
                 onSuccess={() => setEditing(false)}
               />
-            )
-          )
-        )}
-
-        {/* Show form when no schedule exists */}
-        {!hasSchedule && !isLoading && !scheduleNotFound && null}
-        {scheduleNotFound && !editing && (
-          <div>
-            <p className="text-sm text-muted-foreground mb-4">{t('debt.noSchedule')}</p>
-            {isCC ? (
-              <CCScheduleForm accountId={accountId!} onSuccess={() => setEditing(false)} />
-            ) : (
-              <LoanScheduleForm
-                accountId={accountId!}
-                initialMode="full"
-                onSuccess={() => setEditing(false)}
-              />
             )}
-          </div>
-        )}
+          </>
+        ) : null}
       </section>
 
       {/* Payoff simulation / amortization table */}
       {hasSchedule && (
-        <section className="bg-card rounded-xl border border-border p-6">
-          <h2 className="text-base font-semibold text-foreground mb-4">
-            {isRevolving ? t('debt.payoffSimulation') : t('debt.amortization')}
-          </h2>
-          <AmortizationTable accountId={accountId!} isRevolving={isRevolving} />
+        <section className="bg-muted/30 rounded-xl border border-border p-5">
+          <h3 className="text-sm font-semibold text-foreground mb-4">
+            {isCC ? t('debt.payoffSimulation') : t('debt.amortization')}
+          </h3>
+          <AmortizationTable accountId={accountId} isRevolving={isCC} />
         </section>
       )}
 
       {/* What-if calculator */}
       {hasSchedule && (
-        <section className="bg-card rounded-xl border border-border p-6">
-          <h2 className="text-base font-semibold text-foreground mb-2">{t('debt.whatIf')}</h2>
+        <section className="bg-muted/30 rounded-xl border border-border p-5">
+          <h3 className="text-sm font-semibold text-foreground mb-1">{t('debt.whatIf')}</h3>
           <p className="text-sm text-muted-foreground mb-4">
-            {isRevolving ? t('debt.whatIfDescCC') : t('debt.whatIfDesc')}
+            {isCC ? t('debt.whatIfDescCC') : t('debt.whatIfDesc')}
           </p>
-          <ExtraPaymentCalculator accountId={accountId!} />
+          <ExtraPaymentCalculator accountId={accountId} />
         </section>
       )}
     </div>
   );
 }
+
+// ─── DebtDetailModal ──────────────────────────────────────────────────────────
+
+export function DebtDetailModal({
+  accountId,
+  open,
+  onClose,
+}: {
+  accountId: string | null;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+  const { data: accounts = [] } = useAccounts();
+  const account = accountId ? accounts.find((a) => a.id === accountId) : null;
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {account
+              ? t('debt.titleWithAccount', { name: account.name })
+              : t('debt.title')}
+          </DialogTitle>
+          {account && (
+            <p className="text-sm text-muted-foreground">
+              {t(`accounts.types.${account.type}`)}
+            </p>
+          )}
+        </DialogHeader>
+        {accountId && <DebtDetailContent accountId={accountId} />}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Keep a named page export so the existing route still works as a fallback.
+export { DebtDetailModal as DebtDetailPage };

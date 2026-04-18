@@ -16,7 +16,6 @@ import { DashboardPage } from '@features/dashboard/pages/DashboardPage';
 import { AccountsPage } from '@features/core/pages/AccountsPage';
 import { TransactionsPage } from '@features/core/pages/TransactionsPage';
 import { BudgetPage } from '@features/core/pages/BudgetPage';
-import { DebtDetailPage } from '@features/core/pages/DebtDetailPage';
 import { LiabilitiesPage } from '@features/core/pages/LiabilitiesPage';
 import { SavingsGoalsPage } from '@features/core/pages/SavingsGoalsPage';
 import { ImportsPage } from '@features/integrations/pages/ImportsPage';
@@ -80,7 +79,7 @@ function App() {
           <Route path="/transactions" element={<TransactionsPage />} />
           <Route path="/budget" element={<BudgetPage />} />
           <Route path="/budgets" element={<BudgetPage />} />
-          <Route path="/accounts/:accountId/debt" element={<DebtDetailPage />} />
+          <Route path="/accounts/:accountId/debt" element={<LiabilitiesPage />} />
           <Route path="/liabilities" element={<LiabilitiesPage />} />
           <Route path="/savings-goals" element={<SavingsGoalsPage />} />
           <Route path="/reports" element={<ReportsPage />} />

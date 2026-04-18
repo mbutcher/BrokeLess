@@ -551,6 +551,10 @@
     "totalOutstanding": "Total impayé",
     "estMonthlyInterest": "Intérêts mensuels est.",
     "noRateWarning": "Certains comptes n'ont pas de taux défini.",
+    "noRate": "Taux non défini —",
+    "addRate": "ajouter via Détails de la dette",
+    "debtDetail": "Détails de la dette",
+    "whatIfResult": "Remboursez {{months}} mois plus tôt · économisez {{interest}}$ en intérêts. Nouvel échéance: {{date}}",
     "rateDesc": "Taux ↓ (Avalanche)",
     "rateAsc": "Taux ↑",
     "balanceDesc": "Solde ↓",
@@ -621,6 +625,9 @@
     "whatIfDesc": "Entrez un paiement mensuel supplémentaire pour voir combien de temps plus tôt vous rembourserez le prêt.",
     "whatIfDescCC": "Entrez un paiement supplémentaire au-dessus du minimum pour voir combien de temps plus tôt vous rembourserez le solde.",
     "extraMonthlyPlaceholder": "Paiement mensuel supplémentaire",
+    "extraMonthlyPlaceholderShort": "Extra/mois",
+    "setupPrompt": "Configurer les détails de la dette",
+    "setupPromptSuffix": "pour utiliser le calculateur de remboursement.",
     "whatIfResult": "Économisez {{months}} mois et {{interest}}$ en intérêts. Remboursement: {{date}}"
   },
   "reports": {

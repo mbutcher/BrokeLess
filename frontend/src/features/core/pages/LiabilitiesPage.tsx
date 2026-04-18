@@ -1,8 +1,8 @@
 import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAccounts } from '../hooks/useAccounts';
 import { useWhatIf, useDebtSchedules } from '../hooks/useDebt';
+import { DebtDetailModal } from './DebtDetailPage';
 import type { Account } from '../types';
 
 // ─── Debt payoff recommendations ──────────────────────────────────────────────
@@ -124,18 +124,31 @@ const selectClass =
 
 // ─── Per-account What-If calculator ──────────────────────────────────────────
 
-function WhatIfRow({ accountId, hasSchedule }: { accountId: string; hasSchedule?: boolean }) {
+function WhatIfRow({
+  accountId,
+  hasSchedule,
+  onDebtDetailClick,
+}: {
+  accountId: string;
+  hasSchedule?: boolean;
+  onDebtDetailClick: (id: string) => void;
+}) {
+  const { t } = useTranslation();
   const [extra, setExtra] = useState('');
   const extraNum = parseFloat(extra);
   const { data: whatIf, isError } = useWhatIf(accountId, isNaN(extraNum) ? null : extraNum);
 
   if (hasSchedule === false || isError) {
     return (
-      <p className="text-xs text-gray-400 mt-1">
-        <Link to={`/accounts/${accountId}/debt`} className="text-blue-600 hover:underline">
-          Set up amortization schedule
-        </Link>{' '}
-        to use the paydown calculator.
+      <p className="text-xs text-muted-foreground mt-1">
+        <button
+          type="button"
+          onClick={() => onDebtDetailClick(accountId)}
+          className="text-primary hover:underline"
+        >
+          {t('debt.setupPrompt')}
+        </button>{' '}
+        {t('debt.setupPromptSuffix')}
       </p>
     );
   }
@@ -143,26 +156,24 @@ function WhatIfRow({ accountId, hasSchedule }: { accountId: string; hasSchedule?
   return (
     <div className="mt-2 flex flex-wrap items-center gap-3">
       <div className="relative">
-        <span className="absolute left-2.5 top-1.5 text-gray-400 text-xs">$</span>
+        <span className="absolute left-2.5 top-1.5 text-muted-foreground text-xs">$</span>
         <input
           type="number"
           value={extra}
           onChange={(e) => setExtra(e.target.value)}
           min="0.01"
           step="0.01"
-          placeholder="Extra/mo"
-          className="pl-6 border border-gray-200 rounded-md px-2 py-1.5 text-xs w-32 focus:outline-none focus:ring-1 focus:ring-blue-400"
+          placeholder={t('debt.extraMonthlyPlaceholderShort')}
+          className="pl-6 border border-border rounded-md px-2 py-1.5 text-xs w-32 bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
         />
       </div>
       {whatIf && (
-        <p className="text-xs text-gray-600">
-          Pay off{' '}
-          <span className="font-semibold text-green-600">{whatIf.monthsSaved} months</span> sooner
-          {' · '}save{' '}
-          <span className="font-semibold text-green-600">
-            ${whatIf.interestSaved.toFixed(2)}
-          </span>{' '}
-          interest. New payoff: <span className="font-medium">{whatIf.newPayoffDate}</span>
+        <p className="text-xs text-foreground">
+          {t('liabilities.whatIfResult', {
+            months: whatIf.monthsSaved,
+            interest: whatIf.interestSaved.toFixed(2),
+            date: whatIf.newPayoffDate,
+          })}
         </p>
       )}
     </div>
@@ -171,15 +182,23 @@ function WhatIfRow({ accountId, hasSchedule }: { accountId: string; hasSchedule?
 
 // ─── Single liability row ─────────────────────────────────────────────────────
 
-function LiabilityRow({ account, hasSchedule }: { account: Account; hasSchedule?: boolean }) {
+function LiabilityRow({
+  account,
+  hasSchedule,
+  onDebtDetailClick,
+}: {
+  account: Account;
+  hasSchedule?: boolean;
+  onDebtDetailClick: (id: string) => void;
+}) {
   const { t } = useTranslation();
   const absBalance = Math.abs(account.currentBalance);
   const isNegativeBalance = account.currentBalance < 0;
   const monthlyInterest =
-    account.annualRate != null ? absBalance * account.annualRate / 12 : null;
+    account.annualRate != null ? (absBalance * account.annualRate) / 12 : null;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-4">
+    <div className="bg-card border border-border rounded-xl p-4">
       <div className="flex items-start justify-between gap-4">
         {/* Left: name + type */}
         <div className="flex items-start gap-3 min-w-0 flex-1">
@@ -188,51 +207,57 @@ function LiabilityRow({ account, hasSchedule }: { account: Account; hasSchedule?
             style={{ height: 36, backgroundColor: account.color ?? '#6b7280' }}
           />
           <div className="min-w-0">
-            <p className="font-medium text-gray-900 truncate">{account.name}</p>
-            <p className="text-sm text-gray-500">
+            <p className="font-medium text-foreground truncate">{account.name}</p>
+            <p className="text-sm text-muted-foreground">
               {t(`accounts.types.${account.type}`)}
               {account.institution && ` · ${account.institution}`}
             </p>
             {account.annualRate != null ? (
-              <p className="text-xs text-gray-400 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {(account.annualRate * 100).toFixed(2)}% APR
                 {monthlyInterest !== null && (
-                  <span className="ml-2 text-orange-500 font-medium">
+                  <span className="ml-2 text-warning font-medium">
                     ~${monthlyInterest.toFixed(2)}/mo interest
                   </span>
                 )}
               </p>
             ) : (
-              <p className="text-xs text-gray-400 mt-0.5">
-                No rate set —{' '}
-                <Link
-                  to={`/accounts/${account.id}/debt`}
-                  className="text-blue-600 hover:underline"
-                  onClick={(e) => e.stopPropagation()}
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {t('liabilities.noRate')}{' '}
+                <button
+                  type="button"
+                  onClick={() => onDebtDetailClick(account.id)}
+                  className="text-primary hover:underline"
                 >
-                  add via Debt Detail
-                </Link>
+                  {t('liabilities.addRate')}
+                </button>
               </p>
             )}
           </div>
         </div>
 
-        {/* Right: balance */}
+        {/* Right: balance + debt detail button */}
         <div className="text-right flex-shrink-0">
-          <p className="font-semibold tabular-nums text-gray-900">
-            {isNegativeBalance ? '-' : ''}{account.currency} {absBalance.toFixed(2)}
+          <p className="font-semibold tabular-nums text-foreground">
+            {isNegativeBalance ? '-' : ''}
+            {account.currency} {absBalance.toFixed(2)}
           </p>
-          <Link
-            to={`/accounts/${account.id}/debt`}
-            className="text-xs text-blue-600 hover:underline mt-0.5 block"
+          <button
+            type="button"
+            onClick={() => onDebtDetailClick(account.id)}
+            className="text-xs text-primary hover:underline mt-0.5 block"
           >
-            Debt detail →
-          </Link>
+            {t('liabilities.debtDetail')} →
+          </button>
         </div>
       </div>
 
       {/* What-if row */}
-      <WhatIfRow accountId={account.id} hasSchedule={hasSchedule} />
+      <WhatIfRow
+        accountId={account.id}
+        hasSchedule={hasSchedule}
+        onDebtDetailClick={onDebtDetailClick}
+      />
     </div>
   );
 }
@@ -243,6 +268,7 @@ export function LiabilitiesPage() {
   const { t } = useTranslation();
   const { data: accounts = [], isLoading } = useAccounts();
   const [sortBy, setSortBy] = useState<SortKey>('rate-desc');
+  const [debtModalAccountId, setDebtModalAccountId] = useState<string | null>(null);
 
   const liabilities = useMemo(() => {
     const list = accounts.filter(
@@ -307,12 +333,12 @@ export function LiabilitiesPage() {
           ))}
         </div>
       ) : liabilities.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">
+        <div className="text-center py-12 text-muted-foreground">
           <p className="text-sm">{t('liabilities.empty')}</p>
           <p className="text-xs mt-1">
-            <Link to="/accounts" className="text-blue-600 hover:underline">
+            <a href="/accounts" className="text-primary hover:underline">
               {t('liabilities.addAccount')}
-            </Link>{' '}
+            </a>{' '}
             of type Credit Card, Loan, Line of Credit, or Mortgage.
           </p>
         </div>
@@ -358,7 +384,12 @@ export function LiabilitiesPage() {
           {/* Liability cards */}
           <div className="space-y-3">
             {liabilities.map((account) => (
-              <LiabilityRow key={account.id} account={account} hasSchedule={schedules.get(account.id)} />
+              <LiabilityRow
+                key={account.id}
+                account={account}
+                hasSchedule={schedules.get(account.id)}
+                onDebtDetailClick={setDebtModalAccountId}
+              />
             ))}
           </div>
 
@@ -366,6 +397,12 @@ export function LiabilitiesPage() {
           <PayoffRecommendations liabilities={liabilities} />
         </>
       )}
+
+      <DebtDetailModal
+        accountId={debtModalAccountId}
+        open={debtModalAccountId !== null}
+        onClose={() => setDebtModalAccountId(null)}
+      />
     </div>
   );
 }

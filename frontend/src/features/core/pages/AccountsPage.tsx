@@ -7,6 +7,7 @@ import { useExchangeRates } from '../hooks/useExchangeRate';
 import { useAuthStore } from '@features/auth/stores/authStore';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@components/ui/dialog';
 import { ManageSharesDialog } from '@features/household/components/ManageSharesDialog';
+import { DebtDetailModal } from './DebtDetailPage';
 import type { Account } from '../types';
 
 type SortKey = 'name' | 'type' | 'institution';
@@ -22,6 +23,7 @@ export function AccountsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Account | null>(null);
   const [sharingAccount, setSharingAccount] = useState<Account | null>(null);
+  const [debtModalAccountId, setDebtModalAccountId] = useState<string | null>(null);
 
   // Sort state
   const [sortBy, setSortBy] = useState<SortKey>('name');
@@ -221,6 +223,7 @@ export function AccountsPage() {
                 key={account.id}
                 account={account}
                 onClick={() => openEdit(account)}
+                onDebtDetailClick={setDebtModalAccountId}
               />
             ))}
           </div>
@@ -236,6 +239,7 @@ export function AccountsPage() {
                     key={account.id}
                     account={account}
                     onClick={() => openEdit(account)}
+                    onDebtDetailClick={setDebtModalAccountId}
                   />
                 ))}
               </div>
@@ -253,6 +257,7 @@ export function AccountsPage() {
                     key={account.id}
                     account={account}
                     onClick={() => openEdit(account)}
+                    onDebtDetailClick={setDebtModalAccountId}
                   />
                 ))}
               </div>
@@ -260,6 +265,12 @@ export function AccountsPage() {
           )}
         </>
       )}
+
+      <DebtDetailModal
+        accountId={debtModalAccountId}
+        open={debtModalAccountId !== null}
+        onClose={() => setDebtModalAccountId(null)}
+      />
     </div>
   );
 }
