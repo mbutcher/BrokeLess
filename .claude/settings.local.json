@@ -43,7 +43,9 @@
       "Bash(npx tsc:*)",
       "Read(//config/.ssh/**)",
       "mcp__claude_ai_Figma__generate_diagram",
-      "Bash(gh pr *)"
+      "Bash(gh pr *)",
+      "Bash(npm view:*)",
+      "Bash(npm run:*)"
     ]
   }
 }
