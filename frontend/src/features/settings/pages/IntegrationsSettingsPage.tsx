@@ -70,6 +70,7 @@ function SimplefinSection() {
     pendingReviews: number;
     unmappedAccounts: number;
   } | null>(null);
+  const [activeSyncMode, setActiveSyncMode] = useState<'normal' | 'full' | null>(null);
 
   const [scheduleForm, setScheduleForm] = useState<UpdateScheduleInput>({
     autoSyncEnabled: false,
@@ -103,9 +104,14 @@ function SimplefinSection() {
   }
 
   async function handleSync(full = false) {
+    setActiveSyncMode(full ? 'full' : 'normal');
     setSyncResult(null);
-    const res = await syncMutation.mutateAsync(full);
-    setSyncResult(res.data.data.result);
+    try {
+      const res = await syncMutation.mutateAsync(full);
+      setSyncResult(res.data.data.result);
+    } finally {
+      setActiveSyncMode(null);
+    }
   }
 
   async function handleSaveSchedule(e: React.FormEvent) {
@@ -209,7 +215,7 @@ function SimplefinSection() {
 
               <div className="flex gap-2 flex-wrap">
                 <Button variant="default" onClick={() => void handleSync(false)} disabled={syncMutation.isPending}>
-                  {syncMutation.isPending ? (
+                  {activeSyncMode === 'normal' ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
                     <RefreshCw className="mr-2 h-4 w-4" />
@@ -217,7 +223,7 @@ function SimplefinSection() {
                   {t('simplefin.syncNow')}
                 </Button>
                 <Button variant="outline" onClick={() => void handleSync(true)} disabled={syncMutation.isPending} title={t('simplefin.fullSyncHelp')}>
-                  {syncMutation.isPending ? (
+                  {activeSyncMode === 'full' ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
                     <RefreshCw className="mr-2 h-4 w-4" />

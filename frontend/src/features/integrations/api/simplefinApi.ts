@@ -31,7 +31,9 @@ export const simplefinApi = {
 
   sync: (full = false) =>
     apiClient.post<ApiResponse<{ result: SyncResult }>>(
-      full ? '/simplefin/sync?full=true' : '/simplefin/sync'
+      '/simplefin/sync',
+      {},
+      full ? { params: { full: 'true' } } : undefined
     ),
 
   // ─── Schedule ────────────────────────────────────────────────────────────────

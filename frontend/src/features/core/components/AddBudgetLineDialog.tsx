@@ -103,6 +103,23 @@ export function AddBudgetLineDialog({
 
   const topLevel = allCategories.filter((c) => c.parentId === null && c.isActive);
 
+  const buildDefaultValues = (): FormValues => ({
+    name: defaultName ?? '',
+    classification: defaultClassification ?? 'expense',
+    flexibility: 'fixed',
+    categoryId: defaultCategoryId ?? '',
+    subcategoryId: null,
+    accountId: defaultAccountId ?? null,
+    amount: defaultAmount ?? 0,
+    frequency: 'monthly',
+    frequencyInterval: null,
+    dayOfMonth1: null,
+    dayOfMonth2: null,
+    anchorDate: defaultAnchorDate ?? new Date().toISOString().substring(0, 10),
+    isPayPeriodAnchor: false,
+    notes: defaultNotes ?? null,
+  });
+
   const {
     register,
     handleSubmit,
@@ -112,44 +129,13 @@ export function AddBudgetLineDialog({
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      name: defaultName ?? '',
-      classification: defaultClassification ?? 'expense',
-      flexibility: 'fixed',
-      categoryId: defaultCategoryId ?? '',
-      subcategoryId: null,
-      accountId: defaultAccountId ?? null,
-      amount: defaultAmount ?? 0,
-      frequency: 'monthly',
-      frequencyInterval: null,
-      dayOfMonth1: null,
-      dayOfMonth2: null,
-      anchorDate: defaultAnchorDate ?? new Date().toISOString().substring(0, 10),
-      isPayPeriodAnchor: false,
-      notes: defaultNotes ?? null,
-    },
+    defaultValues: buildDefaultValues(),
   });
 
-  // Re-seed the form each time the dialog opens so that pre-fill props are applied.
+  // Re-seed the form each time the dialog opens so pre-fill props from the
+  // parent are applied (defaultValues in useForm only runs on initial mount).
   useEffect(() => {
-    if (open) {
-      reset({
-        name: defaultName ?? '',
-        classification: defaultClassification ?? 'expense',
-        flexibility: 'fixed',
-        categoryId: defaultCategoryId ?? '',
-        subcategoryId: null,
-        accountId: defaultAccountId ?? null,
-        amount: defaultAmount ?? 0,
-        frequency: 'monthly',
-        frequencyInterval: null,
-        dayOfMonth1: null,
-        dayOfMonth2: null,
-        anchorDate: defaultAnchorDate ?? new Date().toISOString().substring(0, 10),
-        isPayPeriodAnchor: false,
-        notes: defaultNotes ?? null,
-      });
-    }
+    if (open) reset(buildDefaultValues());
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 

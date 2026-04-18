@@ -4,10 +4,7 @@ import { cn } from '@lib/utils';
 import { CategoryBadge } from './CategoryBadge';
 import { AddBudgetLineDialog } from './AddBudgetLineDialog';
 import { useDeleteTransaction } from '../hooks/useTransactions';
-import type { Transaction } from '../types';
-import type { Category } from '../types';
-import type { Account } from '../types';
-import type { BudgetLineClassification } from '../types';
+import type { Transaction, Category, Account, BudgetLineClassification } from '../types';
 
 export interface TransactionListItemProps {
   transaction: Transaction;
@@ -113,17 +110,19 @@ export function TransactionListItem({ transaction: tx, category, account, onEdit
       </div>
     </div>
 
-    <AddBudgetLineDialog
-      open={showBudgetLineDialog}
-      defaultName={tx.payee ?? tx.description ?? ''}
-      defaultAmount={Math.abs(tx.amount)}
-      defaultClassification={(tx.amount < 0 ? 'expense' : 'income') as BudgetLineClassification}
-      defaultCategoryId={tx.categoryId ?? undefined}
-      defaultAccountId={tx.accountId}
-      defaultAnchorDate={tx.date.split('T')[0]}
-      defaultNotes={tx.notes ?? undefined}
-      onClose={() => setShowBudgetLineDialog(false)}
-    />
+    {showBudgetLineDialog && (
+      <AddBudgetLineDialog
+        open
+        defaultName={tx.payee ?? tx.description ?? ''}
+        defaultAmount={Math.abs(tx.amount)}
+        defaultClassification={(tx.amount < 0 ? 'expense' : 'income') as BudgetLineClassification}
+        defaultCategoryId={tx.categoryId ?? undefined}
+        defaultAccountId={tx.accountId}
+        defaultAnchorDate={tx.date.split('T')[0]}
+        defaultNotes={tx.notes ?? undefined}
+        onClose={() => setShowBudgetLineDialog(false)}
+      />
+    )}
     </>
   );
 }
