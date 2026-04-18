@@ -87,7 +87,7 @@ export const env = {
   // Rate Limiting
   rateLimit: {
     windowMs: parseInt(e['RATE_LIMIT_WINDOW_MS'] ?? '900000', 10),
-    maxRequests: parseInt(e['RATE_LIMIT_MAX_REQUESTS'] ?? '500', 10),
+    maxRequests: parseInt(e['RATE_LIMIT_MAX_REQUESTS'] ?? '2000', 10),
     loginMaxRequests: parseInt(e['LOGIN_RATE_LIMIT_MAX'] ?? '5', 10),
     loginWindowMs: parseInt(e['LOGIN_RATE_LIMIT_WINDOW_MS'] ?? '900000', 10),
   },

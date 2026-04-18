@@ -26,10 +26,14 @@ const queryClient = new QueryClient({
       staleTime: 60 * 1000, // 1 min
       gcTime: 5 * 60 * 1000, // 5 min
       retry: (failureCount, error) => {
-        // Don't retry 401/403 — the interceptor handles token refresh
+        // Don't retry client errors that won't succeed on a second attempt:
+        //   400/422 — validation failures; request won't change between retries
+        //   401/403 — the Axios interceptor handles token refresh
+        //   404     — missing resources won't appear after retry
+        //   429     — retrying a rate-limited request multiplies the damage
         if (error && typeof error === 'object' && 'response' in error) {
           const status = (error as { response?: { status?: number } }).response?.status;
-          if (status === 401 || status === 403 || status === 404) return false;
+          if (status === 400 || status === 401 || status === 403 || status === 404 || status === 422 || status === 429) return false;
         }
         return failureCount < 2;
       },
