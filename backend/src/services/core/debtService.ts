@@ -17,22 +17,32 @@ const round2 = (n: number): number => Math.round(n * 100) / 100;
 
 // ─── Fixed-term amortization (loans / mortgages) ──────────────────────────────
 
+const PERIODS_PER_YEAR: Record<string, number> = {
+  weekly: 52,
+  biweekly: 26,
+  semimonthly: 24,
+  monthly: 12,
+};
+
 function buildAmortizationRows(
   principal: number,
   annualRate: number,
   termMonths: number,
-  paymentAmount: number
+  paymentAmount: number,
+  frequency: string = 'monthly'
 ): AmortizationRow[] {
-  const monthlyRate = annualRate / 12;
+  const periodsPerYear = PERIODS_PER_YEAR[frequency] ?? 12;
+  const periodicRate = annualRate / periodsPerYear;
+  const totalPeriods = Math.round((termMonths * periodsPerYear) / 12);
   let balance = principal;
   const rows: AmortizationRow[] = [];
 
-  for (let month = 1; month <= termMonths && balance > 0.005; month++) {
-    const interest = round2(balance * monthlyRate);
+  for (let period = 1; period <= totalPeriods && balance > 0.005; period++) {
+    const interest = round2(balance * periodicRate);
     const principalPaid = round2(Math.min(paymentAmount - interest, balance));
     balance = round2(balance - principalPaid);
     rows.push({
-      month,
+      month: period,
       payment: round2(principalPaid + interest),
       principal: principalPaid,
       interest,
@@ -104,9 +114,23 @@ function buildCCPayoffRows(
   return rows;
 }
 
-function addMonths(dateStr: string, months: number): string {
+function addPeriods(dateStr: string, periods: number, frequency: string = 'monthly'): string {
   const d = new Date(dateStr + 'T00:00:00Z');
-  d.setUTCMonth(d.getUTCMonth() + months);
+  switch (frequency) {
+    case 'weekly':
+      d.setUTCDate(d.getUTCDate() + periods * 7);
+      break;
+    case 'biweekly':
+      d.setUTCDate(d.getUTCDate() + periods * 14);
+      break;
+    case 'semimonthly':
+      // 24 periods ≈ 1 year (365.25 days)
+      d.setUTCDate(d.getUTCDate() + Math.round((periods * 365.25) / 24));
+      break;
+    default: // monthly
+      d.setUTCMonth(d.getUTCMonth() + periods);
+      break;
+  }
   return d.toISOString().slice(0, 10);
 }
 
@@ -127,7 +151,10 @@ class DebtService {
   async upsertSchedule(userId: string, data: UpsertDebtScheduleData): Promise<DebtSchedule> {
     const account = await accountRepository.findById(data.accountId, userId);
     if (!account) throw new AppError('Account not found', 404);
-    return debtRepository.upsert(userId, data);
+    const schedule = await debtRepository.upsert(userId, data);
+    // Sync purchase APR to accounts.annual_rate so cards display it immediately
+    await accountRepository.update(data.accountId, userId, { annualRate: data.annualRate });
+    return schedule;
   }
 
   async deleteSchedule(userId: string, accountId: string): Promise<void> {
@@ -155,15 +182,22 @@ class DebtService {
         schedule.minimumPaymentAmount,
         schedule.minimumPaymentPercent
       );
-      payoffDate = addMonths(todayIso(), rows.length);
+      payoffDate = addPeriods(todayIso(), rows.length);
     } else {
       // Loan / Mortgage
       const principal = schedule.principal ?? 0;
       const termMonths = schedule.termMonths ?? 0;
       const paymentAmount = schedule.paymentAmount ?? 0;
-      rows = buildAmortizationRows(principal, schedule.annualRate, termMonths, paymentAmount);
+      const frequency = schedule.paymentFrequency ?? 'monthly';
+      rows = buildAmortizationRows(
+        principal,
+        schedule.annualRate,
+        termMonths,
+        paymentAmount,
+        frequency
+      );
       const startDate = schedule.originationDate ?? schedule.asOfDate ?? todayIso();
-      payoffDate = addMonths(startDate, rows.length);
+      payoffDate = addPeriods(startDate, rows.length, frequency);
     }
 
     const totalInterest = round2(rows.reduce((sum, r) => sum + r.interest, 0));
@@ -182,9 +216,10 @@ class DebtService {
     let originalRows: AmortizationRow[];
     let newRows: AmortizationRow[];
     let startDate: string;
+    let payFrequency = 'monthly';
 
     if (isRevolving(schedule)) {
-      // CC / LOC — simulate from current balance
+      // CC / LOC — simulate from current balance (always monthly periods)
       const account = await accountRepository.findById(accountId, userId);
       if (!account) throw new AppError('Account not found', 404);
       const balance = Math.abs(account.currentBalance);
@@ -206,27 +241,33 @@ class DebtService {
         extraMonthly
       );
     } else {
-      // Loan / Mortgage
+      // Loan / Mortgage — convert monthly extra to per-period extra
       const principal = schedule.principal ?? 0;
       const termMonths = schedule.termMonths ?? 0;
       const paymentAmount = schedule.paymentAmount ?? 0;
+      payFrequency = schedule.paymentFrequency ?? 'monthly';
+      const frequency = payFrequency;
+      const periodsPerYear = PERIODS_PER_YEAR[frequency] ?? 12;
+      const extraPerPeriod = round2((extraMonthly * 12) / periodsPerYear);
       startDate = schedule.originationDate ?? schedule.asOfDate ?? todayIso();
       originalRows = buildAmortizationRows(
         principal,
         schedule.annualRate,
         termMonths,
-        paymentAmount
+        paymentAmount,
+        frequency
       );
       newRows = buildAmortizationRows(
         principal,
         schedule.annualRate,
         termMonths,
-        paymentAmount + extraMonthly
+        paymentAmount + extraPerPeriod,
+        frequency
       );
     }
 
-    const originalPayoffDate = addMonths(startDate, originalRows.length);
-    const newPayoffDate = addMonths(startDate, newRows.length);
+    const originalPayoffDate = addPeriods(startDate, originalRows.length, payFrequency);
+    const newPayoffDate = addPeriods(startDate, newRows.length, payFrequency);
     const monthsSaved = originalRows.length - newRows.length;
     const originalInterest = round2(originalRows.reduce((sum, r) => sum + r.interest, 0));
     const newInterest = round2(newRows.reduce((sum, r) => sum + r.interest, 0));
