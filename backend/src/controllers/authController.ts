@@ -24,13 +24,13 @@ function getRequestMeta(req: Request) {
 
 class AuthController {
   register = asyncHandler(async (req: Request, res: Response) => {
-    const user = await authService.register(req.body as { email: string; password: string });
+    const user = await authService.register(req.body as { username: string; email: string; password: string });
     res.status(201).json({ status: 'success', data: { user } });
   });
 
   login = asyncHandler(async (req: Request, res: Response) => {
     const result = await authService.login(
-      req.body as { email: string; password: string },
+      req.body as { username: string; password: string },
       getRequestMeta(req)
     );
 

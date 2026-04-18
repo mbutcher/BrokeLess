@@ -44,9 +44,20 @@ class SimplefinController {
 
   // ─── Account Mapping ───────────────────────────────────────────────────────
 
+  getAllAccounts = asyncHandler(async (req: Request, res: Response) => {
+    const accounts = await simplefinService.getAllAccounts(req.user!.id);
+    res.json({ status: 'success', data: { accounts } });
+  });
+
   getUnmappedAccounts = asyncHandler(async (req: Request, res: Response) => {
     const accounts = await simplefinService.getUnmappedAccounts(req.user!.id);
     res.json({ status: 'success', data: { accounts } });
+  });
+
+  ignoreAccount = asyncHandler(async (req: Request, res: Response) => {
+    const { simplefinAccountId } = req.params;
+    await simplefinService.ignoreAccount(req.user!.id, simplefinAccountId!);
+    res.json({ status: 'success', data: null });
   });
 
   mapAccount = asyncHandler(async (req: Request, res: Response) => {

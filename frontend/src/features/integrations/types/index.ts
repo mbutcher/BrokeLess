@@ -26,6 +26,7 @@ export interface SimplefinAccountMapping {
   simplefinAccountName: string;
   simplefinAccountType: string;
   localAccountId: string | null;
+  ignored: boolean;
   createdAt: string;
   updatedAt: string;
 }

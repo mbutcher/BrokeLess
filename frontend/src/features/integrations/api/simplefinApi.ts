@@ -41,16 +41,19 @@ export const simplefinApi = {
 
   // ─── Account Mapping ─────────────────────────────────────────────────────────
 
+  getAccounts: () =>
+    apiClient.get<ApiResponse<{ accounts: SimplefinAccountMapping[] }>>('/simplefin/accounts'),
+
   getUnmappedAccounts: () =>
     apiClient.get<ApiResponse<{ accounts: SimplefinAccountMapping[] }>>(
       '/simplefin/accounts/unmapped'
     ),
 
   mapAccount: (simplefinAccountId: string, data: MapAccountAction) =>
-    apiClient.post<ApiResponse<null>>(
-      `/simplefin/accounts/${simplefinAccountId}/map`,
-      data
-    ),
+    apiClient.post<ApiResponse<null>>(`/simplefin/accounts/${simplefinAccountId}/map`, data),
+
+  ignoreAccount: (simplefinAccountId: string) =>
+    apiClient.post<ApiResponse<null>>(`/simplefin/accounts/${simplefinAccountId}/ignore`, {}),
 
   // ─── Pending Reviews ─────────────────────────────────────────────────────────
 

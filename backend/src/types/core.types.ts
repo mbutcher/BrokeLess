@@ -644,6 +644,7 @@ export interface SimplefinAccountMapping {
   simplefinAccountName: string;
   simplefinAccountType: string;
   localAccountId: string | null; // null = not yet mapped by user
+  ignored: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

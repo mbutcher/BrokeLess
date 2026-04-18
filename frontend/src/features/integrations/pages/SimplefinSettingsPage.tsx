@@ -8,6 +8,7 @@ import { Label } from '@components/ui/label';
 import { Badge } from '@components/ui/badge';
 import { Alert, AlertDescription } from '@components/ui/alert';
 import { SetupInstructionsCard } from '../components/SetupInstructionsCard';
+import { AccountMappingSection } from '../components/AccountMappingSection';
 import {
   useSimplefinStatus,
   useSimplefinSchedule,
@@ -234,6 +235,9 @@ export function SimplefinSettingsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* ─── Account Mapping ─────────────────────────────────────────────────── */}
+      {isConnected && <AccountMappingSection />}
 
       {/* ─── Sync Schedule ───────────────────────────────────────────────────── */}
       {isConnected && (

@@ -77,7 +77,7 @@ class HouseholdService {
     const emailEncrypted = encryptionService.encrypt(normalizedEmail);
     const passwordHash = await passwordService.hash(data.password);
 
-    const newUser = await userRepository.create({ emailEncrypted, emailHash, passwordHash });
+    const newUser = await userRepository.create({ username: null, emailEncrypted, emailHash, passwordHash });
 
     // Set displayName if provided
     if (data.displayName) {
@@ -93,6 +93,7 @@ class HouseholdService {
 
     return {
       id: newUser.id,
+      username: null,
       email: normalizedEmail,
       displayName: data.displayName ?? null,
       totpEnabled: false,

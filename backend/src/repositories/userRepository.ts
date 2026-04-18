@@ -6,6 +6,7 @@ import type { User, CreateUserData, UpdateProfileData } from '@typings/auth.type
 function rowToUser(row: Record<string, unknown>): User {
   return {
     id: row['id'] as string,
+    username: (row['username'] as string | null | undefined) ?? null,
     emailEncrypted: row['email_encrypted'] as string,
     emailHash: row['email_hash'] as string,
     displayName: (row['display_name'] as string | null | undefined) ?? null,
@@ -55,6 +56,21 @@ class UserRepository {
     return row ? rowToUser(row as Record<string, unknown>) : null;
   }
 
+  async findByUsername(username: string): Promise<User | null> {
+    const row: unknown = await this.db('users')
+      .whereRaw('LOWER(username) = ?', [username.toLowerCase()])
+      .first();
+    return row ? rowToUser(row as Record<string, unknown>) : null;
+  }
+
+  async existsByUsername(username: string): Promise<boolean> {
+    const result = await this.db('users')
+      .whereRaw('LOWER(username) = ?', [username.toLowerCase()])
+      .count('id as count')
+      .first();
+    return Number(result?.['count'] ?? 0) > 0;
+  }
+
   async existsByEmailHash(emailHash: string): Promise<boolean> {
     const result = await this.db('users')
       .where({ email_hash: emailHash })
@@ -68,6 +84,7 @@ class UserRepository {
     const id = randomUUID();
     await db('users').insert({
       id,
+      username: data.username,
       email_encrypted: data.emailEncrypted,
       email_hash: data.emailHash,
       password_hash: data.passwordHash,

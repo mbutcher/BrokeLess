@@ -2,6 +2,7 @@ import { getDatabase } from '@config/database';
 import type { BudgetLine, DashboardHint } from '@typings/core.types';
 import { computeCurrentPayPeriod } from '@services/core/budgetLineService';
 import { dialectHelper } from '@utils/db/dialectHelper';
+import { simplefinAccountMappingRepository } from '@repositories/simplefinAccountMappingRepository';
 
 const ANNUAL_REVIEW_THRESHOLD_MS = 365 * 24 * 60 * 60 * 1000;
 
@@ -56,7 +57,7 @@ class DashboardHintsService {
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
 
     // Run all hint queries in parallel
-    const [uncatCount, overAvgCategories, anchorRow, flexibleLineCount, dashboardRow] =
+    const [uncatCount, overAvgCategories, anchorRow, flexibleLineCount, dashboardRow, unlinkedSfCount] =
       await Promise.all([
         // Uncategorised transactions this month
         db('transactions')
@@ -137,6 +138,9 @@ class DashboardHintsService {
           .where({ user_id: userId })
           .select('budget_lines_last_reviewed_at', 'acknowledged_rollovers')
           .first() as Promise<BudgetReviewRow | undefined>,
+
+        // Unlinked SimpleFIN accounts (non-ignored)
+        simplefinAccountMappingRepository.countUnlinkedActive(userId),
       ]);
 
     // 1. Uncategorised transactions
@@ -244,6 +248,16 @@ class DashboardHintsService {
           linkTo: '/budget',
         });
       }
+    }
+
+    // 6. Unlinked SimpleFIN accounts
+    if (unlinkedSfCount > 0) {
+      hints.push({
+        id: 'unlinked-simplefin-accounts',
+        type: 'action',
+        message: `${unlinkedSfCount} SimpleFIN account${unlinkedSfCount === 1 ? '' : 's'} need${unlinkedSfCount === 1 ? 's' : ''} to be linked before transactions can import`,
+        linkTo: '/settings/integrations',
+      });
     }
 
     // Cache result

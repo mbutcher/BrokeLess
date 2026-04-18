@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { ShieldAlert, Copy, Check, KeyRound, AlertTriangle, ChevronDown } from 'lucide-react';
-import { setupApi, type InitialSecret } from '../api/authApi';
+import { ShieldAlert, Copy, Check, KeyRound, AlertTriangle } from 'lucide-react';
+import { setupApi } from '../api/authApi';
 import {
   Dialog,
   DialogContent,
@@ -51,25 +51,6 @@ function CopyButton({ value, className = '' }: { value: string; className?: stri
   );
 }
 
-// ── Derived secret row (compact) ───────────────────────────────────────────────
-
-function SecretRow({ secret }: { secret: InitialSecret }) {
-  return (
-    <div className="rounded-md border border-border bg-muted/20 px-3 py-2.5">
-      <div className="mb-1.5 flex items-start justify-between gap-2">
-        <div>
-          <p className="text-xs font-semibold text-foreground">{secret.name}</p>
-          <p className="text-xs text-muted-foreground">{secret.description}</p>
-        </div>
-        <CopyButton value={secret.value} />
-      </div>
-      <code className="block break-all rounded bg-background px-2 py-1.5 font-mono text-xs text-foreground ring-1 ring-border">
-        {secret.value}
-      </code>
-    </div>
-  );
-}
-
 // ── Modal ──────────────────────────────────────────────────────────────────────
 
 interface InitialSecretsModalProps {
@@ -80,7 +61,6 @@ interface InitialSecretsModalProps {
 export function InitialSecretsModal({ open, onAcknowledged }: InitialSecretsModalProps) {
   const { t } = useTranslation();
   const [confirmed, setConfirmed] = useState(false);
-  const [derivedOpen, setDerivedOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['setup', 'initial-secrets'],
@@ -149,34 +129,6 @@ export function InitialSecretsModal({ open, onAcknowledged }: InitialSecretsModa
                 <code className="mt-1 block break-all rounded-lg bg-background px-3 py-2.5 font-mono text-sm font-semibold tracking-wide text-foreground ring-2 ring-primary/20">
                   {data.masterSecret}
                 </code>
-              </div>
-            )}
-
-            {/* ── Derived secrets (collapsible) ── */}
-            {data.secrets.length > 0 && (
-              <div>
-                <button
-                  type="button"
-                  onClick={() => setDerivedOpen((v) => !v)}
-                  className="flex w-full items-center justify-between rounded-md px-1 py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <span>
-                    {hasMaster
-                      ? t('setup.secretsModal.derivedSecretsLabel')
-                      : t('setup.secretsModal.allSecretsLabel')}
-                  </span>
-                  <ChevronDown
-                    className={`h-3.5 w-3.5 transition-transform ${derivedOpen ? 'rotate-180' : ''}`}
-                  />
-                </button>
-
-                {derivedOpen && (
-                  <div className="mt-2 space-y-2">
-                    {data.secrets.map((secret) => (
-                      <SecretRow key={secret.name} secret={secret} />
-                    ))}
-                  </div>
-                )}
               </div>
             )}
 

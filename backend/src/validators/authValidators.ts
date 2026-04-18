@@ -2,6 +2,17 @@ import Joi from 'joi';
 import { VALID_SCOPES } from '@services/auth/apiKeyService';
 
 export const registerSchema = Joi.object({
+  username: Joi.string()
+    .min(3)
+    .max(50)
+    .pattern(/^[a-zA-Z0-9_-]+$/)
+    .required()
+    .messages({
+      'string.min': 'Username must be at least 3 characters',
+      'string.max': 'Username must be no more than 50 characters',
+      'string.pattern.base': 'Username may only contain letters, numbers, underscores, and hyphens',
+      'any.required': 'Username is required',
+    }),
   email: Joi.string().email().max(254).lowercase().trim().required().messages({
     'string.email': 'Please provide a valid email address',
     'string.max': 'Email address is too long',
@@ -15,9 +26,8 @@ export const registerSchema = Joi.object({
 });
 
 export const loginSchema = Joi.object({
-  email: Joi.string().email().max(254).lowercase().trim().required().messages({
-    'string.email': 'Please provide a valid email address',
-    'any.required': 'Email is required',
+  username: Joi.string().max(50).trim().required().messages({
+    'any.required': 'Username is required',
   }),
   // No min length on login — users should see "invalid credentials" not "too short"
   password: Joi.string().required().messages({

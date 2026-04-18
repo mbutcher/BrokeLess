@@ -5,6 +5,7 @@ import type { MapAccountAction, ResolveReviewAction, UpdateScheduleInput } from 
 const KEYS = {
   status: ['simplefin', 'status'] as const,
   schedule: ['simplefin', 'schedule'] as const,
+  accounts: ['simplefin', 'accounts'] as const,
   unmapped: ['simplefin', 'unmapped'] as const,
   reviews: ['simplefin', 'reviews'] as const,
   reviewCount: ['simplefin', 'reviews', 'count'] as const,
@@ -28,6 +29,16 @@ export function useSimplefinSchedule() {
     queryFn: async () => {
       const res = await simplefinApi.getSchedule();
       return res.data.data.connection;
+    },
+  });
+}
+
+export function useSimplefinAccounts() {
+  return useQuery({
+    queryKey: KEYS.accounts,
+    queryFn: async () => {
+      const res = await simplefinApi.getAccounts();
+      return res.data.data.accounts;
     },
   });
 }
@@ -82,6 +93,7 @@ export function useDisconnectSimplefin() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: KEYS.status });
       void qc.invalidateQueries({ queryKey: KEYS.schedule });
+      void qc.invalidateQueries({ queryKey: KEYS.accounts });
       void qc.invalidateQueries({ queryKey: KEYS.unmapped });
     },
   });
@@ -93,13 +105,13 @@ export function useSyncNow() {
     mutationFn: () => simplefinApi.sync(),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: KEYS.status });
+      void qc.invalidateQueries({ queryKey: KEYS.accounts });
       void qc.invalidateQueries({ queryKey: KEYS.unmapped });
       void qc.invalidateQueries({ queryKey: KEYS.reviews });
       void qc.invalidateQueries({ queryKey: KEYS.reviewCount });
-      // Accounts balances may have changed
       void qc.invalidateQueries({ queryKey: ['accounts'] });
-      // New transactions may have arrived
       void qc.invalidateQueries({ queryKey: ['transactions'] });
+      void qc.invalidateQueries({ queryKey: ['dashboard', 'hints'] });
     },
   });
 }
@@ -120,8 +132,22 @@ export function useMapAccount() {
     mutationFn: ({ simplefinAccountId, data }: { simplefinAccountId: string; data: MapAccountAction }) =>
       simplefinApi.mapAccount(simplefinAccountId, data),
     onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: KEYS.accounts });
       void qc.invalidateQueries({ queryKey: KEYS.unmapped });
       void qc.invalidateQueries({ queryKey: ['accounts'] });
+      void qc.invalidateQueries({ queryKey: ['dashboard', 'hints'] });
+    },
+  });
+}
+
+export function useIgnoreSimplefinAccount() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (simplefinAccountId: string) => simplefinApi.ignoreAccount(simplefinAccountId),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: KEYS.accounts });
+      void qc.invalidateQueries({ queryKey: KEYS.unmapped });
+      void qc.invalidateQueries({ queryKey: ['dashboard', 'hints'] });
     },
   });
 }

@@ -67,10 +67,15 @@ class AuthService {
     const normalizedEmail = input.email.toLowerCase().trim();
     const emailHash = encryptionService.hash(normalizedEmail);
 
-    // Check for duplicate without revealing whether email exists
-    const exists = await userRepository.existsByEmailHash(emailHash);
-    if (exists) {
-      // Use the same ConflictError message regardless of reason to avoid user enumeration
+    // Check for duplicate username (case-insensitive)
+    const usernameTaken = await userRepository.existsByUsername(input.username);
+    if (usernameTaken) {
+      throw new ConflictError('That username is already taken.');
+    }
+
+    // Check for duplicate email without revealing whether it exists
+    const emailExists = await userRepository.existsByEmailHash(emailHash);
+    if (emailExists) {
       throw new ConflictError('Registration failed. Please try a different email address.');
     }
 
@@ -82,7 +87,12 @@ class AuthService {
     const emailEncrypted = encryptionService.encrypt(normalizedEmail);
     const passwordHash = await passwordService.hash(input.password);
 
-    const user = await userRepository.create({ emailEncrypted, emailHash, passwordHash });
+    const user = await userRepository.create({
+      username: input.username,
+      emailEncrypted,
+      emailHash,
+      passwordHash,
+    });
 
     loggers.auth('user_registered', user.id);
     logger.info('New user registered', { userId: user.id });
@@ -102,17 +112,14 @@ class AuthService {
    * timing attacks that could reveal whether an email is registered.
    */
   async login(input: LoginInput, meta: RequestMeta): Promise<AuthResult> {
-    const normalizedEmail = input.email.toLowerCase().trim();
-    const emailHash = encryptionService.hash(normalizedEmail);
-
-    const user = await userRepository.findByEmailHash(emailHash);
+    const user = await userRepository.findByUsername(input.username);
 
     if (!user) {
       // Verify against a real dummy hash to maintain consistent response time.
       // DUMMY_HASH is a Promise (computed at startup) so this always runs the
       // full Argon2id computation, preventing timing-based user enumeration.
       await passwordService.verify(input.password, await passwordService.DUMMY_HASH);
-      loggers.security('login_unknown_email', { ip: meta.ip });
+      loggers.security('login_unknown_username', { ip: meta.ip });
       throw new UnauthorizedError(GENERIC_AUTH_ERROR);
     }
 
@@ -163,7 +170,8 @@ class AuthService {
     const tokens = await this.issueTokens(user.id, meta);
     loggers.auth('login_success', user.id, { ip: meta.ip });
 
-    return { tokens, user: this.toPublicUser(user, normalizedEmail) };
+    const email = encryptionService.decrypt(user.emailEncrypted);
+    return { tokens, user: this.toPublicUser(user, email) };
   }
 
   /**
@@ -318,6 +326,7 @@ class AuthService {
   private toPublicUser(
     user: {
       id: string;
+      username: string | null;
       displayName: string | null;
       totpEnabled: boolean;
       webauthnEnabled: boolean;
@@ -338,6 +347,7 @@ class AuthService {
   ): PublicUser {
     return {
       id: user.id,
+      username: user.username,
       email,
       displayName: user.displayName,
       totpEnabled: user.totpEnabled,

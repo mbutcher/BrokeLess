@@ -36,6 +36,7 @@ router.patch(
 );
 
 // ─── Account Mapping ─────────────────────────────────────────────────────────
+router.get('/accounts', requireScope('simplefin:read'), simplefinController.getAllAccounts);
 router.get(
   '/accounts/unmapped',
   requireScope('simplefin:read'),
@@ -46,6 +47,11 @@ router.post(
   requireScope('simplefin:write'),
   validateRequest(mapAccountSchema),
   simplefinController.mapAccount
+);
+router.post(
+  '/accounts/:simplefinAccountId/ignore',
+  requireScope('simplefin:write'),
+  simplefinController.ignoreAccount
 );
 
 // ─── Pending Reviews ─────────────────────────────────────────────────────────

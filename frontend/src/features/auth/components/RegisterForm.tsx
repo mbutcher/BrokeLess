@@ -88,6 +88,16 @@ export function RegisterForm() {
       )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
+        <FormField label={t('auth.username')} htmlFor="username" error={errors.username?.message}>
+          <Input
+            id="username"
+            type="text"
+            autoComplete="username"
+            placeholder={t('auth.usernamePlaceholder')}
+            {...register('username')}
+          />
+        </FormField>
+
         <FormField label={t('auth.email')} htmlFor="email" error={errors.email?.message}>
           <Input
             id="email"

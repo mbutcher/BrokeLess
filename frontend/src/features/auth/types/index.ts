@@ -6,6 +6,7 @@ export interface PushPreferences {
 
 export interface User {
   id: string;
+  username: string | null;
   email: string;
   displayName?: string | null;
   totpEnabled: boolean;
@@ -45,11 +46,12 @@ export interface ChangePasswordInput {
 }
 
 export interface LoginCredentials {
-  email: string;
+  username: string;
   password: string;
 }
 
 export interface RegisterCredentials {
+  username: string;
   email: string;
   password: string;
   confirmPassword: string;

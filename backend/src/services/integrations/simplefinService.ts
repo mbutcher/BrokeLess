@@ -10,6 +10,7 @@ import { accountService } from '@services/core/accountService';
 import { transactionRepository } from '@repositories/transactionRepository';
 import { AppError } from '@middleware/errorHandler';
 import { similarity } from '@utils/similarity';
+import { dashboardHintsService } from '@services/core/dashboardHintsService';
 import type {
   SimplefinConnection,
   SimplefinAccountMapping,
@@ -158,12 +159,17 @@ class SimplefinService {
   ): Promise<{ imported: number; skipped: number; pendingReviews: number }> {
     const counts = { imported: 0, skipped: 0, pendingReviews: 0 };
 
+    // Collect all candidate IDs upfront for bulk deduplication lookups
+    const candidateIds = sfTransactions.map((tx) => tx.id);
+
     // Load recent existing transactions for fuzzy matching (decrypt payees in memory)
-    const recentTxs = await transactionRepository.findRecentForAccount(
-      userId,
-      localAccountId,
-      FUZZY_LOOKBACK_DAYS
-    );
+    const [recentTxs, importedIds, pendingIds] = await Promise.all([
+      transactionRepository.findRecentForAccount(userId, localAccountId, FUZZY_LOOKBACK_DAYS),
+      transactionRepository.findImportedSimplefinIds(userId, candidateIds),
+      simplefinPendingReviewRepository.findPendingSimplefinIds(userId, candidateIds),
+    ]);
+
+    const discardedSet = new Set(discardedIds);
 
     for (const sfTx of sfTransactions) {
       // Skip pending transactions — only import posted ones
@@ -173,24 +179,19 @@ class SimplefinService {
       }
 
       // Skip if explicitly discarded by user
-      if (discardedIds.includes(sfTx.id)) {
+      if (discardedSet.has(sfTx.id)) {
         counts.skipped++;
         continue;
       }
 
       // Primary deduplication: exact SimpleFIN ID match
-      const existing = await transactionRepository.findBySimplefinId(userId, sfTx.id);
-      if (existing) {
+      if (importedIds.has(sfTx.id)) {
         counts.skipped++;
         continue;
       }
 
       // Check if already in pending reviews
-      const existingReview = await simplefinPendingReviewRepository.findBySimplefinTxId(
-        userId,
-        sfTx.id
-      );
-      if (existingReview) {
+      if (pendingIds.has(sfTx.id)) {
         counts.skipped++;
         continue;
       }
@@ -305,6 +306,21 @@ class SimplefinService {
         account.id
       );
     }
+    dashboardHintsService.clearCache(userId);
+  }
+
+  async getAllAccounts(userId: string): Promise<SimplefinAccountMapping[]> {
+    return simplefinAccountMappingRepository.findAllByUser(userId);
+  }
+
+  async ignoreAccount(userId: string, simplefinAccountId: string): Promise<void> {
+    const mapping = await simplefinAccountMappingRepository.findBySimplefinId(
+      userId,
+      simplefinAccountId
+    );
+    if (!mapping) throw new AppError('SimpleFIN account mapping not found', 404);
+    await simplefinAccountMappingRepository.setIgnored(userId, simplefinAccountId, true);
+    dashboardHintsService.clearCache(userId);
   }
 
   async getUnmappedAccounts(userId: string): Promise<SimplefinAccountMapping[]> {

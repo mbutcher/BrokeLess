@@ -2,6 +2,7 @@
 
 export interface User {
   id: string;
+  username: string | null;
   emailEncrypted: string;
   emailHash: string;
   displayName: string | null;
@@ -104,12 +105,13 @@ export interface TwoFactorTokenPayload {
 // ─── Service input / output shapes ───────────────────────────────────────────
 
 export interface RegisterInput {
+  username: string;
   email: string;
   password: string;
 }
 
 export interface LoginInput {
-  email: string;
+  username: string;
   password: string;
 }
 
@@ -121,6 +123,7 @@ export interface RequestMeta {
 /** User shape safe to return in API responses (no hashes, no encrypted values) */
 export interface PublicUser {
   id: string;
+  username: string | null;
   email: string; // decrypted
   displayName: string | null;
   totpEnabled: boolean;
@@ -220,6 +223,7 @@ export interface CreateApiKeyData {
 // ─── Repository input shapes ──────────────────────────────────────────────────
 
 export interface CreateUserData {
+  username: string | null;
   emailEncrypted: string;
   emailHash: string;
   passwordHash: string;

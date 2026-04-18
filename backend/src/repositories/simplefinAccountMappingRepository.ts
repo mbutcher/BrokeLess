@@ -11,6 +11,7 @@ function rowToMapping(row: Record<string, unknown>): SimplefinAccountMapping {
     simplefinAccountName: row['simplefin_account_name'] as string,
     simplefinAccountType: row['simplefin_account_type'] as string,
     localAccountId: row['local_account_id'] ? String(row['local_account_id']) : null,
+    ignored: Boolean(row['ignored']),
     createdAt: new Date(row['created_at'] as string),
     updatedAt: new Date(row['updated_at'] as string),
   };
@@ -91,7 +92,22 @@ class SimplefinAccountMappingRepository {
   ): Promise<void> {
     await this.db('simplefin_account_mappings')
       .where({ user_id: userId, simplefin_account_id: simplefinAccountId })
-      .update({ local_account_id: localAccountId });
+      .update({ local_account_id: localAccountId, ignored: false });
+  }
+
+  async setIgnored(userId: string, simplefinAccountId: string, ignored: boolean): Promise<void> {
+    await this.db('simplefin_account_mappings')
+      .where({ user_id: userId, simplefin_account_id: simplefinAccountId })
+      .update({ ignored });
+  }
+
+  async countUnlinkedActive(userId: string): Promise<number> {
+    const result = await this.db('simplefin_account_mappings')
+      .where({ user_id: userId, ignored: false })
+      .whereNull('local_account_id')
+      .count('id as count')
+      .first();
+    return Number(result?.['count'] ?? 0);
   }
 }
 

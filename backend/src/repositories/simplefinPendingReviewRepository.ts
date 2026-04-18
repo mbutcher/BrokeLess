@@ -55,6 +55,16 @@ class SimplefinPendingReviewRepository {
     return row ? rowToReview(row as Record<string, unknown>) : null;
   }
 
+  /** Returns the set of SimpleFIN transaction IDs already in pending review for this user. */
+  async findPendingSimplefinIds(userId: string, simplefinIds: string[]): Promise<Set<string>> {
+    if (simplefinIds.length === 0) return new Set();
+    const rows = (await this.db('simplefin_pending_reviews')
+      .where('user_id', userId)
+      .whereIn('simplefin_transaction_id', simplefinIds)
+      .select('simplefin_transaction_id')) as Array<{ simplefin_transaction_id: string }>;
+    return new Set(rows.map((r) => r.simplefin_transaction_id));
+  }
+
   async findById(userId: string, reviewId: string): Promise<SimplefinPendingReview | null> {
     const row: unknown = await this.db('simplefin_pending_reviews')
       .where({ id: reviewId, user_id: userId })

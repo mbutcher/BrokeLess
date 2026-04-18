@@ -121,6 +121,16 @@ class TransactionRepository {
     return row ? rowToTransaction(row as Record<string, unknown>) : null;
   }
 
+  /** Returns the set of SimpleFIN transaction IDs already imported for this user. */
+  async findImportedSimplefinIds(userId: string, simplefinIds: string[]): Promise<Set<string>> {
+    if (simplefinIds.length === 0) return new Set();
+    const rows = (await this.db('transactions')
+      .where('user_id', userId)
+      .whereIn('simplefin_transaction_id', simplefinIds)
+      .select('simplefin_transaction_id')) as Array<{ simplefin_transaction_id: string }>;
+    return new Set(rows.map((r) => r.simplefin_transaction_id));
+  }
+
   /**
    * Returns recent transactions for an account (for fuzzy-match deduplication).
    * Results include encrypted payee/description — caller must decrypt before comparing.
