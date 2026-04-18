@@ -32,6 +32,13 @@ handleUncaughtException();
 
 const app: Application = express();
 
+// Trust the first proxy (Nginx) so req.ip reflects the real client IP.
+// Without this, express-rate-limit sees all requests as coming from 127.0.0.1
+// and incorrectly applies a single shared bucket across all users.
+if (env.isProduction) {
+  app.set('trust proxy', 1);
+}
+
 // API docs — mounted before helmet so swagger-ui CSS/JS are not blocked by CSP
 const swaggerSpec = buildSwaggerSpec();
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
