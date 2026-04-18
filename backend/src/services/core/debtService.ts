@@ -5,6 +5,7 @@ import { AppError } from '@middleware/errorHandler';
 import logger from '@utils/logger';
 import type {
   DebtSchedule,
+  MinimumPaymentType,
   TransactionSplit,
   UpsertDebtScheduleData,
   AmortizationRow,
@@ -13,6 +14,8 @@ import type {
 } from '@typings/core.types';
 
 const round2 = (n: number): number => Math.round(n * 100) / 100;
+
+// ─── Fixed-term amortization (loans / mortgages) ──────────────────────────────
 
 function buildAmortizationRows(
   principal: number,
@@ -40,10 +43,80 @@ function buildAmortizationRows(
   return rows;
 }
 
+// ─── Revolving credit payoff (CC / LOC) ──────────────────────────────────────
+
+function computeMinPayment(
+  balance: number,
+  type: MinimumPaymentType | null,
+  amount: number | null,
+  percent: number | null
+): number {
+  const fixedAmt = amount ?? 25;
+  const pct = percent ?? 0.02;
+
+  switch (type) {
+    case 'fixed':
+      return fixedAmt;
+    case 'percentage':
+      return round2(balance * pct);
+    case 'greater_of':
+      return Math.max(fixedAmt, round2(balance * pct));
+    case 'lesser_of':
+      return Math.min(fixedAmt, round2(balance * pct));
+    default:
+      return fixedAmt;
+  }
+}
+
+/** Iterative payoff simulation for CC / LOC accounts. */
+function buildCCPayoffRows(
+  startBalance: number,
+  annualRate: number,
+  minPaymentType: MinimumPaymentType | null,
+  minPaymentAmount: number | null,
+  minPaymentPercent: number | null,
+  extraMonthly: number = 0
+): AmortizationRow[] {
+  const monthlyRate = annualRate / 12;
+  let balance = startBalance;
+  const rows: AmortizationRow[] = [];
+  const MAX_MONTHS = 999; // safety cap against 0-rate / no-payment edge cases
+
+  for (let month = 1; month <= MAX_MONTHS && balance > 0.005; month++) {
+    const interest = round2(balance * monthlyRate);
+    const minPay = computeMinPayment(balance, minPaymentType, minPaymentAmount, minPaymentPercent);
+    // Total payment must at least cover interest + $0.01 principal to make progress
+    const totalPay = round2(
+      Math.min(Math.max(minPay + extraMonthly, interest + 0.01), balance + interest)
+    );
+    const principalPaid = round2(totalPay - interest);
+    balance = round2(Math.max(balance - principalPaid, 0));
+
+    rows.push({
+      month,
+      payment: totalPay,
+      principal: principalPaid,
+      interest,
+      balance,
+    });
+  }
+
+  return rows;
+}
+
 function addMonths(dateStr: string, months: number): string {
   const d = new Date(dateStr + 'T00:00:00Z');
   d.setUTCMonth(d.getUTCMonth() + months);
   return d.toISOString().slice(0, 10);
+}
+
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** True for CC / LOC schedules (no fixed term). */
+function isRevolving(schedule: DebtSchedule): boolean {
+  return schedule.termMonths == null;
 }
 
 class DebtService {
@@ -67,15 +140,33 @@ class DebtService {
     const schedule = await debtRepository.findByUserAndAccount(userId, accountId);
     if (!schedule) throw new AppError('Debt schedule not found', 404);
 
-    const rows = buildAmortizationRows(
-      schedule.principal,
-      schedule.annualRate,
-      schedule.termMonths,
-      schedule.paymentAmount
-    );
+    let rows: AmortizationRow[];
+    let payoffDate: string;
+
+    if (isRevolving(schedule)) {
+      // CC / LOC — start from current account balance
+      const account = await accountRepository.findById(accountId, userId);
+      if (!account) throw new AppError('Account not found', 404);
+      const balance = Math.abs(account.currentBalance);
+      rows = buildCCPayoffRows(
+        balance,
+        schedule.annualRate,
+        schedule.minimumPaymentType,
+        schedule.minimumPaymentAmount,
+        schedule.minimumPaymentPercent
+      );
+      payoffDate = addMonths(todayIso(), rows.length);
+    } else {
+      // Loan / Mortgage
+      const principal = schedule.principal ?? 0;
+      const termMonths = schedule.termMonths ?? 0;
+      const paymentAmount = schedule.paymentAmount ?? 0;
+      rows = buildAmortizationRows(principal, schedule.annualRate, termMonths, paymentAmount);
+      const startDate = schedule.originationDate ?? schedule.asOfDate ?? todayIso();
+      payoffDate = addMonths(startDate, rows.length);
+    }
 
     const totalInterest = round2(rows.reduce((sum, r) => sum + r.interest, 0));
-    const payoffDate = addMonths(schedule.originationDate, rows.length);
 
     return { schedule: rows, totalInterest, payoffDate };
   }
@@ -88,22 +179,54 @@ class DebtService {
     const schedule = await debtRepository.findByUserAndAccount(userId, accountId);
     if (!schedule) throw new AppError('Debt schedule not found', 404);
 
-    const originalRows = buildAmortizationRows(
-      schedule.principal,
-      schedule.annualRate,
-      schedule.termMonths,
-      schedule.paymentAmount
-    );
+    let originalRows: AmortizationRow[];
+    let newRows: AmortizationRow[];
+    let startDate: string;
 
-    const newRows = buildAmortizationRows(
-      schedule.principal,
-      schedule.annualRate,
-      schedule.termMonths,
-      schedule.paymentAmount + extraMonthly
-    );
+    if (isRevolving(schedule)) {
+      // CC / LOC — simulate from current balance
+      const account = await accountRepository.findById(accountId, userId);
+      if (!account) throw new AppError('Account not found', 404);
+      const balance = Math.abs(account.currentBalance);
+      startDate = todayIso();
+      originalRows = buildCCPayoffRows(
+        balance,
+        schedule.annualRate,
+        schedule.minimumPaymentType,
+        schedule.minimumPaymentAmount,
+        schedule.minimumPaymentPercent,
+        0
+      );
+      newRows = buildCCPayoffRows(
+        balance,
+        schedule.annualRate,
+        schedule.minimumPaymentType,
+        schedule.minimumPaymentAmount,
+        schedule.minimumPaymentPercent,
+        extraMonthly
+      );
+    } else {
+      // Loan / Mortgage
+      const principal = schedule.principal ?? 0;
+      const termMonths = schedule.termMonths ?? 0;
+      const paymentAmount = schedule.paymentAmount ?? 0;
+      startDate = schedule.originationDate ?? schedule.asOfDate ?? todayIso();
+      originalRows = buildAmortizationRows(
+        principal,
+        schedule.annualRate,
+        termMonths,
+        paymentAmount
+      );
+      newRows = buildAmortizationRows(
+        principal,
+        schedule.annualRate,
+        termMonths,
+        paymentAmount + extraMonthly
+      );
+    }
 
-    const originalPayoffDate = addMonths(schedule.originationDate, originalRows.length);
-    const newPayoffDate = addMonths(schedule.originationDate, newRows.length);
+    const originalPayoffDate = addMonths(startDate, originalRows.length);
+    const newPayoffDate = addMonths(startDate, newRows.length);
     const monthsSaved = originalRows.length - newRows.length;
     const originalInterest = round2(originalRows.reduce((sum, r) => sum + r.interest, 0));
     const newInterest = round2(newRows.reduce((sum, r) => sum + r.interest, 0));
@@ -113,7 +236,7 @@ class DebtService {
   }
 
   /**
-   * Called after a payment transaction is committed against a loan/mortgage/credit_card account.
+   * Called after a payment transaction is committed against a debt account.
    * Computes principal/interest split and records it. Errors are logged but non-fatal.
    */
   async autoSplitPayment(

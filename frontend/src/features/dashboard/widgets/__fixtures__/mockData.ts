@@ -419,6 +419,13 @@ export const mockDebtSchedule: DebtSchedule = {
   termMonths: 60,
   originationDate: '2023-01-01',
   paymentAmount: 495.42,
+  isSimplified: false,
+  asOfDate: null,
+  cashAdvanceRate: null,
+  minimumPaymentType: null,
+  minimumPaymentAmount: null,
+  minimumPaymentPercent: null,
+  creditLimit: null,
   createdAt: '2023-01-01T00:00:00Z',
   updatedAt: '2026-01-01T00:00:00Z',
 };

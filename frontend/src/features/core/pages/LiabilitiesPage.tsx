@@ -5,6 +5,116 @@ import { useAccounts } from '../hooks/useAccounts';
 import { useWhatIf, useDebtSchedules } from '../hooks/useDebt';
 import type { Account } from '../types';
 
+// ─── Debt payoff recommendations ──────────────────────────────────────────────
+
+interface DebtCandidate {
+  account: Account;
+  balance: number;
+  rate: number;
+  monthlyInterest: number;
+}
+
+function PayoffRecommendations({ liabilities }: { liabilities: Account[] }) {
+  const { t } = useTranslation();
+  const [activeTab, setActiveTab] = useState<'avalanche' | 'snowball'>('avalanche');
+
+  const candidates = useMemo<DebtCandidate[]>(() => {
+    return liabilities
+      .filter((a) => a.annualRate != null && Math.abs(a.currentBalance) > 0)
+      .map((a) => {
+        const balance = Math.abs(a.currentBalance);
+        const rate = a.annualRate!;
+        return { account: a, balance, rate, monthlyInterest: round2(balance * rate / 12) };
+      });
+  }, [liabilities]);
+
+  if (candidates.length < 2) return null;
+
+  const avalanche = [...candidates].sort((a, b) => b.rate - a.rate);
+  const snowball = [...candidates].sort((a, b) => a.balance - b.balance);
+
+  // Rough total monthly interest (same total regardless of strategy — shows prioritisation)
+  const totalMonthlyInterest = candidates.reduce((s, c) => s + c.monthlyInterest, 0);
+
+  const ordered = activeTab === 'avalanche' ? avalanche : snowball;
+
+  return (
+    <section className="bg-card rounded-xl border border-border p-5 mt-5">
+      <h2 className="text-base font-semibold text-foreground mb-1">{t('liabilities.recommendations')}</h2>
+      <p className="text-xs text-muted-foreground mb-4">
+        {t('liabilities.recommendationsDesc', {
+          interest: `$${totalMonthlyInterest.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+        })}
+      </p>
+
+      {/* Strategy tabs */}
+      <div className="flex gap-2 p-1 bg-muted rounded-lg w-fit mb-4">
+        <button
+          type="button"
+          onClick={() => setActiveTab('avalanche')}
+          className={`px-3 py-1.5 text-xs rounded-md font-medium transition-colors ${
+            activeTab === 'avalanche'
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          {t('liabilities.avalancheTab')}
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('snowball')}
+          className={`px-3 py-1.5 text-xs rounded-md font-medium transition-colors ${
+            activeTab === 'snowball'
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          {t('liabilities.snowballTab')}
+        </button>
+      </div>
+
+      {/* Strategy description */}
+      <p className="text-xs text-muted-foreground mb-3">
+        {activeTab === 'avalanche' ? t('liabilities.avalancheDesc') : t('liabilities.snowballDesc')}
+      </p>
+
+      {/* Ordered list */}
+      <ol className="space-y-2">
+        {ordered.map((c, i) => (
+          <li key={c.account.id} className="flex items-center gap-3">
+            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center">
+              {i + 1}
+            </span>
+            <div
+              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+              style={{ backgroundColor: c.account.color ?? '#6b7280' }}
+            />
+            <div className="flex-1 min-w-0">
+              <span className="text-sm font-medium text-foreground truncate">{c.account.name}</span>
+            </div>
+            <div className="text-right flex-shrink-0 text-xs text-muted-foreground space-x-3">
+              <span>{(c.rate * 100).toFixed(2)}% APR</span>
+              <span className="tabular-nums">
+                ${c.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+          </li>
+        ))}
+      </ol>
+
+      <p className="mt-4 text-xs text-muted-foreground">
+        {activeTab === 'avalanche'
+          ? t('liabilities.avalancheStrategyNote')
+          : t('liabilities.snowballStrategyNote')}
+      </p>
+    </section>
+  );
+}
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
 const LIABILITY_TYPES: Account['type'][] = ['credit_card', 'loan', 'line_of_credit', 'mortgage'];
 
 type SortKey = 'rate-desc' | 'rate-asc' | 'balance-desc' | 'balance-asc' | 'interest-desc';
@@ -252,7 +362,8 @@ export function LiabilitiesPage() {
             ))}
           </div>
 
-          <p className="mt-6 text-xs text-gray-400 text-center">{t('liabilities.avalancheNote')}</p>
+          {/* Payoff recommendations */}
+          <PayoffRecommendations liabilities={liabilities} />
         </>
       )}
     </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
@@ -12,49 +12,109 @@ import {
   useUpsertDebtSchedule,
   useDeleteDebtSchedule,
 } from '../hooks/useDebt';
+import type { MinimumPaymentType } from '../types';
 
-// ─── Zod schema ───────────────────────────────────────────────────────────────
+// ─── Zod schemas ──────────────────────────────────────────────────────────────
 
-const scheduleSchema = z.object({
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+const loanFullSchema = z.object({
+  mode: z.literal('full'),
   principal: z.number().positive('Principal must be positive'),
-  annualRatePct: z.number().min(0).max(100, 'Rate must be between 0 and 100'),
+  annualRatePct: z.number().min(0).max(100, 'Rate must be 0–100'),
   termMonths: z.number().int().min(1).max(600),
-  originationDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD format'),
-  paymentAmount: z.number().positive('Payment amount must be positive'),
+  originationDate: z.string().regex(ISO_DATE, 'Use YYYY-MM-DD'),
+  paymentAmount: z.number().positive('Payment must be positive'),
 });
 
-type ScheduleFormValues = z.infer<typeof scheduleSchema>;
+const loanSimplifiedSchema = z.object({
+  mode: z.literal('simplified'),
+  principal: z.number().positive('Current balance must be positive'),
+  annualRatePct: z.number().min(0).max(100, 'Rate must be 0–100'),
+  termMonths: z.number().int().min(1).max(600),
+  asOfDate: z.string().regex(ISO_DATE, 'Use YYYY-MM-DD'),
+  paymentAmount: z.number().positive('Payment must be positive'),
+});
 
-// ─── DebtScheduleForm ─────────────────────────────────────────────────────────
+const ccSchema = z.object({
+  annualRatePct: z.number().min(0).max(100, 'Rate must be 0–100'),
+  cashAdvanceRatePct: z.number().min(0).max(100).optional().nullable(),
+  minimumPaymentType: z.enum(['fixed', 'percentage', 'greater_of', 'lesser_of']),
+  minimumPaymentAmount: z.number().positive().optional().nullable(),
+  minimumPaymentPercent: z.number().min(0).max(100).optional().nullable(),
+  creditLimit: z.number().positive().optional().nullable(),
+});
 
-function DebtScheduleForm({
+type LoanFullValues = z.infer<typeof loanFullSchema>;
+type LoanSimplifiedValues = z.infer<typeof loanSimplifiedSchema>;
+type CCValues = z.infer<typeof ccSchema>;
+
+/** Common shape for pre-filling loan forms regardless of mode. */
+interface LoanDefaults {
+  principal?: number;
+  annualRatePct?: number;
+  termMonths?: number;
+  originationDate?: string;
+  asOfDate?: string;
+  paymentAmount?: number;
+}
+
+// ─── Shared helpers ───────────────────────────────────────────────────────────
+
+const inputClass =
+  'w-full border border-border rounded-lg px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50';
+const labelClass = 'block text-sm font-medium text-foreground mb-1';
+const errorClass = 'mt-1 text-xs text-destructive';
+const selectClass =
+  'w-full border border-border rounded-lg px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50';
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return <p className={errorClass}>{message}</p>;
+}
+
+// ─── Loan form (full or simplified mode) ─────────────────────────────────────
+
+function LoanScheduleForm({
   accountId,
+  initialMode,
   defaultValues,
   onSuccess,
 }: {
   accountId: string;
-  defaultValues?: Partial<ScheduleFormValues>;
+  initialMode: 'full' | 'simplified';
+  defaultValues?: LoanDefaults;
   onSuccess: () => void;
 }) {
   const { t } = useTranslation();
+  const [mode, setMode] = useState<'full' | 'simplified'>(initialMode);
   const upsert = useUpsertDebtSchedule(accountId);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<ScheduleFormValues>({
-    resolver: zodResolver(scheduleSchema),
-    defaultValues: defaultValues ?? {
-      principal: 0,
-      annualRatePct: 0,
-      termMonths: 60,
-      originationDate: new Date().toISOString().slice(0, 10),
-      paymentAmount: 0,
+  const fullForm = useForm<LoanFullValues>({
+    resolver: zodResolver(loanFullSchema),
+    defaultValues: {
+      mode: 'full',
+      principal: defaultValues?.principal ?? undefined,
+      annualRatePct: defaultValues?.annualRatePct ?? 0,
+      termMonths: defaultValues?.termMonths ?? 60,
+      originationDate: defaultValues?.originationDate ?? new Date().toISOString().slice(0, 10),
+      paymentAmount: defaultValues?.paymentAmount ?? undefined,
     },
   });
 
-  const onSubmit = (values: ScheduleFormValues) => {
+  const simplifiedForm = useForm<LoanSimplifiedValues>({
+    resolver: zodResolver(loanSimplifiedSchema),
+    defaultValues: {
+      mode: 'simplified',
+      principal: defaultValues?.principal ?? undefined,
+      annualRatePct: defaultValues?.annualRatePct ?? 0,
+      termMonths: defaultValues?.termMonths ?? 60,
+      asOfDate: defaultValues?.asOfDate ?? new Date().toISOString().slice(0, 10),
+      paymentAmount: defaultValues?.paymentAmount ?? undefined,
+    },
+  });
+
+  const submitFull = (values: LoanFullValues) => {
     upsert.mutate(
       {
         principal: values.principal,
@@ -62,6 +122,246 @@ function DebtScheduleForm({
         termMonths: values.termMonths,
         originationDate: values.originationDate,
         paymentAmount: values.paymentAmount,
+        isSimplified: false,
+        asOfDate: null,
+      },
+      { onSuccess }
+    );
+  };
+
+  const submitSimplified = (values: LoanSimplifiedValues) => {
+    upsert.mutate(
+      {
+        principal: values.principal,
+        annualRate: values.annualRatePct / 100,
+        termMonths: values.termMonths,
+        asOfDate: values.asOfDate,
+        paymentAmount: values.paymentAmount,
+        isSimplified: true,
+        originationDate: null,
+      },
+      { onSuccess }
+    );
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* Mode toggle */}
+      <div className="flex gap-2 p-1 bg-muted rounded-lg w-fit">
+        <button
+          type="button"
+          onClick={() => setMode('full')}
+          className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${
+            mode === 'full'
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          {t('debt.fullMode')}
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode('simplified')}
+          className={`px-3 py-1.5 text-sm rounded-md font-medium transition-colors ${
+            mode === 'simplified'
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          {t('debt.simplifiedMode')}
+        </button>
+      </div>
+
+      {mode === 'full' ? (
+        <form onSubmit={fullForm.handleSubmit(submitFull)} className="space-y-4">
+          <p className="text-xs text-muted-foreground">{t('debt.fullModeNote')}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>{t('debt.originalPrincipal')}</label>
+              <input
+                {...fullForm.register('principal', { valueAsNumber: true })}
+                type="number"
+                step="0.01"
+                className={inputClass}
+              />
+              <FieldError message={fullForm.formState.errors.principal?.message} />
+            </div>
+            <div>
+              <label className={labelClass}>{t('debt.annualRateField')}</label>
+              <input
+                {...fullForm.register('annualRatePct', { valueAsNumber: true })}
+                type="number"
+                step="0.001"
+                min="0"
+                max="100"
+                className={inputClass}
+              />
+              <FieldError message={fullForm.formState.errors.annualRatePct?.message} />
+            </div>
+            <div>
+              <label className={labelClass}>{t('debt.termMonths')}</label>
+              <input
+                {...fullForm.register('termMonths', { valueAsNumber: true })}
+                type="number"
+                step="1"
+                min="1"
+                className={inputClass}
+              />
+              <FieldError message={fullForm.formState.errors.termMonths?.message} />
+            </div>
+            <div>
+              <label className={labelClass}>{t('debt.originationDate')}</label>
+              <input {...fullForm.register('originationDate')} type="date" className={inputClass} />
+              <FieldError message={fullForm.formState.errors.originationDate?.message} />
+            </div>
+            <div>
+              <label className={labelClass}>{t('debt.monthlyPaymentField')}</label>
+              <input
+                {...fullForm.register('paymentAmount', { valueAsNumber: true })}
+                type="number"
+                step="0.01"
+                min="0.01"
+                className={inputClass}
+              />
+              <FieldError message={fullForm.formState.errors.paymentAmount?.message} />
+            </div>
+          </div>
+          <button
+            type="submit"
+            disabled={upsert.isPending}
+            className="bg-primary text-primary-foreground rounded-lg px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
+          >
+            {upsert.isPending ? t('debt.saving') : t('debt.saveSchedule')}
+          </button>
+        </form>
+      ) : (
+        <form onSubmit={simplifiedForm.handleSubmit(submitSimplified)} className="space-y-4">
+          <p className="text-xs text-muted-foreground">{t('debt.simplifiedModeNote')}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>{t('debt.currentBalance')}</label>
+              <input
+                {...simplifiedForm.register('principal', { valueAsNumber: true })}
+                type="number"
+                step="0.01"
+                className={inputClass}
+              />
+              <FieldError message={simplifiedForm.formState.errors.principal?.message} />
+            </div>
+            <div>
+              <label className={labelClass}>{t('debt.asOfDate')}</label>
+              <input {...simplifiedForm.register('asOfDate')} type="date" className={inputClass} />
+              <FieldError message={simplifiedForm.formState.errors.asOfDate?.message} />
+            </div>
+            <div>
+              <label className={labelClass}>{t('debt.annualRateField')}</label>
+              <input
+                {...simplifiedForm.register('annualRatePct', { valueAsNumber: true })}
+                type="number"
+                step="0.001"
+                min="0"
+                max="100"
+                className={inputClass}
+              />
+              <FieldError message={simplifiedForm.formState.errors.annualRatePct?.message} />
+            </div>
+            <div>
+              <label className={labelClass}>{t('debt.remainingTerm')}</label>
+              <input
+                {...simplifiedForm.register('termMonths', { valueAsNumber: true })}
+                type="number"
+                step="1"
+                min="1"
+                className={inputClass}
+              />
+              <FieldError message={simplifiedForm.formState.errors.termMonths?.message} />
+            </div>
+            <div>
+              <label className={labelClass}>{t('debt.monthlyPaymentField')}</label>
+              <input
+                {...simplifiedForm.register('paymentAmount', { valueAsNumber: true })}
+                type="number"
+                step="0.01"
+                min="0.01"
+                className={inputClass}
+              />
+              <FieldError message={simplifiedForm.formState.errors.paymentAmount?.message} />
+            </div>
+          </div>
+          <button
+            type="submit"
+            disabled={upsert.isPending}
+            className="bg-primary text-primary-foreground rounded-lg px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
+          >
+            {upsert.isPending ? t('debt.saving') : t('debt.saveSchedule')}
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
+
+// ─── CC / LOC form ────────────────────────────────────────────────────────────
+
+const MIN_PAYMENT_TYPES: { value: MinimumPaymentType; labelKey: string }[] = [
+  { value: 'fixed', labelKey: 'debt.minPayFixed' },
+  { value: 'percentage', labelKey: 'debt.minPayPercentage' },
+  { value: 'greater_of', labelKey: 'debt.minPayGreaterOf' },
+  { value: 'lesser_of', labelKey: 'debt.minPayLesserOf' },
+];
+
+function CCScheduleForm({
+  accountId,
+  defaultValues,
+  onSuccess,
+}: {
+  accountId: string;
+  defaultValues?: Partial<CCValues>;
+  onSuccess: () => void;
+}) {
+  const { t } = useTranslation();
+  const upsert = useUpsertDebtSchedule(accountId);
+
+  const {
+    register,
+    control,
+    watch,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<CCValues>({
+    resolver: zodResolver(ccSchema),
+    defaultValues: {
+      annualRatePct: defaultValues?.annualRatePct ?? 0,
+      cashAdvanceRatePct: defaultValues?.cashAdvanceRatePct ?? null,
+      minimumPaymentType: defaultValues?.minimumPaymentType ?? 'greater_of',
+      minimumPaymentAmount: defaultValues?.minimumPaymentAmount ?? null,
+      minimumPaymentPercent: defaultValues?.minimumPaymentPercent ?? null,
+      creditLimit: defaultValues?.creditLimit ?? null,
+    },
+  });
+
+  const paymentType = watch('minimumPaymentType');
+  const showAmount = paymentType === 'fixed' || paymentType === 'greater_of' || paymentType === 'lesser_of';
+  const showPercent = paymentType === 'percentage' || paymentType === 'greater_of' || paymentType === 'lesser_of';
+
+  const onSubmit = (values: CCValues) => {
+    upsert.mutate(
+      {
+        annualRate: values.annualRatePct / 100,
+        cashAdvanceRate:
+          values.cashAdvanceRatePct != null ? values.cashAdvanceRatePct / 100 : null,
+        minimumPaymentType: values.minimumPaymentType,
+        minimumPaymentAmount: values.minimumPaymentAmount ?? null,
+        minimumPaymentPercent:
+          values.minimumPaymentPercent != null ? values.minimumPaymentPercent / 100 : null,
+        creditLimit: values.creditLimit ?? null,
+        // Null out all loan fields
+        principal: null,
+        termMonths: null,
+        originationDate: null,
+        paymentAmount: null,
+        isSimplified: false,
+        asOfDate: null,
       },
       { onSuccess }
     );
@@ -71,96 +371,108 @@ function DebtScheduleForm({
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t('debt.originalPrincipal')}
-          </label>
-          <input
-            {...register('principal', { valueAsNumber: true })}
-            type="number"
-            step="0.01"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-          />
-          {errors.principal && <p className="mt-1 text-xs text-red-500">{errors.principal.message}</p>}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t('debt.annualRateField')}
-          </label>
+          <label className={labelClass}>{t('debt.purchaseRate')}</label>
           <input
             {...register('annualRatePct', { valueAsNumber: true })}
             type="number"
             step="0.001"
             min="0"
             max="100"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            className={inputClass}
           />
-          {errors.annualRatePct && <p className="mt-1 text-xs text-red-500">{errors.annualRatePct.message}</p>}
+          <FieldError message={errors.annualRatePct?.message} />
         </div>
-
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t('debt.termMonths')}
-          </label>
+          <label className={labelClass}>{t('debt.cashAdvanceRate')}</label>
           <input
-            {...register('termMonths', { valueAsNumber: true })}
+            {...register('cashAdvanceRatePct', { valueAsNumber: true, setValueAs: (v) => (v === '' || isNaN(v) ? null : v) })}
             type="number"
-            step="1"
-            min="1"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            step="0.001"
+            min="0"
+            max="100"
+            placeholder={t('debt.optional')}
+            className={inputClass}
           />
-          {errors.termMonths && <p className="mt-1 text-xs text-red-500">{errors.termMonths.message}</p>}
+          <FieldError message={errors.cashAdvanceRatePct?.message} />
         </div>
-
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t('debt.monthlyPaymentField')}
-          </label>
+          <label className={labelClass}>{t('debt.minimumPaymentType')}</label>
+          <Controller
+            name="minimumPaymentType"
+            control={control}
+            render={({ field }) => (
+              <select {...field} className={selectClass}>
+                {MIN_PAYMENT_TYPES.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {t(opt.labelKey)}
+                  </option>
+                ))}
+              </select>
+            )}
+          />
+        </div>
+        {showAmount && (
+          <div>
+            <label className={labelClass}>{t('debt.minimumPaymentAmount')}</label>
+            <input
+              {...register('minimumPaymentAmount', { valueAsNumber: true, setValueAs: (v) => (v === '' || isNaN(v) ? null : v) })}
+              type="number"
+              step="0.01"
+              min="0.01"
+              className={inputClass}
+            />
+            <FieldError message={errors.minimumPaymentAmount?.message} />
+          </div>
+        )}
+        {showPercent && (
+          <div>
+            <label className={labelClass}>{t('debt.minimumPaymentPercent')}</label>
+            <input
+              {...register('minimumPaymentPercent', { valueAsNumber: true, setValueAs: (v) => (v === '' || isNaN(v) ? null : v) })}
+              type="number"
+              step="0.1"
+              min="0"
+              max="100"
+              placeholder="e.g. 2"
+              className={inputClass}
+            />
+            <FieldError message={errors.minimumPaymentPercent?.message} />
+          </div>
+        )}
+        <div>
+          <label className={labelClass}>{t('debt.creditLimit')}</label>
           <input
-            {...register('paymentAmount', { valueAsNumber: true })}
+            {...register('creditLimit', { valueAsNumber: true, setValueAs: (v) => (v === '' || isNaN(v) ? null : v) })}
             type="number"
             step="0.01"
-            min="0.01"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            min="0"
+            placeholder={t('debt.optional')}
+            className={inputClass}
           />
-          {errors.paymentAmount && <p className="mt-1 text-xs text-red-500">{errors.paymentAmount.message}</p>}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t('debt.originationDate')}
-          </label>
-          <input
-            {...register('originationDate')}
-            type="date"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-          />
-          {errors.originationDate && <p className="mt-1 text-xs text-red-500">{errors.originationDate.message}</p>}
+          <FieldError message={errors.creditLimit?.message} />
         </div>
       </div>
-
-      <div className="flex gap-3">
-        <button
-          type="submit"
-          disabled={upsert.isPending}
-          className="bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-        >
-          {upsert.isPending ? t('debt.saving') : t('debt.saveSchedule')}
-        </button>
-      </div>
+      <button
+        type="submit"
+        disabled={upsert.isPending}
+        className="bg-primary text-primary-foreground rounded-lg px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
+      >
+        {upsert.isPending ? t('debt.saving') : t('debt.saveSchedule')}
+      </button>
     </form>
   );
 }
 
 // ─── AmortizationTable ────────────────────────────────────────────────────────
 
-function AmortizationTable({ accountId }: { accountId: string }) {
+function AmortizationTable({ accountId, isRevolving }: { accountId: string; isRevolving: boolean }) {
   const { data: scheduleData } = useDebtSchedule(accountId);
   const { data: amortData, isLoading } = useAmortizationSchedule(accountId, !!scheduleData);
   const [showAll, setShowAll] = useState(false);
+  const { t } = useTranslation();
 
   if (isLoading) {
-    return <div className="h-48 bg-gray-100 animate-pulse rounded-lg" />;
+    return <div className="h-48 bg-muted animate-pulse rounded-lg" />;
   }
   if (!amortData) return null;
 
@@ -172,44 +484,52 @@ function AmortizationTable({ accountId }: { accountId: string }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <div className="text-sm text-gray-600">
-          <span className="font-medium">Payoff date:</span> {amortData.payoffDate}
-          {'  '}
-          <span className="font-medium ml-4">Total interest:</span> {fmt(amortData.totalInterest)}
+        <div className="text-sm text-muted-foreground space-x-4">
+          <span>
+            <span className="font-medium text-foreground">{t('debt.estimatedPayoff')}:</span>{' '}
+            {amortData.payoffDate}
+          </span>
+          <span>
+            <span className="font-medium text-foreground">{t('debt.totalInterest')}:</span>{' '}
+            {fmt(amortData.totalInterest)}
+          </span>
         </div>
       </div>
-
+      {isRevolving && (
+        <p className="text-xs text-muted-foreground mb-3">{t('debt.revolvingSimNote')}</p>
+      )}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-xs text-gray-500 border-b border-gray-200">
-              <th className="pb-2 pr-4">Month</th>
-              <th className="pb-2 pr-4 text-right">Payment</th>
-              <th className="pb-2 pr-4 text-right">Principal</th>
-              <th className="pb-2 pr-4 text-right">Interest</th>
-              <th className="pb-2 text-right">Balance</th>
+            <tr className="text-left text-xs text-muted-foreground border-b border-border">
+              <th className="pb-2 pr-4">{t('debt.tableMonth')}</th>
+              <th className="pb-2 pr-4 text-right">{t('debt.tablePayment')}</th>
+              <th className="pb-2 pr-4 text-right">{t('debt.tablePrincipal')}</th>
+              <th className="pb-2 pr-4 text-right">{t('debt.tableInterest')}</th>
+              <th className="pb-2 text-right">{t('debt.tableBalance')}</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.month} className="border-b border-gray-50">
-                <td className="py-1.5 pr-4 text-gray-600">{row.month}</td>
+              <tr key={row.month} className="border-b border-border/40">
+                <td className="py-1.5 pr-4 text-muted-foreground">{row.month}</td>
                 <td className="py-1.5 pr-4 text-right tabular-nums">{fmt(row.payment)}</td>
-                <td className="py-1.5 pr-4 text-right tabular-nums text-green-600">{fmt(row.principal)}</td>
-                <td className="py-1.5 pr-4 text-right tabular-nums text-red-500">{fmt(row.interest)}</td>
+                <td className="py-1.5 pr-4 text-right tabular-nums text-success">{fmt(row.principal)}</td>
+                <td className="py-1.5 pr-4 text-right tabular-nums text-destructive">{fmt(row.interest)}</td>
                 <td className="py-1.5 text-right tabular-nums">{fmt(row.balance)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-
       {amortData.schedule.length > 24 && (
         <button
           onClick={() => setShowAll((v) => !v)}
-          className="mt-3 text-sm text-blue-600 hover:underline"
+          className="mt-3 text-sm text-primary hover:underline"
         >
-          {showAll ? 'Show fewer rows' : `Show all ${amortData.schedule.length} months`}
+          {showAll
+            ? t('debt.showFewer')
+            : t('debt.showAll', { count: amortData.schedule.length })}
         </button>
       )}
     </div>
@@ -219,33 +539,33 @@ function AmortizationTable({ accountId }: { accountId: string }) {
 // ─── ExtraPaymentCalculator ────────────────────────────────────────────────────
 
 function ExtraPaymentCalculator({ accountId }: { accountId: string }) {
+  const { t } = useTranslation();
   const [extra, setExtra] = useState('');
   const extraNum = parseFloat(extra);
   const { data: whatIf } = useWhatIf(accountId, isNaN(extraNum) ? null : extraNum);
 
   return (
     <div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-wrap">
         <div className="relative">
-          <span className="absolute left-3 top-2 text-gray-400 text-sm">$</span>
+          <span className="absolute left-3 top-2 text-muted-foreground text-sm">$</span>
           <input
             type="number"
             value={extra}
             onChange={(e) => setExtra(e.target.value)}
             min="0.01"
             step="0.01"
-            placeholder="Extra monthly payment"
-            className="pl-7 border border-gray-300 rounded-lg px-3 py-2 text-sm w-52"
+            placeholder={t('debt.extraMonthlyPlaceholder')}
+            className="pl-7 border border-border rounded-lg px-3 py-2 text-sm w-52 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
         </div>
         {whatIf && (
-          <p className="text-sm text-gray-700">
-            Save{' '}
-            <span className="font-semibold text-green-600">{whatIf.monthsSaved} months</span> and{' '}
-            <span className="font-semibold text-green-600">
-              ${whatIf.interestSaved.toFixed(2)}
-            </span>{' '}
-            in interest. Payoff: <span className="font-medium">{whatIf.newPayoffDate}</span>
+          <p className="text-sm text-foreground">
+            {t('debt.whatIfResult', {
+              months: whatIf.monthsSaved,
+              interest: whatIf.interestSaved.toFixed(2),
+              date: whatIf.newPayoffDate,
+            })}
           </p>
         )}
       </div>
@@ -270,34 +590,87 @@ export function DebtDetailPage() {
   const scheduleNotFound =
     isError && (error as { response?: { status: number } })?.response?.status === 404;
 
+  const isCC = account?.type === 'credit_card' || account?.type === 'line_of_credit';
+  const isRevolving = isCC; // used for amortization table note
+
+  const fmt = (n: number | null) =>
+    n != null
+      ? `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      : '—';
+  const pct = (n: number | null) => (n != null ? `${(n * 100).toFixed(3)}%` : '—');
+
+  // Build defaultValues for edit mode
+  const loanDefaults =
+    schedule && !isCC
+      ? {
+          principal: schedule.principal ?? undefined,
+          annualRatePct: schedule.annualRate * 100,
+          termMonths: schedule.termMonths ?? undefined,
+          originationDate: schedule.originationDate ?? undefined,
+          asOfDate: schedule.asOfDate ?? undefined,
+          paymentAmount: schedule.paymentAmount ?? undefined,
+        }
+      : undefined;
+
+  const ccDefaults =
+    schedule && isCC
+      ? {
+          annualRatePct: schedule.annualRate * 100,
+          cashAdvanceRatePct:
+            schedule.cashAdvanceRate != null ? schedule.cashAdvanceRate * 100 : null,
+          minimumPaymentType: schedule.minimumPaymentType ?? undefined,
+          minimumPaymentAmount: schedule.minimumPaymentAmount ?? null,
+          minimumPaymentPercent:
+            schedule.minimumPaymentPercent != null ? schedule.minimumPaymentPercent * 100 : null,
+          creditLimit: schedule.creditLimit ?? null,
+        }
+      : undefined;
+
+  const minPayLabel = (type: string | null) => {
+    switch (type) {
+      case 'fixed': return t('debt.minPayFixed');
+      case 'percentage': return t('debt.minPayPercentage');
+      case 'greater_of': return t('debt.minPayGreaterOf');
+      case 'lesser_of': return t('debt.minPayLesserOf');
+      default: return '—';
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-8 space-y-8">
       <div>
-        <Link to="/accounts" className="text-sm text-blue-600 hover:underline">
+        <Link to="/accounts" className="text-sm text-primary hover:underline">
           {t('debt.backToAccounts')}
         </Link>
-        <h1 className="mt-2 text-2xl font-bold text-gray-900">
+        <h1 className="mt-2 text-2xl font-bold text-foreground">
           {account
             ? t('debt.titleWithAccount', { name: account.name })
             : t('debt.title')}
         </h1>
+        {account && (
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {t(`accounts.types.${account.type}`)}
+          </p>
+        )}
       </div>
 
-      {/* Schedule form */}
-      <section className="bg-white rounded-xl border border-gray-200 p-6">
+      {/* Schedule form / display */}
+      <section className="bg-card rounded-xl border border-border p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-gray-900">{t('debt.loanSchedule')}</h2>
+          <h2 className="text-base font-semibold text-foreground">
+            {isCC ? t('debt.ccLOCDetails') : t('debt.loanSchedule')}
+          </h2>
           {hasSchedule && !editing && (
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <button
                 onClick={() => setEditing(true)}
-                className="text-sm text-blue-600 hover:underline"
+                className="text-sm text-primary hover:underline"
               >
                 {t('debt.edit')}
               </button>
               <button
                 onClick={() => deleteSchedule.mutate()}
-                className="text-sm text-red-500 hover:underline"
+                className="text-sm text-destructive hover:underline"
               >
                 {t('debt.remove')}
               </button>
@@ -306,70 +679,133 @@ export function DebtDetailPage() {
         </div>
 
         {isLoading ? (
-          <div className="h-32 bg-gray-100 animate-pulse rounded-lg" />
+          <div className="h-32 bg-muted animate-pulse rounded-lg" />
         ) : hasSchedule && !editing ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
-            <div>
-              <p className="text-gray-500">{t('debt.principal')}</p>
-              <p className="font-medium">${schedule.principal.toFixed(2)}</p>
+          // ── Read-only summary ──────────────────────────────────────────────
+          isCC ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+              <div>
+                <p className="text-muted-foreground">{t('debt.purchaseRate')}</p>
+                <p className="font-medium">{pct(schedule.annualRate)}</p>
+              </div>
+              {schedule.cashAdvanceRate != null && (
+                <div>
+                  <p className="text-muted-foreground">{t('debt.cashAdvanceRate')}</p>
+                  <p className="font-medium">{pct(schedule.cashAdvanceRate)}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-muted-foreground">{t('debt.minimumPaymentType')}</p>
+                <p className="font-medium">{minPayLabel(schedule.minimumPaymentType)}</p>
+              </div>
+              {schedule.minimumPaymentAmount != null && (
+                <div>
+                  <p className="text-muted-foreground">{t('debt.minimumPaymentAmount')}</p>
+                  <p className="font-medium">{fmt(schedule.minimumPaymentAmount)}</p>
+                </div>
+              )}
+              {schedule.minimumPaymentPercent != null && (
+                <div>
+                  <p className="text-muted-foreground">{t('debt.minimumPaymentPercent')}</p>
+                  <p className="font-medium">{(schedule.minimumPaymentPercent * 100).toFixed(2)}%</p>
+                </div>
+              )}
+              {schedule.creditLimit != null && (
+                <div>
+                  <p className="text-muted-foreground">{t('debt.creditLimit')}</p>
+                  <p className="font-medium">{fmt(schedule.creditLimit)}</p>
+                </div>
+              )}
             </div>
-            <div>
-              <p className="text-gray-500">{t('debt.annualRate')}</p>
-              <p className="font-medium">{(schedule.annualRate * 100).toFixed(3)}%</p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+              <div>
+                <p className="text-muted-foreground">
+                  {schedule.isSimplified ? t('debt.currentBalance') : t('debt.principal')}
+                </p>
+                <p className="font-medium">{fmt(schedule.principal)}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">{t('debt.annualRate')}</p>
+                <p className="font-medium">{pct(schedule.annualRate)}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">{t('debt.term')}</p>
+                <p className="font-medium">
+                  {schedule.termMonths != null ? `${schedule.termMonths} months` : '—'}
+                </p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">{t('debt.monthlyPayment')}</p>
+                <p className="font-medium">{fmt(schedule.paymentAmount)}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">
+                  {schedule.isSimplified ? t('debt.asOfDate') : t('debt.origination')}
+                </p>
+                <p className="font-medium">
+                  {schedule.isSimplified
+                    ? (schedule.asOfDate ?? '—')
+                    : (schedule.originationDate ?? '—')}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-gray-500">{t('debt.term')}</p>
-              <p className="font-medium">{schedule.termMonths} months</p>
-            </div>
-            <div>
-              <p className="text-gray-500">{t('debt.monthlyPayment')}</p>
-              <p className="font-medium">${schedule.paymentAmount.toFixed(2)}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">{t('debt.origination')}</p>
-              <p className="font-medium">{schedule.originationDate}</p>
-            </div>
-          </div>
+          )
         ) : (
-          <DebtScheduleForm
-            accountId={accountId!}
-            defaultValues={
-              schedule
-                ? {
-                    principal: schedule.principal,
-                    annualRatePct: schedule.annualRate * 100,
-                    termMonths: schedule.termMonths,
-                    originationDate: schedule.originationDate,
-                    paymentAmount: schedule.paymentAmount,
-                  }
-                : undefined
-            }
-            onSuccess={() => {
-              setEditing(false);
-            }}
-          />
+          // ── Edit / create form ─────────────────────────────────────────────
+          (scheduleNotFound || editing) && (
+            isCC ? (
+              <CCScheduleForm
+                accountId={accountId!}
+                defaultValues={ccDefaults}
+                onSuccess={() => setEditing(false)}
+              />
+            ) : (
+              <LoanScheduleForm
+                accountId={accountId!}
+                initialMode={schedule?.isSimplified ? 'simplified' : 'full'}
+                defaultValues={loanDefaults}
+                onSuccess={() => setEditing(false)}
+              />
+            )
+          )
         )}
+
+        {/* Show form when no schedule exists */}
+        {!hasSchedule && !isLoading && !scheduleNotFound && null}
         {scheduleNotFound && !editing && (
           <div>
-            <p className="text-sm text-gray-400 mb-4">{t('debt.noSchedule')}</p>
-            <DebtScheduleForm accountId={accountId!} onSuccess={() => setEditing(false)} />
+            <p className="text-sm text-muted-foreground mb-4">{t('debt.noSchedule')}</p>
+            {isCC ? (
+              <CCScheduleForm accountId={accountId!} onSuccess={() => setEditing(false)} />
+            ) : (
+              <LoanScheduleForm
+                accountId={accountId!}
+                initialMode="full"
+                onSuccess={() => setEditing(false)}
+              />
+            )}
           </div>
         )}
       </section>
 
-      {/* Amortization table */}
+      {/* Payoff simulation / amortization table */}
       {hasSchedule && (
-        <section className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-4">{t('debt.amortization')}</h2>
-          <AmortizationTable accountId={accountId!} />
+        <section className="bg-card rounded-xl border border-border p-6">
+          <h2 className="text-base font-semibold text-foreground mb-4">
+            {isRevolving ? t('debt.payoffSimulation') : t('debt.amortization')}
+          </h2>
+          <AmortizationTable accountId={accountId!} isRevolving={isRevolving} />
         </section>
       )}
 
       {/* What-if calculator */}
       {hasSchedule && (
-        <section className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-2">{t('debt.whatIf')}</h2>
-          <p className="text-sm text-gray-500 mb-4">{t('debt.whatIfDesc')}</p>
+        <section className="bg-card rounded-xl border border-border p-6">
+          <h2 className="text-base font-semibold text-foreground mb-2">{t('debt.whatIf')}</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            {isRevolving ? t('debt.whatIfDescCC') : t('debt.whatIfDesc')}
+          </p>
           <ExtraPaymentCalculator accountId={accountId!} />
         </section>
       )}

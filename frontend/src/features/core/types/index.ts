@@ -340,26 +340,45 @@ export interface PayPeriod {
 
 // ─── Debt Schedules ───────────────────────────────────────────────────────────
 
+export type MinimumPaymentType = 'fixed' | 'percentage' | 'greater_of' | 'lesser_of';
+
 export interface DebtSchedule {
   id: string;
   userId: string;
   accountId: string;
-  principal: number;
-  /** Decimal fraction: 0.065 = 6.5% APR */
+  // Loan / Mortgage
+  principal: number | null;
   annualRate: number;
-  termMonths: number;
-  originationDate: string; // YYYY-MM-DD
-  paymentAmount: number;
+  termMonths: number | null;
+  originationDate: string | null;
+  paymentAmount: number | null;
+  isSimplified: boolean;
+  asOfDate: string | null;
+  // CC / LOC
+  cashAdvanceRate: number | null;
+  minimumPaymentType: MinimumPaymentType | null;
+  minimumPaymentAmount: number | null;
+  minimumPaymentPercent: number | null;
+  creditLimit: number | null;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface UpsertDebtScheduleInput {
-  principal: number;
   annualRate: number;
-  termMonths: number;
-  originationDate: string;
-  paymentAmount: number;
+  // Loan / Mortgage
+  principal?: number | null;
+  termMonths?: number | null;
+  originationDate?: string | null;
+  paymentAmount?: number | null;
+  isSimplified?: boolean;
+  asOfDate?: string | null;
+  // CC / LOC
+  cashAdvanceRate?: number | null;
+  minimumPaymentType?: MinimumPaymentType | null;
+  minimumPaymentAmount?: number | null;
+  minimumPaymentPercent?: number | null;
+  creditLimit?: number | null;
 }
 
 export interface AmortizationRow {

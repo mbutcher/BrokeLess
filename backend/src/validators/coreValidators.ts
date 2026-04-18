@@ -129,25 +129,37 @@ export const linkTransactionSchema = Joi.object({
 // ─── Debt Schedule Validators ─────────────────────────────────────────────────
 
 export const upsertDebtScheduleSchema = Joi.object({
-  principal: Joi.number().positive().precision(2).required().messages({
-    'any.required': 'principal is required',
-    'number.positive': 'principal must be a positive number',
-  }),
+  // Required for all debt types
   annualRate: Joi.number().min(0).max(1).required().messages({
     'any.required': 'annualRate is required',
     'number.max': 'annualRate must be a decimal fraction (e.g. 0.065 for 6.5%)',
   }),
-  termMonths: Joi.number().integer().min(1).max(600).required().messages({
-    'any.required': 'termMonths is required',
+
+  // Loan / Mortgage fields (optional for CC/LOC)
+  principal: Joi.number().positive().precision(2).optional().allow(null),
+  termMonths: Joi.number().integer().min(1).max(600).optional().allow(null).messages({
     'number.max': 'termMonths cannot exceed 600',
   }),
-  originationDate: Joi.string().pattern(ISO_DATE).required().messages({
-    'any.required': 'originationDate is required',
+  originationDate: Joi.string().pattern(ISO_DATE).optional().allow(null).messages({
     'string.pattern.base': 'originationDate must be in YYYY-MM-DD format',
   }),
-  paymentAmount: Joi.number().positive().precision(2).required().messages({
-    'any.required': 'paymentAmount is required',
+  paymentAmount: Joi.number().positive().precision(2).optional().allow(null),
+
+  // Simplified loan mode
+  isSimplified: Joi.boolean().optional().default(false),
+  asOfDate: Joi.string().pattern(ISO_DATE).optional().allow(null).messages({
+    'string.pattern.base': 'asOfDate must be in YYYY-MM-DD format',
   }),
+
+  // CC / LOC fields
+  cashAdvanceRate: Joi.number().min(0).max(2).optional().allow(null),
+  minimumPaymentType: Joi.string()
+    .valid('fixed', 'percentage', 'greater_of', 'lesser_of')
+    .optional()
+    .allow(null),
+  minimumPaymentAmount: Joi.number().positive().precision(2).optional().allow(null),
+  minimumPaymentPercent: Joi.number().min(0).max(1).optional().allow(null),
+  creditLimit: Joi.number().positive().precision(2).optional().allow(null),
 });
 
 export const whatIfQuerySchema = Joi.object({

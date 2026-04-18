@@ -229,28 +229,59 @@ export interface BudgetCategoryEntry {
 
 // ─── Debt Schedules ───────────────────────────────────────────────────────────
 
+export type MinimumPaymentType = 'fixed' | 'percentage' | 'greater_of' | 'lesser_of';
+
 export interface DebtSchedule {
   id: string;
   userId: string;
   accountId: string;
-  /** Original loan amount */
-  principal: number;
-  /** Decimal fraction: 0.065 = 6.5% APR */
+
+  // ── Loan / Mortgage — full mode ─────────────────────────────────────────
+  /** Original loan amount (null for CC/LOC; for simplified mode this is the current balance) */
+  principal: number | null;
+  /** Purchase APR as a decimal fraction: 0.065 = 6.5% (required for all types) */
   annualRate: number;
-  termMonths: number;
-  originationDate: string; // YYYY-MM-DD
-  paymentAmount: number;
+  /** Loan term in months (null for CC/LOC) */
+  termMonths: number | null;
+  /** Loan start date (null for CC/LOC and simplified mode) */
+  originationDate: string | null; // YYYY-MM-DD
+  /** Fixed monthly payment (null for CC/LOC) */
+  paymentAmount: number | null;
+
+  // ── Loan / Mortgage — simplified mode ───────────────────────────────────
+  /** true = principal holds current balance as of asOfDate, not original loan amount */
+  isSimplified: boolean;
+  /** Snapshot date for simplified balance entry */
+  asOfDate: string | null; // YYYY-MM-DD
+
+  // ── Credit Card / Line of Credit ─────────────────────────────────────────
+  /** Cash-advance APR (null for loans) */
+  cashAdvanceRate: number | null;
+  minimumPaymentType: MinimumPaymentType | null;
+  minimumPaymentAmount: number | null;
+  minimumPaymentPercent: number | null;
+  creditLimit: number | null;
+
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface UpsertDebtScheduleData {
   accountId: string;
-  principal: number;
   annualRate: number;
-  termMonths: number;
-  originationDate: string;
-  paymentAmount: number;
+  // Loan / Mortgage
+  principal?: number | null;
+  termMonths?: number | null;
+  originationDate?: string | null;
+  paymentAmount?: number | null;
+  isSimplified?: boolean;
+  asOfDate?: string | null;
+  // CC / LOC
+  cashAdvanceRate?: number | null;
+  minimumPaymentType?: MinimumPaymentType | null;
+  minimumPaymentAmount?: number | null;
+  minimumPaymentPercent?: number | null;
+  creditLimit?: number | null;
 }
 
 export interface AmortizationRow {
