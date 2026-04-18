@@ -12,6 +12,7 @@ import {
 import { hasIndexedDbKey } from '@lib/db/crypto';
 import { useNetworkStore } from '@stores/networkStore';
 import type { CreateBudgetLineInput, UpdateBudgetLineInput } from '../types';
+import { BUDGET_VIEW_KEY } from './useBudgetView';
 
 export const BUDGET_LINES_KEY = ['budget-lines'] as const;
 
@@ -78,7 +79,10 @@ export function useCreateBudgetLine() {
       }
       return budgetLineApi.create(data);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: BUDGET_LINES_KEY }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: BUDGET_LINES_KEY });
+      void qc.invalidateQueries({ queryKey: BUDGET_VIEW_KEY });
+    },
   });
 }
 
@@ -108,7 +112,10 @@ export function useUpdateBudgetLine() {
       }
       return budgetLineApi.update(id, data);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: BUDGET_LINES_KEY }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: BUDGET_LINES_KEY });
+      void qc.invalidateQueries({ queryKey: BUDGET_VIEW_KEY });
+    },
   });
 }
 
@@ -138,7 +145,10 @@ export function useDeleteBudgetLine() {
       }
       return budgetLineApi.delete(id);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: BUDGET_LINES_KEY }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: BUDGET_LINES_KEY });
+      void qc.invalidateQueries({ queryKey: BUDGET_VIEW_KEY });
+    },
   });
 }
 
