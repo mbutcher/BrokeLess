@@ -82,7 +82,7 @@ export function SimplefinSettingsPage() {
 
   async function handleSync() {
     setSyncResult(null);
-    const res = await syncMutation.mutateAsync();
+    const res = await syncMutation.mutateAsync(false);
     setSyncResult(res.data.data.result);
   }
 

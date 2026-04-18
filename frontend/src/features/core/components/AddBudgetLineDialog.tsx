@@ -78,6 +78,11 @@ interface AddBudgetLineDialogProps {
   open: boolean;
   defaultCategoryId?: string;
   defaultClassification?: BudgetLineClassification;
+  defaultName?: string;
+  defaultAmount?: number;
+  defaultAnchorDate?: string;
+  defaultAccountId?: string;
+  defaultNotes?: string;
   onClose: () => void;
 }
 
@@ -85,6 +90,11 @@ export function AddBudgetLineDialog({
   open,
   defaultCategoryId,
   defaultClassification,
+  defaultName,
+  defaultAmount,
+  defaultAnchorDate,
+  defaultAccountId,
+  defaultNotes,
   onClose,
 }: AddBudgetLineDialogProps) {
   const createLine = useCreateBudgetLine();
@@ -103,22 +113,45 @@ export function AddBudgetLineDialog({
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      name: '',
+      name: defaultName ?? '',
       classification: defaultClassification ?? 'expense',
       flexibility: 'fixed',
       categoryId: defaultCategoryId ?? '',
       subcategoryId: null,
-      accountId: null,
-      amount: 0,
+      accountId: defaultAccountId ?? null,
+      amount: defaultAmount ?? 0,
       frequency: 'monthly',
       frequencyInterval: null,
       dayOfMonth1: null,
       dayOfMonth2: null,
-      anchorDate: new Date().toISOString().substring(0, 10),
+      anchorDate: defaultAnchorDate ?? new Date().toISOString().substring(0, 10),
       isPayPeriodAnchor: false,
-      notes: null,
+      notes: defaultNotes ?? null,
     },
   });
+
+  // Re-seed the form each time the dialog opens so that pre-fill props are applied.
+  useEffect(() => {
+    if (open) {
+      reset({
+        name: defaultName ?? '',
+        classification: defaultClassification ?? 'expense',
+        flexibility: 'fixed',
+        categoryId: defaultCategoryId ?? '',
+        subcategoryId: null,
+        accountId: defaultAccountId ?? null,
+        amount: defaultAmount ?? 0,
+        frequency: 'monthly',
+        frequencyInterval: null,
+        dayOfMonth1: null,
+        dayOfMonth2: null,
+        anchorDate: defaultAnchorDate ?? new Date().toISOString().substring(0, 10),
+        isPayPeriodAnchor: false,
+        notes: defaultNotes ?? null,
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const watchedCategoryId = watch('categoryId');
   const watchedClassification = watch('classification');

@@ -102,9 +102,9 @@ function SimplefinSection() {
     }
   }
 
-  async function handleSync() {
+  async function handleSync(full = false) {
     setSyncResult(null);
-    const res = await syncMutation.mutateAsync();
+    const res = await syncMutation.mutateAsync(full);
     setSyncResult(res.data.data.result);
   }
 
@@ -207,14 +207,22 @@ function SimplefinSection() {
                 </Alert>
               )}
 
-              <div className="flex gap-2">
-                <Button variant="default" onClick={handleSync} disabled={syncMutation.isPending}>
+              <div className="flex gap-2 flex-wrap">
+                <Button variant="default" onClick={() => void handleSync(false)} disabled={syncMutation.isPending}>
                   {syncMutation.isPending ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
                     <RefreshCw className="mr-2 h-4 w-4" />
                   )}
                   {t('simplefin.syncNow')}
+                </Button>
+                <Button variant="outline" onClick={() => void handleSync(true)} disabled={syncMutation.isPending} title={t('simplefin.fullSyncHelp')}>
+                  {syncMutation.isPending ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                  )}
+                  {t('simplefin.fullSync')}
                 </Button>
 
                 {!confirmDisconnect ? (
