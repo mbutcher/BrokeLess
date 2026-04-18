@@ -17,7 +17,7 @@ import {
   useUpsertDebtSchedule,
   useDeleteDebtSchedule,
 } from '../hooks/useDebt';
-import type { MinimumPaymentType } from '../types';
+import type { MinimumPaymentType, PaymentFrequency } from '../types';
 
 // ─── Zod schemas ──────────────────────────────────────────────────────────────
 
@@ -30,6 +30,7 @@ const loanFullSchema = z.object({
   termMonths: z.number().int().min(1).max(600),
   originationDate: z.string().regex(ISO_DATE, 'Use YYYY-MM-DD'),
   paymentAmount: z.number().positive('Payment must be positive'),
+  paymentFrequency: z.enum(['weekly', 'biweekly', 'semimonthly', 'monthly']),
 });
 
 const loanSimplifiedSchema = z.object({
@@ -39,15 +40,16 @@ const loanSimplifiedSchema = z.object({
   termMonths: z.number().int().min(1).max(600),
   asOfDate: z.string().regex(ISO_DATE, 'Use YYYY-MM-DD'),
   paymentAmount: z.number().positive('Payment must be positive'),
+  paymentFrequency: z.enum(['weekly', 'biweekly', 'semimonthly', 'monthly']),
 });
 
 const ccSchema = z.object({
   annualRatePct: z.number().min(0).max(100, 'Rate must be 0–100'),
-  cashAdvanceRatePct: z.number().min(0).max(100).optional().nullable(),
+  cashAdvanceRatePct: z.number().min(0).max(100).nullable().optional(),
   minimumPaymentType: z.enum(['fixed', 'percentage', 'greater_of', 'lesser_of']),
-  minimumPaymentAmount: z.number().positive().optional().nullable(),
-  minimumPaymentPercent: z.number().min(0).max(100).optional().nullable(),
-  creditLimit: z.number().positive().optional().nullable(),
+  minimumPaymentAmount: z.number().positive().nullable().optional(),
+  minimumPaymentPercent: z.number().min(0).max(100).nullable().optional(),
+  creditLimit: z.number().positive().nullable().optional(),
 });
 
 type LoanFullValues = z.infer<typeof loanFullSchema>;
@@ -62,6 +64,7 @@ interface LoanDefaults {
   originationDate?: string;
   asOfDate?: string;
   paymentAmount?: number;
+  paymentFrequency?: PaymentFrequency;
 }
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
@@ -77,6 +80,20 @@ function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return <p className={errorClass}>{message}</p>;
 }
+
+/** Parse a form input value to a number or null (for optional numeric fields). */
+function parseOptionalNum(v: unknown): number | null {
+  if (v === '' || v === null || v === undefined) return null;
+  const n = parseFloat(String(v));
+  return isNaN(n) ? null : n;
+}
+
+const FREQUENCY_OPTIONS: { value: PaymentFrequency; labelKey: string }[] = [
+  { value: 'monthly', labelKey: 'debt.freqMonthly' },
+  { value: 'semimonthly', labelKey: 'debt.freqSemimonthly' },
+  { value: 'biweekly', labelKey: 'debt.freqBiweekly' },
+  { value: 'weekly', labelKey: 'debt.freqWeekly' },
+];
 
 // ─── Loan form (full or simplified mode) ─────────────────────────────────────
 
@@ -104,6 +121,7 @@ function LoanScheduleForm({
       termMonths: defaultValues?.termMonths ?? 60,
       originationDate: defaultValues?.originationDate ?? new Date().toISOString().slice(0, 10),
       paymentAmount: defaultValues?.paymentAmount ?? undefined,
+      paymentFrequency: defaultValues?.paymentFrequency ?? 'monthly',
     },
   });
 
@@ -116,6 +134,7 @@ function LoanScheduleForm({
       termMonths: defaultValues?.termMonths ?? 60,
       asOfDate: defaultValues?.asOfDate ?? new Date().toISOString().slice(0, 10),
       paymentAmount: defaultValues?.paymentAmount ?? undefined,
+      paymentFrequency: defaultValues?.paymentFrequency ?? 'monthly',
     },
   });
 
@@ -127,6 +146,7 @@ function LoanScheduleForm({
         termMonths: values.termMonths,
         originationDate: values.originationDate,
         paymentAmount: values.paymentAmount,
+        paymentFrequency: values.paymentFrequency,
         isSimplified: false,
         asOfDate: null,
       },
@@ -142,6 +162,7 @@ function LoanScheduleForm({
         termMonths: values.termMonths,
         asOfDate: values.asOfDate,
         paymentAmount: values.paymentAmount,
+        paymentFrequency: values.paymentFrequency,
         isSimplified: true,
         originationDate: null,
       },
@@ -220,7 +241,23 @@ function LoanScheduleForm({
               <FieldError message={fullForm.formState.errors.originationDate?.message} />
             </div>
             <div>
-              <label className={labelClass}>{t('debt.monthlyPaymentField')}</label>
+              <label className={labelClass}>{t('debt.paymentFrequency')}</label>
+              <Controller
+                name="paymentFrequency"
+                control={fullForm.control}
+                render={({ field }) => (
+                  <select {...field} className={selectClass}>
+                    {FREQUENCY_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {t(opt.labelKey)}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>{t('debt.paymentAmountField')}</label>
               <input
                 {...fullForm.register('paymentAmount', { valueAsNumber: true })}
                 type="number"
@@ -286,7 +323,23 @@ function LoanScheduleForm({
               <FieldError message={simplifiedForm.formState.errors.termMonths?.message} />
             </div>
             <div>
-              <label className={labelClass}>{t('debt.monthlyPaymentField')}</label>
+              <label className={labelClass}>{t('debt.paymentFrequency')}</label>
+              <Controller
+                name="paymentFrequency"
+                control={simplifiedForm.control}
+                render={({ field }) => (
+                  <select {...field} className={selectClass}>
+                    {FREQUENCY_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {t(opt.labelKey)}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>{t('debt.paymentAmountField')}</label>
               <input
                 {...simplifiedForm.register('paymentAmount', { valueAsNumber: true })}
                 type="number"
@@ -395,10 +448,7 @@ function CCScheduleForm({
         <div>
           <label className={labelClass}>{t('debt.cashAdvanceRate')}</label>
           <input
-            {...register('cashAdvanceRatePct', {
-              valueAsNumber: true,
-              setValueAs: (v) => (v === '' || isNaN(v) ? null : v),
-            })}
+            {...register('cashAdvanceRatePct', { setValueAs: parseOptionalNum })}
             type="number"
             step="0.001"
             min="0"
@@ -428,10 +478,7 @@ function CCScheduleForm({
           <div>
             <label className={labelClass}>{t('debt.minimumPaymentAmount')}</label>
             <input
-              {...register('minimumPaymentAmount', {
-                valueAsNumber: true,
-                setValueAs: (v) => (v === '' || isNaN(v) ? null : v),
-              })}
+              {...register('minimumPaymentAmount', { setValueAs: parseOptionalNum })}
               type="number"
               step="0.01"
               min="0.01"
@@ -444,10 +491,7 @@ function CCScheduleForm({
           <div>
             <label className={labelClass}>{t('debt.minimumPaymentPercent')}</label>
             <input
-              {...register('minimumPaymentPercent', {
-                valueAsNumber: true,
-                setValueAs: (v) => (v === '' || isNaN(v) ? null : v),
-              })}
+              {...register('minimumPaymentPercent', { setValueAs: parseOptionalNum })}
               type="number"
               step="0.1"
               min="0"
@@ -461,10 +505,7 @@ function CCScheduleForm({
         <div>
           <label className={labelClass}>{t('debt.creditLimit')}</label>
           <input
-            {...register('creditLimit', {
-              valueAsNumber: true,
-              setValueAs: (v) => (v === '' || isNaN(v) ? null : v),
-            })}
+            {...register('creditLimit', { setValueAs: parseOptionalNum })}
             type="number"
             step="0.01"
             min="0"
@@ -494,8 +535,8 @@ function AmortizationTable({
   accountId: string;
   isRevolving: boolean;
 }) {
-  const { data: scheduleData } = useDebtSchedule(accountId);
-  const { data: amortData, isLoading } = useAmortizationSchedule(accountId, !!scheduleData);
+  // Always enabled — parent only renders this component when hasSchedule is true
+  const { data: amortData, isLoading } = useAmortizationSchedule(accountId, true);
   const [showAll, setShowAll] = useState(false);
   const { t } = useTranslation();
 
@@ -530,7 +571,7 @@ function AmortizationTable({
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-xs text-muted-foreground border-b border-border">
-              <th className="pb-2 pr-4">{t('debt.tableMonth')}</th>
+              <th className="pb-2 pr-4">{t('debt.tablePeriod')}</th>
               <th className="pb-2 pr-4 text-right">{t('debt.tablePayment')}</th>
               <th className="pb-2 pr-4 text-right">{t('debt.tablePrincipal')}</th>
               <th className="pb-2 pr-4 text-right">{t('debt.tableInterest')}</th>
@@ -604,7 +645,6 @@ function ExtraPaymentCalculator({ accountId }: { accountId: string }) {
 }
 
 // ─── DebtDetailContent ────────────────────────────────────────────────────────
-// Inner content — reused by both the modal and (optionally) a standalone page.
 
 function DebtDetailContent({ accountId }: { accountId: string }) {
   const { t } = useTranslation();
@@ -627,6 +667,15 @@ function DebtDetailContent({ accountId }: { accountId: string }) {
       : '—';
   const pct = (n: number | null) => (n != null ? `${(n * 100).toFixed(3)}%` : '—');
 
+  const freqLabel = (f: string | null) => {
+    switch (f) {
+      case 'weekly': return t('debt.freqWeekly');
+      case 'biweekly': return t('debt.freqBiweekly');
+      case 'semimonthly': return t('debt.freqSemimonthly');
+      default: return t('debt.freqMonthly');
+    }
+  };
+
   const loanDefaults: LoanDefaults | undefined =
     schedule && !isCC
       ? {
@@ -636,6 +685,7 @@ function DebtDetailContent({ accountId }: { accountId: string }) {
           originationDate: schedule.originationDate ?? undefined,
           asOfDate: schedule.asOfDate ?? undefined,
           paymentAmount: schedule.paymentAmount ?? undefined,
+          paymentFrequency: schedule.paymentFrequency ?? 'monthly',
         }
       : undefined;
 
@@ -657,16 +707,11 @@ function DebtDetailContent({ accountId }: { accountId: string }) {
 
   const minPayLabel = (type: string | null) => {
     switch (type) {
-      case 'fixed':
-        return t('debt.minPayFixed');
-      case 'percentage':
-        return t('debt.minPayPercentage');
-      case 'greater_of':
-        return t('debt.minPayGreaterOf');
-      case 'lesser_of':
-        return t('debt.minPayLesserOf');
-      default:
-        return '—';
+      case 'fixed': return t('debt.minPayFixed');
+      case 'percentage': return t('debt.minPayPercentage');
+      case 'greater_of': return t('debt.minPayGreaterOf');
+      case 'lesser_of': return t('debt.minPayLesserOf');
+      default: return '—';
     }
   };
 
@@ -758,7 +803,11 @@ function DebtDetailContent({ accountId }: { accountId: string }) {
                 </p>
               </div>
               <div>
-                <p className="text-muted-foreground">{t('debt.monthlyPayment')}</p>
+                <p className="text-muted-foreground">{t('debt.paymentFrequency')}</p>
+                <p className="font-medium">{freqLabel(schedule.paymentFrequency)}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">{t('debt.paymentAmount')}</p>
                 <p className="font-medium">{fmt(schedule.paymentAmount)}</p>
               </div>
               <div>
@@ -798,7 +847,7 @@ function DebtDetailContent({ accountId }: { accountId: string }) {
       </section>
 
       {/* Payoff simulation / amortization table */}
-      {hasSchedule && (
+      {hasSchedule && !editing && (
         <section className="bg-muted/30 rounded-xl border border-border p-5">
           <h3 className="text-sm font-semibold text-foreground mb-4">
             {isCC ? t('debt.payoffSimulation') : t('debt.amortization')}
@@ -808,7 +857,7 @@ function DebtDetailContent({ accountId }: { accountId: string }) {
       )}
 
       {/* What-if calculator */}
-      {hasSchedule && (
+      {hasSchedule && !editing && (
         <section className="bg-muted/30 rounded-xl border border-border p-5">
           <h3 className="text-sm font-semibold text-foreground mb-1">{t('debt.whatIf')}</h3>
           <p className="text-sm text-muted-foreground mb-4">

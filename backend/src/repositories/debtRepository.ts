@@ -1,6 +1,11 @@
 import { randomUUID } from 'crypto';
 import { getDatabase } from '@config/database';
-import type { DebtSchedule, TransactionSplit, UpsertDebtScheduleData } from '@typings/core.types';
+import type {
+  DebtSchedule,
+  PaymentFrequency,
+  TransactionSplit,
+  UpsertDebtScheduleData,
+} from '@typings/core.types';
 
 function rowToSchedule(row: Record<string, unknown>): DebtSchedule {
   return {
@@ -12,6 +17,8 @@ function rowToSchedule(row: Record<string, unknown>): DebtSchedule {
     termMonths: row['term_months'] != null ? Number(row['term_months']) : null,
     originationDate: row['origination_date'] ? (row['origination_date'] as string) : null,
     paymentAmount: row['payment_amount'] != null ? Number(row['payment_amount']) : null,
+    paymentFrequency:
+      row['payment_frequency'] != null ? (row['payment_frequency'] as PaymentFrequency) : 'monthly',
     isSimplified: Boolean(row['is_simplified']),
     asOfDate: row['as_of_date'] ? (row['as_of_date'] as string) : null,
     cashAdvanceRate: row['cash_advance_rate'] != null ? Number(row['cash_advance_rate']) : null,
@@ -64,6 +71,7 @@ class DebtRepository {
       term_months: data.termMonths ?? null,
       origination_date: data.originationDate ?? null,
       payment_amount: data.paymentAmount ?? null,
+      payment_frequency: data.paymentFrequency ?? 'monthly',
       is_simplified: data.isSimplified ? 1 : 0,
       as_of_date: data.asOfDate ?? null,
       cash_advance_rate: data.cashAdvanceRate ?? null,

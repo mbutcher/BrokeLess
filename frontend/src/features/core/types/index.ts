@@ -342,6 +342,8 @@ export interface PayPeriod {
 
 export type MinimumPaymentType = 'fixed' | 'percentage' | 'greater_of' | 'lesser_of';
 
+export type PaymentFrequency = 'weekly' | 'biweekly' | 'semimonthly' | 'monthly';
+
 export interface DebtSchedule {
   id: string;
   userId: string;
@@ -352,6 +354,7 @@ export interface DebtSchedule {
   termMonths: number | null;
   originationDate: string | null;
   paymentAmount: number | null;
+  paymentFrequency: PaymentFrequency | null;
   isSimplified: boolean;
   asOfDate: string | null;
   // CC / LOC
@@ -371,6 +374,7 @@ export interface UpsertDebtScheduleInput {
   termMonths?: number | null;
   originationDate?: string | null;
   paymentAmount?: number | null;
+  paymentFrequency?: PaymentFrequency | null;
   isSimplified?: boolean;
   asOfDate?: string | null;
   // CC / LOC

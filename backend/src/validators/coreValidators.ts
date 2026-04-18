@@ -151,6 +151,12 @@ export const upsertDebtScheduleSchema = Joi.object({
     'string.pattern.base': 'asOfDate must be in YYYY-MM-DD format',
   }),
 
+  // Payment frequency for loans (ignored for CC/LOC)
+  paymentFrequency: Joi.string()
+    .valid('weekly', 'biweekly', 'semimonthly', 'monthly')
+    .optional()
+    .allow(null),
+
   // CC / LOC fields
   cashAdvanceRate: Joi.number().min(0).max(2).optional().allow(null),
   minimumPaymentType: Joi.string()

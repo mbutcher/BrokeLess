@@ -102,6 +102,8 @@ export function useUpsertDebtSchedule(accountId: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['debt', 'schedule', accountId] });
       void queryClient.invalidateQueries({ queryKey: ['debt', 'amortization', accountId] });
+      // Backend syncs annualRate to the account on upsert — refresh so cards show the rate
+      void queryClient.invalidateQueries({ queryKey: ['accounts'] });
     },
   });
 }
