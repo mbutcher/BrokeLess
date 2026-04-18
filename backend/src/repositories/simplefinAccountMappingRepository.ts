@@ -47,6 +47,51 @@ class SimplefinAccountMappingRepository {
     return rows.map(rowToMapping);
   }
 
+  /**
+   * Insert a brand-new mapping row (no prior-existence check).
+   * Use during sync for accounts discovered for the first time.
+   */
+  async insert(data: {
+    userId: string;
+    simplefinAccountId: string;
+    simplefinOrgName: string;
+    simplefinAccountName: string;
+    simplefinAccountType: string;
+  }): Promise<void> {
+    const id = randomUUID();
+    await this.db('simplefin_account_mappings').insert({
+      id,
+      user_id: data.userId,
+      simplefin_account_id: data.simplefinAccountId,
+      simplefin_org_name: data.simplefinOrgName,
+      simplefin_account_name: data.simplefinAccountName,
+      simplefin_account_type: data.simplefinAccountType,
+      local_account_id: null,
+    });
+  }
+
+  /**
+   * Update only the display fields (org name, account name, account type) for an
+   * existing mapping. Does not touch local_account_id or ignored.
+   * Use during sync to keep the display info fresh without extra SELECTs.
+   */
+  async updateOrgInfo(
+    userId: string,
+    simplefinAccountId: string,
+    orgName: string,
+    accountName: string,
+    accountType: string
+  ): Promise<void> {
+    await this.db('simplefin_account_mappings')
+      .where({ user_id: userId, simplefin_account_id: simplefinAccountId })
+      .update({
+        simplefin_org_name: orgName,
+        simplefin_account_name: accountName,
+        simplefin_account_type: accountType,
+        updated_at: new Date(),
+      });
+  }
+
   async upsert(data: {
     userId: string;
     simplefinAccountId: string;

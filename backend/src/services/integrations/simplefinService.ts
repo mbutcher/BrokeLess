@@ -79,36 +79,44 @@ class SimplefinService {
         startDate.setDate(startDate.getDate() - SYNC_OVERLAP_DAYS);
       }
 
-      const apiResponse = await simplefinApiClient.fetchAccounts(plainAccessUrl, startDate);
-      const discardedIds = await simplefinRepository.getDiscardedIds(userId);
+      const [apiResponse, discardedIds, existingMappings] = await Promise.all([
+        simplefinApiClient.fetchAccounts(plainAccessUrl, startDate),
+        simplefinRepository.getDiscardedIds(userId),
+        // Pre-fetch all account mappings once to avoid N+1 in the loop below
+        simplefinAccountMappingRepository.findAllByUser(userId),
+      ]);
+
+      const mappingBySimplefinId = new Map(
+        existingMappings.map((m) => [m.simplefinAccountId, m])
+      );
 
       for (const sfAccount of apiResponse.accounts) {
-        const mapping = await simplefinAccountMappingRepository.findBySimplefinId(
-          userId,
-          sfAccount.id
-        );
+        const mapping = mappingBySimplefinId.get(sfAccount.id) ?? null;
+        const orgName = sfAccount.org.name;
+        const accountName = sfAccount.name;
+        const accountType = sfAccount['account-type'] ?? sfAccount.name;
 
         if (!mapping) {
           // Newly discovered account — record it and ask user to map it
-          await simplefinAccountMappingRepository.upsert({
+          await simplefinAccountMappingRepository.insert({
             userId,
             simplefinAccountId: sfAccount.id,
-            simplefinOrgName: sfAccount.org.name,
-            simplefinAccountName: sfAccount.name,
-            simplefinAccountType: sfAccount['account-type'] ?? sfAccount.name,
+            simplefinOrgName: orgName,
+            simplefinAccountName: accountName,
+            simplefinAccountType: accountType,
           });
           result.unmappedAccounts++;
           continue;
         }
 
-        // Update org/account name in case they changed on SimpleFIN's side
-        await simplefinAccountMappingRepository.upsert({
+        // Update org/account display info in case it changed on SimpleFIN's side
+        await simplefinAccountMappingRepository.updateOrgInfo(
           userId,
-          simplefinAccountId: sfAccount.id,
-          simplefinOrgName: sfAccount.org.name,
-          simplefinAccountName: sfAccount.name,
-          simplefinAccountType: sfAccount['account-type'] ?? sfAccount.name,
-        });
+          sfAccount.id,
+          orgName,
+          accountName,
+          accountType
+        );
 
         if (!mapping.localAccountId) {
           // Already known but not yet mapped by user
