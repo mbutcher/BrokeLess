@@ -41,7 +41,7 @@ class SimplefinAccountMappingRepository {
 
   async findUnmapped(userId: string): Promise<SimplefinAccountMapping[]> {
     const rows = await this.db('simplefin_account_mappings')
-      .where({ user_id: userId })
+      .where({ user_id: userId, ignored: false })
       .whereNull('local_account_id')
       .orderBy('simplefin_org_name', 'asc');
     return rows.map(rowToMapping);

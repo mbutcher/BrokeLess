@@ -119,8 +119,8 @@ class SimplefinService {
         );
 
         if (!mapping.localAccountId) {
-          // Already known but not yet mapped by user
-          result.unmappedAccounts++;
+          // Already known but not yet mapped by user (skip if intentionally ignored)
+          if (!mapping.ignored) result.unmappedAccounts++;
           continue;
         }
 
@@ -306,6 +306,7 @@ class SimplefinService {
         startingBalance: 0,
         currency: data.newAccount.currency,
         color: data.newAccount.color,
+        institution: mapping.simplefinOrgName,
       });
       await accountRepository.setSimplefinAccountId(account.id, userId, simplefinAccountId);
       await simplefinAccountMappingRepository.setLocalAccount(

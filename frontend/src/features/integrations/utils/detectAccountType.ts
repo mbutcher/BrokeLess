@@ -4,6 +4,11 @@ import type { AccountType } from '@features/core/types';
  * Infer a likely account type and asset/liability classification from an
  * account name and optional SimpleFIN type string.
  *
+ * Handles English and French terms (Scotiabank and other Canadian banks send
+ * French account-type strings via SimpleFIN). Normalizes Unicode diacritics
+ * before matching so accented characters (é, è, ê, â…) work without
+ * needing accent-specific patterns.
+ *
  * Intentionally duplicated from the backend utility — no shared code between FE/BE.
  * Pure function — no side effects.
  */
@@ -11,20 +16,35 @@ export function detectAccountType(
   name: string,
   simplefinType?: string
 ): { type: AccountType; isAsset: boolean } {
-  const text = `${name} ${simplefinType ?? ''}`.toLowerCase();
+  // Normalize Unicode diacritics (é→e, è→e, ê→e, â→a, etc.) for accent-insensitive matching.
+  const raw = `${name} ${simplefinType ?? ''}`.toLowerCase();
+  const text = raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-  if (/credit.?card|visa|mastercard|amex|american express|discover/.test(text))
+  // Credit cards (EN + FR: "carte de credit")
+  if (/credit.?card|visa|mastercard|amex|american express|discover|carte.?de.?credit/.test(text))
     return { type: 'credit_card', isAsset: false };
-  if (/line.?of.?credit|\bloc\b|heloc|personal line/.test(text))
+
+  // Line of credit (EN + FR: "marge de credit", "marge")
+  if (/line.?of.?credit|\bloc\b|heloc|personal line|marge.?de.?credit|\bmarge\b/.test(text))
     return { type: 'line_of_credit', isAsset: false };
-  if (/mortgage/.test(text))
+
+  // Mortgage (EN + FR: "hypotheque")
+  if (/mortgage|hypotheque/.test(text))
     return { type: 'mortgage', isAsset: false };
-  if (/\bloan\b/.test(text))
+
+  // Loans (EN + FR: "pret")
+  if (/\bloan\b|\bpret\b/.test(text))
     return { type: 'loan', isAsset: false };
-  if (/saving|hisa|tfsa/.test(text))
+
+  // Savings (EN + FR: "epargne", CELI = TFSA, RELI)
+  if (/saving|hisa|tfsa|celi|\bepargne\b/.test(text))
     return { type: 'savings', isAsset: true };
-  if (/invest|brokerage|rrsp|resp|\bira\b|401k|403b/.test(text))
+
+  // Investments (EN + FR: REER = RRSP, REEE = RESP)
+  if (/invest|brokerage|rrsp|resp|\bira\b|401k|403b|reer|reee/.test(text))
     return { type: 'investment', isAsset: true };
+
+  // Chequing / checking (EN + FR: "cheque", "cheques" — diacritics already stripped)
   if (/chequ|check/.test(text))
     return { type: 'checking', isAsset: true };
 
