@@ -23,12 +23,16 @@ import householdRoutes from './householdRoutes';
 
 const router = Router();
 
-// Apply general rate limiting to all API routes
-router.use(apiRateLimiter);
-
-// Feature routers
+// Auth routes first — they have their own per-endpoint rate limiters for
+// sensitive actions (login, register, WebAuthn). The general apiRateLimiter
+// must NOT cover /auth/refresh: that endpoint has its own refreshRateLimiter,
+// and if the general limit is exhausted the refresh call would also fail,
+// triggering a logout on the client.
 router.use('/setup', setupRoutes);
 router.use('/auth', authRoutes);
+
+// Apply general rate limiting to all remaining API routes
+router.use(apiRateLimiter);
 router.use('/accounts', accountRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/transactions', transactionRoutes);

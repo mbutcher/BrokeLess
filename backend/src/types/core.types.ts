@@ -231,6 +231,8 @@ export interface BudgetCategoryEntry {
 
 export type MinimumPaymentType = 'fixed' | 'percentage' | 'greater_of' | 'lesser_of';
 
+export type PaymentFrequency = 'weekly' | 'biweekly' | 'semimonthly' | 'monthly';
+
 export interface DebtSchedule {
   id: string;
   userId: string;
@@ -245,8 +247,10 @@ export interface DebtSchedule {
   termMonths: number | null;
   /** Loan start date (null for CC/LOC and simplified mode) */
   originationDate: string | null; // YYYY-MM-DD
-  /** Fixed monthly payment (null for CC/LOC) */
+  /** Fixed per-period payment (null for CC/LOC) */
   paymentAmount: number | null;
+  /** Payment frequency for loan amortization (null treated as monthly) */
+  paymentFrequency: PaymentFrequency | null;
 
   // ── Loan / Mortgage — simplified mode ───────────────────────────────────
   /** true = principal holds current balance as of asOfDate, not original loan amount */
@@ -274,6 +278,7 @@ export interface UpsertDebtScheduleData {
   termMonths?: number | null;
   originationDate?: string | null;
   paymentAmount?: number | null;
+  paymentFrequency?: PaymentFrequency | null;
   isSimplified?: boolean;
   asOfDate?: string | null;
   // CC / LOC

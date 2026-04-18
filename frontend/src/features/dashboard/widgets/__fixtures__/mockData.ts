@@ -419,6 +419,7 @@ export const mockDebtSchedule: DebtSchedule = {
   termMonths: 60,
   originationDate: '2023-01-01',
   paymentAmount: 495.42,
+  paymentFrequency: 'monthly',
   isSimplified: false,
   asOfDate: null,
   cashAdvanceRate: null,
