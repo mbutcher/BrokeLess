@@ -60,7 +60,7 @@ class SimplefinService {
 
   // ─── Sync ─────────────────────────────────────────────────────────────────
 
-  async sync(userId: string): Promise<SyncResult> {
+  async sync(userId: string, fullSync = false): Promise<SyncResult> {
     const accessUrlEncrypted = await simplefinRepository.findAccessUrl(userId);
     if (!accessUrlEncrypted) throw new AppError('No SimpleFIN connection found', 404);
 
@@ -71,12 +71,15 @@ class SimplefinService {
     try {
       const plainAccessUrl = encryptionService.decrypt(accessUrlEncrypted);
 
-      // Use lastSyncAt - SYNC_OVERLAP_DAYS for safety overlap
-      const connection = await simplefinRepository.findConnectionByUser(userId);
+      // Full sync: no start-date — let SimpleFIN return all available history.
+      // Normal sync: use lastSyncAt - SYNC_OVERLAP_DAYS for safety overlap.
       let startDate: Date | undefined;
-      if (connection?.lastSyncAt) {
-        startDate = new Date(connection.lastSyncAt);
-        startDate.setDate(startDate.getDate() - SYNC_OVERLAP_DAYS);
+      if (!fullSync) {
+        const connection = await simplefinRepository.findConnectionByUser(userId);
+        if (connection?.lastSyncAt) {
+          startDate = new Date(connection.lastSyncAt);
+          startDate.setDate(startDate.getDate() - SYNC_OVERLAP_DAYS);
+        }
       }
 
       const [apiResponse, discardedIds, existingMappings] = await Promise.all([

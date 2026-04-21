@@ -25,7 +25,8 @@ class SimplefinController {
   // ─── Sync ──────────────────────────────────────────────────────────────────
 
   sync = asyncHandler(async (req: Request, res: Response) => {
-    const result = await simplefinService.sync(req.user!.id);
+    const fullSync = req.query['full'] === 'true';
+    const result = await simplefinService.sync(req.user!.id, fullSync);
     res.json({ status: 'success', data: { result } });
   });
 

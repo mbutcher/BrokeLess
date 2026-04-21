@@ -78,6 +78,11 @@ interface AddBudgetLineDialogProps {
   open: boolean;
   defaultCategoryId?: string;
   defaultClassification?: BudgetLineClassification;
+  defaultName?: string;
+  defaultAmount?: number;
+  defaultAnchorDate?: string;
+  defaultAccountId?: string;
+  defaultNotes?: string;
   onClose: () => void;
 }
 
@@ -85,6 +90,11 @@ export function AddBudgetLineDialog({
   open,
   defaultCategoryId,
   defaultClassification,
+  defaultName,
+  defaultAmount,
+  defaultAnchorDate,
+  defaultAccountId,
+  defaultNotes,
   onClose,
 }: AddBudgetLineDialogProps) {
   const createLine = useCreateBudgetLine();
@@ -92,6 +102,23 @@ export function AddBudgetLineDialog({
   const { data: accounts = [] } = useAccounts();
 
   const topLevel = allCategories.filter((c) => c.parentId === null && c.isActive);
+
+  const buildDefaultValues = (): FormValues => ({
+    name: defaultName ?? '',
+    classification: defaultClassification ?? 'expense',
+    flexibility: 'fixed',
+    categoryId: defaultCategoryId ?? '',
+    subcategoryId: null,
+    accountId: defaultAccountId ?? null,
+    amount: defaultAmount ?? 0,
+    frequency: 'monthly',
+    frequencyInterval: null,
+    dayOfMonth1: null,
+    dayOfMonth2: null,
+    anchorDate: defaultAnchorDate ?? new Date().toISOString().substring(0, 10),
+    isPayPeriodAnchor: false,
+    notes: defaultNotes ?? null,
+  });
 
   const {
     register,
@@ -102,22 +129,7 @@ export function AddBudgetLineDialog({
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      name: '',
-      classification: defaultClassification ?? 'expense',
-      flexibility: 'fixed',
-      categoryId: defaultCategoryId ?? '',
-      subcategoryId: null,
-      accountId: null,
-      amount: 0,
-      frequency: 'monthly',
-      frequencyInterval: null,
-      dayOfMonth1: null,
-      dayOfMonth2: null,
-      anchorDate: new Date().toISOString().substring(0, 10),
-      isPayPeriodAnchor: false,
-      notes: null,
-    },
+    defaultValues: buildDefaultValues(),
   });
 
   const watchedCategoryId = watch('categoryId');
