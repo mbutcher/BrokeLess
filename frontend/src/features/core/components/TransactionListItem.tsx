@@ -2,10 +2,9 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@lib/utils';
 import { CategoryBadge } from './CategoryBadge';
+import { AddBudgetLineDialog } from './AddBudgetLineDialog';
 import { useDeleteTransaction } from '../hooks/useTransactions';
-import type { Transaction } from '../types';
-import type { Category } from '../types';
-import type { Account } from '../types';
+import type { Transaction, Category, Account, BudgetLineClassification } from '../types';
 
 export interface TransactionListItemProps {
   transaction: Transaction;
@@ -18,9 +17,11 @@ export function TransactionListItem({ transaction: tx, category, account, onEdit
   const { t } = useTranslation();
   const deleteTx = useDeleteTransaction();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showBudgetLineDialog, setShowBudgetLineDialog] = useState(false);
   const isExpense = tx.amount < 0;
 
   return (
+    <>
     <div
       className={cn(
         'bg-card border border-border rounded-xl px-4 py-3 flex items-center gap-3',
@@ -68,6 +69,15 @@ export function TransactionListItem({ transaction: tx, category, account, onEdit
                   {t('common.edit')}
                 </button>
               )}
+              {!tx.isTransfer && (
+                <button
+                  onClick={() => setShowBudgetLineDialog(true)}
+                  className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted"
+                  title={t('transactions.createBudgetLine')}
+                >
+                  {t('transactions.budgetLine')}
+                </button>
+              )}
               {confirmDelete ? (
                 <div className="flex gap-1">
                   <button
@@ -99,5 +109,20 @@ export function TransactionListItem({ transaction: tx, category, account, onEdit
         </div>
       </div>
     </div>
+
+    {showBudgetLineDialog && (
+      <AddBudgetLineDialog
+        open
+        defaultName={tx.payee ?? tx.description ?? ''}
+        defaultAmount={Math.abs(tx.amount)}
+        defaultClassification={(tx.amount < 0 ? 'expense' : 'income') as BudgetLineClassification}
+        defaultCategoryId={tx.categoryId ?? undefined}
+        defaultAccountId={tx.accountId}
+        defaultAnchorDate={tx.date.split('T')[0]}
+        defaultNotes={tx.notes ?? undefined}
+        onClose={() => setShowBudgetLineDialog(false)}
+      />
+    )}
+    </>
   );
 }

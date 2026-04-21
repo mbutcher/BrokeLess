@@ -102,7 +102,7 @@ export function useDisconnectSimplefin() {
 export function useSyncNow() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => simplefinApi.sync(),
+    mutationFn: (full: boolean) => simplefinApi.sync(full),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: KEYS.status });
       void qc.invalidateQueries({ queryKey: KEYS.accounts });
