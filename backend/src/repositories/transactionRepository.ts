@@ -190,6 +190,23 @@ class TransactionRepository {
       .update({ category_id: toCategoryId, updated_at: new Date().toISOString() });
   }
 
+  /** Bulk-update categoryId and/or budgetLineId on a set of transactions. */
+  async bulkCategorize(
+    userId: string,
+    transactionIds: string[],
+    categoryId: string | null | undefined,
+    budgetLineId: string | null | undefined
+  ): Promise<number> {
+    if (transactionIds.length === 0) return 0;
+    const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (categoryId !== undefined) update['category_id'] = categoryId;
+    if (budgetLineId !== undefined) update['budget_line_id'] = budgetLineId;
+    return this.db('transactions')
+      .where('user_id', userId)
+      .whereIn('id', transactionIds)
+      .update(update);
+  }
+
   async delete(id: string, userId: string, trx?: Knex.Transaction): Promise<void> {
     const db = trx ?? this.db;
     await db('transactions').where({ id, user_id: userId }).delete();

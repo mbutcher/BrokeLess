@@ -51,4 +51,13 @@ export const transactionApi = {
 
   listTags: () =>
     apiClient.get<ApiResponse<{ tags: string[] }>>('/transactions/tags'),
+
+  getSimilar: (id: string) =>
+    apiClient.get<ApiResponse<{ transactions: Transaction[] }>>(`/transactions/${id}/similar`),
+
+  bulkCategorize: (data: {
+    transactionIds: string[];
+    categoryId?: string | null;
+    budgetLineId?: string | null;
+  }) => apiClient.post<ApiResponse<{ updated: number }>>('/transactions/bulk-categorize', data),
 };

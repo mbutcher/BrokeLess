@@ -9,11 +9,12 @@ import { FrequencyBadge } from './FrequencyBadge';
 import { FlexibilityBadge } from './FlexibilityBadge';
 import { useUpdateBudgetLine, useDeleteBudgetLine } from '../hooks/useBudgetLines';
 import { useFormatters } from '@lib/i18n/useFormatters';
-import type { BudgetViewLine, BudgetLineFrequency, BudgetLineFlexibility } from '../types';
+import type { BudgetViewLine, BudgetLineFrequency, BudgetLineFlexibility, Category } from '../types';
 
 interface BudgetLineRowProps {
   viewLine: BudgetViewLine;
   subcategoryName?: string;
+  allCategories: Category[];
 }
 
 const FREQUENCIES: BudgetLineFrequency[] = [
@@ -59,14 +60,24 @@ const editSchema = z
 
 type EditFormValues = z.infer<typeof editSchema>;
 
-export function BudgetLineRow({ viewLine, subcategoryName }: BudgetLineRowProps) {
+export function BudgetLineRow({ viewLine, subcategoryName, allCategories }: BudgetLineRowProps) {
   const { budgetLine: line, proratedAmount, actualAmount, variance } = viewLine;
   const [expanded, setExpanded] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editCategoryId, setEditCategoryId] = useState(line.categoryId);
+  const [editSubcategoryId, setEditSubcategoryId] = useState<string | null>(line.subcategoryId ?? null);
   const { currency: formatCurrency } = useFormatters();
   const navigate = useNavigate();
   const updateLine = useUpdateBudgetLine();
   const deleteLine = useDeleteBudgetLine();
+
+  const isIncomeCategory = line.classification === 'income';
+  const topCategories = allCategories.filter(
+    (c) => c.isActive && c.parentId === null && c.isIncome === isIncomeCategory
+  );
+  const subCategories = allCategories.filter(
+    (c) => c.isActive && c.parentId === editCategoryId
+  );
 
   const { register, handleSubmit, watch, setValue, formState: { errors, isDirty } } = useForm<EditFormValues>({
     resolver: zodResolver(editSchema),
@@ -108,6 +119,8 @@ export function BudgetLineRow({ viewLine, subcategoryName }: BudgetLineRowProps)
           dayOfMonth2: values.frequency === 'twice_monthly' ? (values.dayOfMonth2 ?? null) : null,
           anchorDate: values.anchorDate,
           notes: values.notes ?? null,
+          categoryId: editCategoryId,
+          subcategoryId: editSubcategoryId,
         },
       },
       { onSuccess: () => setExpanded(false) }
@@ -296,6 +309,38 @@ export function BudgetLineRow({ viewLine, subcategoryName }: BudgetLineRowProps)
                 className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Category</label>
+              <select
+                value={editCategoryId}
+                onChange={(e) => {
+                  setEditCategoryId(e.target.value);
+                  setEditSubcategoryId(null);
+                }}
+                className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {topCategories.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {subCategories.length > 0 && (
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Subcategory</label>
+                <select
+                  value={editSubcategoryId ?? ''}
+                  onChange={(e) => setEditSubcategoryId(e.target.value || null)}
+                  className="w-full px-2.5 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">— none —</option>
+                  {subCategories.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div className="sm:col-span-2 lg:col-span-3">
               <label className="block text-xs font-medium text-gray-700 mb-1">Notes</label>

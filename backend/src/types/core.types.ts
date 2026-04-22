@@ -157,6 +157,38 @@ export interface TransactionFilters {
   limit: number;
 }
 
+// ─── Categorization Rules ─────────────────────────────────────────────────────
+
+export interface CategorizationRule {
+  id: string;
+  userId: string;
+  /** Plaintext payee — decrypted in API responses */
+  payee: string;
+  categoryId: string | null;
+  budgetLineId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/** Raw DB row before decryption */
+export interface CategorizationRuleRow {
+  id: string;
+  user_id: string;
+  payee_encrypted: string;
+  token_hashes: string; // JSON
+  category_id: string | null;
+  budget_line_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateCategorizationRuleData {
+  userId: string;
+  payee: string;
+  categoryId?: string | null;
+  budgetLineId?: string | null;
+}
+
 // ─── Transaction Links ────────────────────────────────────────────────────────
 
 export type LinkType = 'transfer' | 'payment' | 'refund';

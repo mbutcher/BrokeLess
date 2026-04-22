@@ -206,5 +206,19 @@ function groupByCategory(lines: BudgetViewLine[], allCategories: Category[]): Gr
     groups.get(catId)!.lines.push(viewLine);
   }
 
-  return Array.from(groups.values());
+  return Array.from(groups.values())
+    .sort((a, b) => a.category.name.localeCompare(b.category.name))
+    .map((group) => ({
+      ...group,
+      lines: [...group.lines].sort((a, b) => {
+        const subA = a.budgetLine.subcategoryId
+          ? (categoryMap.get(a.budgetLine.subcategoryId)?.name ?? '')
+          : '';
+        const subB = b.budgetLine.subcategoryId
+          ? (categoryMap.get(b.budgetLine.subcategoryId)?.name ?? '')
+          : '';
+        if (subA !== subB) return subA.localeCompare(subB);
+        return a.budgetLine.name.localeCompare(b.budgetLine.name);
+      }),
+    }));
 }
