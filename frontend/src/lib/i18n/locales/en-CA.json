@@ -725,6 +725,22 @@
     "errors": {
       "registrationClosed": "Registration is closed.",
       "setupRequired": "Household setup is required."
+    },
+    "onboarding": {
+      "title": "Personalize Your Categories",
+      "description": "Answer a few quick questions to set up a category list that fits your life. You can always add or remove categories later.",
+      "region": "Where do you live?",
+      "regionCA": "Canada",
+      "regionUS": "United States",
+      "regionEU": "Europe / Other",
+      "isFreelancer": "Are you self-employed or freelancing?",
+      "hasPets": "Do you have pets?",
+      "hasKids": "Do you have children?",
+      "isStudent": "Are you a student (or paying for education)?",
+      "yes": "Yes",
+      "no": "No",
+      "submit": "Set Up My Categories",
+      "skip": "Skip — use defaults"
     }
   },
   "setup": {

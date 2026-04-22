@@ -10,6 +10,8 @@ import {
   Loader2,
   Trash2,
 } from 'lucide-react';
+import { icons } from 'lucide-react';
+import { ColorPalette } from '@components/common/ColorPalette';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
@@ -40,30 +42,49 @@ import { getApiErrorMessage } from '@lib/api/errors';
 
 // ─── Icon picker ─────────────────────────────────────────────────────────────
 
+// Kebab-case Lucide icon names shown in the category picker
 const ICON_OPTIONS = [
-  'briefcase', 'laptop', 'trending-up', 'home', 'house', 'shopping-cart',
-  'utensils', 'car', 'zap', 'heart-pulse', 'shield', 'film', 'shirt',
-  'sparkles', 'book-open', 'repeat', 'plane', 'gift', 'more-horizontal',
-  'plus-circle', 'wallet', 'coffee', 'music', 'gamepad-2', 'dumbbell',
-  'baby', 'dog', 'tree-pine', 'wrench', 'smartphone', 'wifi', 'bus',
-  'train', 'bicycle', 'pizza', 'wine', 'stethoscope', 'pill', 'graduation-cap',
-  'building', 'store', 'scissors', 'paint-brush', 'camera', 'headphones',
+  // Income & Finance
+  'briefcase', 'banknote', 'percent', 'wallet', 'credit-card', 'landmark',
+  'piggy-bank', 'trending-up', 'pie-chart', 'target', 'award',
+  // Food & Drink
+  'utensils', 'utensils-crossed', 'coffee', 'wine', 'shopping-basket', 'shopping-cart',
+  // Shopping
+  'shopping-bag', 'shirt', 'package', 'sparkles', 'gift', 'badge-check',
+  // Home & Living
+  'home', 'house', 'key', 'wrench', 'lightbulb', 'flame', 'droplet', 'zap', 'wifi', 'trash-2',
+  // Transportation
+  'car', 'fuel', 'train', 'bicycle', 'plane', 'plane-takeoff', 'map-pin',
+  // Health
+  'heart-pulse', 'stethoscope', 'smile', 'pill', 'dumbbell', 'brain',
+  // Entertainment & Tech
+  'film', 'clapperboard', 'tv', 'gamepad-2', 'music', 'headphones', 'monitor', 'smartphone',
+  // Travel
+  'hotel', 'map', 'map-pinned',
+  // Kids & Pets
+  'baby', 'paw-print', 'bone', 'scissors', 'toy-brick', 'pencil',
+  // People & Work
+  'laptop', 'users', 'building', 'handshake',
+  // Documents & System
+  'file-text', 'receipt', 'book-open', 'graduation-cap', 'shield', 'shield-check',
+  'arrow-right-left', 'undo-2', 'repeat', 'tag', 'palette', 'ticket',
+  // Misc
+  'more-horizontal', 'plus-circle', 'help-circle', 'alert-circle', 'shield-alert',
+  'heart-handshake', 'dog', 'tree-pine',
 ] as const;
 
-// ─── Color picker ────────────────────────────────────────────────────────────
+/** Converts a kebab-case icon name to the PascalCase key used in the lucide `icons` map. */
+function toLucideKey(name: string): string {
+  return name.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+}
 
-const COLOR_OPTIONS = [
-  '#22c55e', '#16a34a', '#15803d', '#166534', '#14532d',
-  '#3b82f6', '#2563eb', '#1d4ed8', '#1e40af', '#1e3a8a',
-  '#f59e0b', '#d97706', '#b45309', '#92400e', '#78350f',
-  '#ef4444', '#dc2626', '#b91c1c', '#991b1b', '#7f1d1d',
-  '#8b5cf6', '#7c3aed', '#6d28d9', '#5b21b6', '#4c1d95',
-  '#f97316', '#ea580c', '#c2410c', '#9a3412', '#7c2d12',
-  '#ec4899', '#db2777', '#be185d', '#9d174d', '#831843',
-  '#6366f1', '#4f46e5', '#4338ca', '#3730a3', '#312e81',
-  '#0891b2', '#0e7490', '#155e75', '#164e63', '#0c4a6e',
-  '#6b7280', '#4b5563', '#374151', '#1f2937', '#111827',
-];
+type LucideIconComponent = React.ComponentType<{ className?: string; size?: number }>;
+
+function CategoryIcon({ name, className }: { name: string; className?: string }) {
+  const Icon = (icons as Record<string, LucideIconComponent>)[toLucideKey(name)];
+  if (!Icon) return <span className="text-[10px] leading-none">{name.slice(0, 2)}</span>;
+  return <Icon className={className} size={14} />;
+}
 
 // ─── Create/Edit Dialog ───────────────────────────────────────────────────────
 
@@ -162,38 +183,26 @@ function CategoryFormDialog({ open, onClose, editTarget, parentCategory }: Categ
 
           <div className="space-y-2">
             <Label>{t('categories.color')}</Label>
-            <div className="flex flex-wrap gap-1.5">
-              {COLOR_OPTIONS.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setColor(c)}
-                  className="w-6 h-6 rounded-full border-2 transition-all"
-                  style={{
-                    backgroundColor: c,
-                    borderColor: color === c ? 'hsl(var(--foreground))' : 'transparent',
-                    transform: color === c ? 'scale(1.2)' : 'scale(1)',
-                  }}
-                />
-              ))}
-            </div>
+            <ColorPalette value={color} onChange={setColor} />
           </div>
 
           <div className="space-y-2">
             <Label>{t('categories.icon')}</Label>
-            <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
+            <div className="grid grid-cols-10 gap-1 max-h-36 overflow-y-auto">
               {ICON_OPTIONS.map((ic) => (
                 <button
                   key={ic}
+                  type="button"
                   onClick={() => setIcon(ic)}
                   className={[
-                    'w-8 h-8 rounded text-xs flex items-center justify-center border transition-colors',
+                    'w-8 h-8 rounded flex items-center justify-center border transition-colors',
                     icon === ic
                       ? 'bg-primary text-primary-foreground border-primary'
                       : 'bg-muted hover:bg-muted/80 border-border text-muted-foreground',
                   ].join(' ')}
                   title={ic}
                 >
-                  {ic.slice(0, 2)}
+                  <CategoryIcon name={ic} />
                 </button>
               ))}
             </div>

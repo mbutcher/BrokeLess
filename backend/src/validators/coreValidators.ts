@@ -569,6 +569,17 @@ export const changePasswordSchema = Joi.object({
 
 // ─── Household Validators ─────────────────────────────────────────────────────
 
+export const onboardingSchema = Joi.object({
+  region: Joi.string().valid('CA', 'US', 'EU').required().messages({
+    'any.required': 'region is required',
+    'any.only': 'region must be CA, US, or EU',
+  }),
+  isFreelancer: Joi.boolean().required(),
+  hasPets: Joi.boolean().required(),
+  hasKids: Joi.boolean().required(),
+  isStudent: Joi.boolean().required(),
+});
+
 export const setupHouseholdSchema = Joi.object({
   name: Joi.string().trim().min(1).max(100).required().messages({
     'any.required': 'Household name is required',

@@ -37,3 +37,11 @@ export interface AddMemberInput {
 export interface PutSharesInput {
   shares: Array<{ userId: string; accessLevel: AccountShareAccessLevel }>;
 }
+
+export interface OnboardingOptions {
+  region: 'CA' | 'US' | 'EU';
+  isFreelancer: boolean;
+  hasPets: boolean;
+  hasKids: boolean;
+  isStudent: boolean;
+}

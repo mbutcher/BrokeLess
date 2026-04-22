@@ -726,6 +726,22 @@
     "errors": {
       "registrationClosed": "Les inscriptions sont fermées.",
       "setupRequired": "La configuration du foyer est requise."
+    },
+    "onboarding": {
+      "title": "Personnalisez Vos Catégories",
+      "description": "Répondez à quelques questions rapides pour configurer une liste de catégories adaptée à votre vie. Vous pouvez toujours ajouter ou supprimer des catégories plus tard.",
+      "region": "Où habitez-vous?",
+      "regionCA": "Canada",
+      "regionUS": "États-Unis",
+      "regionEU": "Europe / Autre",
+      "isFreelancer": "Êtes-vous travailleur autonome ou pigiste?",
+      "hasPets": "Avez-vous des animaux de compagnie?",
+      "hasKids": "Avez-vous des enfants?",
+      "isStudent": "Êtes-vous étudiant(e) (ou payez-vous pour vos études)?",
+      "yes": "Oui",
+      "no": "Non",
+      "submit": "Configurer Mes Catégories",
+      "skip": "Passer — utiliser les valeurs par défaut"
     }
   },
   "setup": {

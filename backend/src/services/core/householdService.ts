@@ -6,7 +6,7 @@ import { userRepository } from '@repositories/userRepository';
 import { householdRepository } from '@repositories/householdRepository';
 import { householdMemberRepository } from '@repositories/householdMemberRepository';
 import { accountShareRepository } from '@repositories/accountShareRepository';
-import { categoryService } from './categoryService';
+import { categoryService, type OnboardingOptions } from './categoryService';
 import type { Household, HouseholdWithMembers, CreateMemberData } from '@typings/core.types';
 import type { PublicUser } from '@typings/auth.types';
 
@@ -24,14 +24,6 @@ class HouseholdService {
 
     const household = await householdRepository.create({ name, ownerUserId: userId });
     await householdMemberRepository.addMember(household.id, userId, 'owner');
-
-    // Seed default categories for the new household (non-fatal if this fails)
-    categoryService.seedDefaultsForHousehold(household.id).catch((err: unknown) => {
-      logger.error('Failed to seed default categories for household', {
-        householdId: household.id,
-        err,
-      });
-    });
 
     const members = await householdMemberRepository.findAllByHouseholdId(household.id);
     return { ...household, members };
@@ -77,7 +69,12 @@ class HouseholdService {
     const emailEncrypted = encryptionService.encrypt(normalizedEmail);
     const passwordHash = await passwordService.hash(data.password);
 
-    const newUser = await userRepository.create({ username: null, emailEncrypted, emailHash, passwordHash });
+    const newUser = await userRepository.create({
+      username: null,
+      emailEncrypted,
+      emailHash,
+      passwordHash,
+    });
 
     // Set displayName if provided
     if (data.displayName) {
@@ -147,6 +144,14 @@ class HouseholdService {
   async getRegistrationStatus(): Promise<{ registrationOpen: boolean }> {
     const count = await householdRepository.count();
     return { registrationOpen: count === 0 };
+  }
+
+  /**
+   * Seeds the category hierarchy for a household based on onboarding answers.
+   * Intended to be called once after household setup, from the onboarding wizard.
+   */
+  async applyOnboarding(householdId: string, opts: OnboardingOptions): Promise<void> {
+    await categoryService.seedDefaultsForHousehold(householdId, opts);
   }
 }
 
