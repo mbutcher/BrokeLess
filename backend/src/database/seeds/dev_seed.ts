@@ -7,8 +7,8 @@
  * debt schedules, transaction splits, and transfer links.
  *
  * TEST USERS
- *   mike+alpha@thebutchers.ca / test123  — Canadian user, CAD, en-CA, Toronto timezone
- *   mike+beta@thebutchers.ca  / test123  — American user, USD, en-US, New York timezone
+ *   mike_alpha / test123  (mike+alpha@thebutchers.ca) — Canadian user, CAD, en-CA, Toronto timezone
+ *   mike_beta  / test123  (mike+beta@thebutchers.ca)  — American user, USD, en-US, New York timezone
  *
  * SAFETY: Refuses to run in production. Staging is permitted so integration
  * tests can reset and reseed via the /api/admin/reset-seeds endpoint.
@@ -319,6 +319,7 @@ export async function seed(knex: Knex): Promise<void> {
   await knex('users').insert([
     {
       id: ALPHA_ID,
+      username: 'mike_alpha',
       email_encrypted: alphaEmailEnc,
       email_hash: alphaEmailHash,
       password_hash: alphaHash,
@@ -336,6 +337,7 @@ export async function seed(knex: Knex): Promise<void> {
     },
     {
       id: BETA_ID,
+      username: 'mike_beta',
       email_encrypted: betaEmailEnc,
       email_hash: betaEmailHash,
       password_hash: betaHash,
