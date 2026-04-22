@@ -706,6 +706,8 @@ export interface SyncResult {
   skipped: number;
   pendingReviews: number;
   unmappedAccounts: number;
+  /** Total transactions returned by SimpleFIN (across all accounts) */
+  total: number;
 }
 
 export interface MapAccountData {

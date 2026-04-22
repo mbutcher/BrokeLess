@@ -62,6 +62,11 @@ router.get(
   simplefinController.getPendingReviewCount
 );
 router.post(
+  '/reviews/bulk-accept',
+  requireScope('simplefin:write'),
+  simplefinController.bulkAcceptReviews
+);
+router.post(
   '/reviews/:reviewId/resolve',
   requireScope('simplefin:write'),
   validateRequest(resolveReviewSchema),

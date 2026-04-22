@@ -1,14 +1,9 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { simplefinApi } from '../api/simplefinApi';
-import type { MapAccountAction, ResolveReviewAction, UpdateScheduleInput } from '../types';
+import type { MapAccountAction, ResolveReviewAction, UpdateScheduleInput, SyncResult } from '../types';
 
-export interface SyncResult {
-  imported: number;
-  skipped: number;
-  pendingReviews: number;
-  unmappedAccounts: number;
-}
+export type { SyncResult };
 
 const KEYS = {
   status: ['simplefin', 'status'] as const,
@@ -193,6 +188,18 @@ export function useResolveReview() {
   return useMutation({
     mutationFn: ({ reviewId, data }: { reviewId: string; data: ResolveReviewAction }) =>
       simplefinApi.resolveReview(reviewId, data),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: KEYS.reviews });
+      void qc.invalidateQueries({ queryKey: KEYS.reviewCount });
+      void qc.invalidateQueries({ queryKey: ['transactions'] });
+    },
+  });
+}
+
+export function useBulkAcceptReviews() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => simplefinApi.bulkAcceptReviews(),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: KEYS.reviews });
       void qc.invalidateQueries({ queryKey: KEYS.reviewCount });
