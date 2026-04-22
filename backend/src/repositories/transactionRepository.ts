@@ -70,6 +70,7 @@ class TransactionRepository {
           .where({ user_id: userId, tag: filters.tag })
       );
     }
+    if (filters.budgetLineId) query = query.where('budget_line_id', filters.budgetLineId);
     if (filters.allowedIds && filters.allowedIds.length > 0) {
       query = query.whereIn('id', filters.allowedIds);
     }

@@ -202,6 +202,43 @@ class BudgetLineRepository {
       actualAmount: Number(row['actual_amount']),
     }));
   }
+
+  /**
+   * Returns the actual amount for a single budget line.
+   * Counts transactions where budget_line_id matches, OR where category_id matches and
+   * budget_line_id is null (uncategorized-to-line fallback). Income lines use positive amounts.
+   */
+  async getActualsForLine(
+    userId: string,
+    budgetLineId: string,
+    effectiveCategoryId: string | null,
+    start: string,
+    end: string,
+    isIncome: boolean
+  ): Promise<number> {
+    const db = this.db;
+    let query = db('transactions')
+      .where('user_id', userId)
+      .where('is_transfer', false)
+      .where('amount', isIncome ? '>' : '<', 0)
+      .whereBetween('date', [start, end])
+      .select(db.raw(isIncome ? 'SUM(amount) as total' : 'SUM(ABS(amount)) as total'));
+
+    if (effectiveCategoryId) {
+      query = query.where(
+        db.raw('(budget_line_id = ? OR (budget_line_id IS NULL AND category_id = ?))', [
+          budgetLineId,
+          effectiveCategoryId,
+        ])
+      );
+    } else {
+      query = query.where('budget_line_id', budgetLineId);
+    }
+
+    const rows = await query;
+
+    return Number((rows[0] as Record<string, unknown> | undefined)?.['total'] ?? 0);
+  }
 }
 
 export const budgetLineRepository = new BudgetLineRepository();
