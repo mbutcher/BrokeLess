@@ -20,6 +20,7 @@ import recurringTransactionRoutes from './recurringTransactionRoutes';
 import dashboardRoutes from './dashboardRoutes';
 import pushRoutes from './pushRoutes';
 import householdRoutes from './householdRoutes';
+import categorizationRuleRoutes from './categorizationRuleRoutes';
 
 const router = Router();
 
@@ -49,6 +50,7 @@ router.use('/recurring-transactions', recurringTransactionRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/push', pushRoutes);
 router.use('/household', householdRoutes);
+router.use('/categorization-rules', categorizationRuleRoutes);
 
 // Staging-only admin routes — not registered in production or development.
 // The reset-seeds endpoint is gated by both this check AND an X-Reset-Token header.

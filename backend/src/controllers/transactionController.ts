@@ -81,6 +81,29 @@ class TransactionController {
     const tags = await transactionTagRepository.findAllForUser(req.user!.id);
     res.json({ status: 'success', data: { tags } });
   });
+
+  similar = asyncHandler(async (req: Request, res: Response) => {
+    const transactions = await transactionService.getSimilarTransactions(
+      req.user!.id,
+      req.params['id']!
+    );
+    res.json({ status: 'success', data: { transactions } });
+  });
+
+  bulkCategorize = asyncHandler(async (req: Request, res: Response) => {
+    const { transactionIds, categoryId, budgetLineId } = req.body as {
+      transactionIds: string[];
+      categoryId?: string | null;
+      budgetLineId?: string | null;
+    };
+    const updated = await transactionService.bulkCategorize(
+      req.user!.id,
+      transactionIds,
+      categoryId,
+      budgetLineId
+    );
+    res.json({ status: 'success', data: { updated } });
+  });
 }
 
 export const transactionController = new TransactionController();

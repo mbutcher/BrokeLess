@@ -308,6 +308,50 @@ class TransactionService {
   }
 
   /**
+   * Returns transactions that share payee tokens with the given transaction (OR semantics).
+   * Excludes the source transaction itself. Used for "categorize similar" suggestions.
+   */
+  async getSimilarTransactions(
+    userId: string,
+    transactionId: string
+  ): Promise<PublicTransaction[]> {
+    const tx = await transactionRepository.findById(transactionId, userId);
+    if (!tx) throw new AppError('Transaction not found', 404);
+
+    const payee = tx.payee ? encryptionService.decrypt(tx.payee) : null;
+    const description = tx.description ? encryptionService.decrypt(tx.description) : null;
+    const tokens = tokenize([payee, description].filter(Boolean).join(' '));
+    if (tokens.length === 0) return [];
+
+    const tokenHashes = tokens.map((t) => encryptionService.hash(t));
+    const matchingIds = await transactionSearchRepository.findMatchingIdsByAny(userId, tokenHashes);
+    const filtered = matchingIds.filter((id) => id !== transactionId);
+    if (filtered.length === 0) return [];
+
+    const result = await transactionRepository.findAll(userId, {
+      page: 1,
+      limit: 200,
+      allowedIds: filtered,
+    } as TransactionFilters & { allowedIds: string[] });
+    const tagMap = await transactionTagRepository.findByTransactionIds(
+      result.data.map((t) => t.id)
+    );
+    return result.data.map((t) => decryptTransaction(t, tagMap.get(t.id) ?? []));
+  }
+
+  /**
+   * Bulk-updates categoryId and/or budgetLineId on a set of the user's transactions.
+   */
+  async bulkCategorize(
+    userId: string,
+    transactionIds: string[],
+    categoryId: string | null | undefined,
+    budgetLineId: string | null | undefined
+  ): Promise<number> {
+    return transactionRepository.bulkCategorize(userId, transactionIds, categoryId, budgetLineId);
+  }
+
+  /**
    * Removes the transfer link between transactions and clears the is_transfer flag on both.
    */
   async unlinkTransactions(userId: string, txId: string): Promise<void> {

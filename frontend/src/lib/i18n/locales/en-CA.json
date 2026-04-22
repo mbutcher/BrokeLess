@@ -789,6 +789,26 @@
     "currency": "Currency",
     "confirmLink": "Confirm"
   },
+  "similar": {
+    "title": "Categorize Similar Transactions",
+    "description": "Found other transactions from \"{{payee}}\". Apply \"{{label}}\" to the ones you select.",
+    "noOthersFound": "No other transactions from the same payee were found. You applied \"{{label}}\".",
+    "selectAll": "All ({{count}})",
+    "selectedCount": "{{count}} selected",
+    "saveRule": "Auto-categorize future imports from this payee",
+    "saveRuleBtn": "Save Rule",
+    "applyToCount": "Apply to {{count}} transaction(s)",
+    "close": "Close"
+  },
+  "categorizationRules": {
+    "title": "Auto-Categorize Rules",
+    "subtitle": "Payee patterns saved from the \"Categorize Similar\" dialog. Applied automatically when importing from SimpleFIN.",
+    "none": "No rules saved yet.",
+    "payee": "Payee pattern",
+    "appliesTo": "Applies to",
+    "noCategory": "No category",
+    "deleteRule": "Delete rule"
+  },
   "categories": {
     "title": "Categories",
     "subtitle": "Manage your income and expense categories and subcategories.",

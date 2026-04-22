@@ -29,6 +29,16 @@ router.patch(
 );
 router.delete('/:id', requireScope('transactions:write'), transactionController.delete);
 
+// Bulk categorize
+router.post(
+  '/bulk-categorize',
+  requireScope('transactions:write'),
+  transactionController.bulkCategorize
+);
+
+// Similar transactions
+router.get('/:id/similar', requireScope('transactions:read'), transactionController.similar);
+
 // Transfer linking
 router.get(
   '/:id/candidates',

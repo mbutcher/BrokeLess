@@ -84,7 +84,7 @@ interface AddBudgetLineDialogProps {
   defaultAccountId?: string;
   defaultNotes?: string;
   onClose: () => void;
-  onCreated?: (budgetLineId: string) => void;
+  onCreated?: (budgetLineId: string, categoryId: string, categoryName: string) => void;
 }
 
 export function AddBudgetLineDialog({
@@ -177,10 +177,13 @@ export function AddBudgetLineDialog({
       },
       {
         onSuccess: (data) => {
+          const bl = data?.data.data.budgetLine;
           reset();
           onClose();
-          if (onCreated && data) {
-            onCreated(data.data.data.budgetLine.id);
+          if (onCreated && bl) {
+            const catName =
+              allCategories.find((c) => c.id === bl.categoryId)?.name ?? '';
+            onCreated(bl.id, bl.categoryId, catName);
           }
         },
       }

@@ -11,6 +11,7 @@ import { transactionRepository } from '@repositories/transactionRepository';
 import { AppError } from '@middleware/errorHandler';
 import { similarity } from '@utils/similarity';
 import { dashboardHintsService } from '@services/core/dashboardHintsService';
+import { categorizationRuleService } from '@services/core/categorizationRuleService';
 import type {
   SimplefinConnection,
   SimplefinAccountMapping,
@@ -261,8 +262,9 @@ class SimplefinService {
       }
 
       // Import as a new transaction
+      let importedTxId: string | null = null;
       await this.db.transaction(async (trx) => {
-        await transactionRepository.create(
+        const created = await transactionRepository.create(
           {
             userId,
             accountId: localAccountId,
@@ -273,8 +275,16 @@ class SimplefinService {
           },
           trx
         );
+        importedTxId = created.id;
         // Balance already updated from SimpleFIN's reported balance — don't double-count
       });
+
+      // Fire-and-forget: apply categorization rule if one matches this payee
+      if (importedTxId) {
+        void categorizationRuleService
+          .applyRuleIfMatch(userId, importedTxId, sfTx.description)
+          .catch((e: unknown) => logger.warn('categorizationRule apply failed', String(e)));
+      }
 
       counts.imported++;
     }
@@ -379,7 +389,7 @@ class SimplefinService {
       const sfDate = new Date(sfTx.posted * 1000).toISOString().slice(0, 10);
 
       // Balance is already set from SimpleFIN's reported balance during sync — do not update it here
-      await transactionRepository.create({
+      const acceptedTx = await transactionRepository.create({
         userId,
         accountId: review.localAccountId,
         amount: sfAmount,
@@ -387,6 +397,9 @@ class SimplefinService {
         date: sfDate,
         simplefinTransactionId: sfTx.id,
       });
+      void categorizationRuleService
+        .applyRuleIfMatch(userId, acceptedTx.id, sfTx.description)
+        .catch((e: unknown) => logger.warn('categorizationRule apply failed', String(e)));
     } else if (action === 'merge') {
       if (!targetTransactionId) {
         throw new AppError('targetTransactionId is required for merge', 400);
@@ -413,7 +426,7 @@ class SimplefinService {
       if (isNaN(sfAmount)) continue;
       const sfDate = new Date(sfTx.posted * 1000).toISOString().slice(0, 10);
       try {
-        await transactionRepository.create({
+        const bulkTx = await transactionRepository.create({
           userId,
           accountId: review.localAccountId,
           amount: sfAmount,
@@ -421,6 +434,9 @@ class SimplefinService {
           date: sfDate,
           simplefinTransactionId: sfTx.id,
         });
+        void categorizationRuleService
+          .applyRuleIfMatch(userId, bulkTx.id, sfTx.description)
+          .catch((e: unknown) => logger.warn('categorizationRule apply failed', String(e)));
         accepted++;
       } catch (err) {
         // Unique constraint violation: already imported — remove the stale review and move on

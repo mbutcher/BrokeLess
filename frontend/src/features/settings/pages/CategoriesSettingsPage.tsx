@@ -8,6 +8,7 @@ import {
   Plus,
   AlertTriangle,
   Loader2,
+  Trash2,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@components/ui/card';
 import { Button } from '@components/ui/button';
@@ -29,6 +30,11 @@ import {
   useCategoryUsage,
   useReassignAndArchiveCategory,
 } from '@features/core/hooks/useCategories';
+import {
+  useCategorizationRules,
+  useDeleteCategorizationRule,
+} from '@features/core/hooks/useTransactions';
+import { useBudgetLines } from '@features/core/hooks/useBudgetLines';
 import type { Category, CreateCategoryInput, UpdateCategoryInput } from '@features/core/types';
 import { getApiErrorMessage } from '@lib/api/errors';
 
@@ -75,7 +81,7 @@ function CategoryFormDialog({ open, onClose, editTarget, parentCategory }: Categ
 
   const isEdit = !!editTarget;
   const [name, setName] = useState(editTarget?.name ?? '');
-  const [color, setColor] = useState(editTarget?.color ?? '#6b7280');
+  const [color, setColor] = useState(editTarget?.color ?? parentCategory?.color ?? '#6b7280');
   const [icon, setIcon] = useState(editTarget?.icon ?? 'more-horizontal');
   const [isIncome, setIsIncome] = useState(editTarget?.isIncome ?? parentCategory?.isIncome ?? false);
   const [error, setError] = useState('');
@@ -420,6 +426,9 @@ function CategoryRow({ category, subcategories, onEdit, onArchive, onAddSub }: C
 export function CategoriesSettingsPage() {
   const { t } = useTranslation();
   const { data: categories = [], isLoading } = useCategories();
+  const { data: rules = [] } = useCategorizationRules();
+  const deleteRule = useDeleteCategorizationRule();
+  const { data: budgetLinesData } = useBudgetLines();
 
   const [formDialog, setFormDialog] = useState<{
     open: boolean;
@@ -427,6 +436,10 @@ export function CategoriesSettingsPage() {
     parentCategory?: Category;
   }>({ open: false });
   const [archiveTarget, setArchiveTarget] = useState<Category | null>(null);
+
+  const budgetLines = budgetLinesData ?? [];
+  const categoryMap = new Map(categories.map((c) => [c.id, c]));
+  const budgetLineMap = new Map(budgetLines.map((bl) => [bl.id, bl]));
 
   const active = categories.filter((c) => c.isActive);
   const archived = categories.filter((c) => !c.isActive);
@@ -533,6 +546,51 @@ export function CategoriesSettingsPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Auto-Categorize Rules */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">{t('categorizationRules.title')}</CardTitle>
+          <CardDescription>{t('categorizationRules.subtitle')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {rules.length === 0 ? (
+            <p className="text-sm text-muted-foreground px-3 py-2">{t('categorizationRules.none')}</p>
+          ) : (
+            <div className="space-y-1">
+              {rules.map((rule) => {
+                const category = rule.categoryId ? categoryMap.get(rule.categoryId) : null;
+                const budgetLine = rule.budgetLineId ? budgetLineMap.get(rule.budgetLineId) : null;
+                const appliesToParts: string[] = [];
+                if (category) appliesToParts.push(category.name);
+                if (budgetLine) appliesToParts.push(budgetLine.name);
+                const appliesTo = appliesToParts.join(' / ') || t('categorizationRules.noCategory');
+
+                return (
+                  <div
+                    key={rule.id}
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted/50 group"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{rule.payee}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t('categorizationRules.appliesTo')}: {appliesTo}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => void deleteRule.mutate(rule.id)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive px-1.5 py-0.5 rounded hover:bg-muted"
+                      title={t('categorizationRules.deleteRule')}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Dialogs */}
       {formDialog.open && (
