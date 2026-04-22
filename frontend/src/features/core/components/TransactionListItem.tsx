@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@lib/utils';
 import { CategoryBadge } from './CategoryBadge';
 import { AddBudgetLineDialog } from './AddBudgetLineDialog';
-import { useDeleteTransaction } from '../hooks/useTransactions';
+import { useDeleteTransaction, useUpdateTransaction } from '../hooks/useTransactions';
 import type { Transaction, Category, Account, BudgetLineClassification } from '../types';
 
 export interface TransactionListItemProps {
@@ -16,6 +16,7 @@ export interface TransactionListItemProps {
 export function TransactionListItem({ transaction: tx, category, account, onEdit }: TransactionListItemProps) {
   const { t } = useTranslation();
   const deleteTx = useDeleteTransaction();
+  const updateTx = useUpdateTransaction();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showBudgetLineDialog, setShowBudgetLineDialog] = useState(false);
   const isExpense = tx.amount < 0;
@@ -70,13 +71,19 @@ export function TransactionListItem({ transaction: tx, category, account, onEdit
                 </button>
               )}
               {!tx.isTransfer && (
-                <button
-                  onClick={() => setShowBudgetLineDialog(true)}
-                  className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted"
-                  title={t('transactions.createBudgetLine')}
-                >
-                  {t('transactions.budgetLine')}
-                </button>
+                tx.budgetLineId ? (
+                  <span className="text-xs text-primary/70 px-2 py-1">
+                    {t('transactions.budgetLine')} ✓
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => setShowBudgetLineDialog(true)}
+                    className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-muted"
+                    title={t('transactions.createBudgetLine')}
+                  >
+                    {t('transactions.budgetLine')}
+                  </button>
+                )
               )}
               {confirmDelete ? (
                 <div className="flex gap-1">
@@ -121,6 +128,9 @@ export function TransactionListItem({ transaction: tx, category, account, onEdit
         defaultAnchorDate={tx.date.split('T')[0]}
         defaultNotes={tx.notes ?? undefined}
         onClose={() => setShowBudgetLineDialog(false)}
+        onCreated={(budgetLineId) => {
+          void updateTx.mutateAsync({ id: tx.id, data: { budgetLineId } });
+        }}
       />
     )}
     </>

@@ -39,14 +39,27 @@ export function TransactionsPage() {
   const [pendingLink, setPendingLink] = useState<{ txId: string; candidates: TransferCandidate[] } | null>(null);
 
   const initialQ = searchParams.get('q') ?? '';
-  const initialTag = searchParams.get('tag') ?? '';
   const [filters, setFilters] = useState<TransactionFilters>({
     page: 1,
     limit: 50,
     q: initialQ || undefined,
-    tag: initialTag || undefined,
+    tag: searchParams.get('tag') || undefined,
+    categoryId: searchParams.get('categoryId') || undefined,
+    accountId: searchParams.get('accountId') || undefined,
   });
   const [searchInput, setSearchInput] = useState(initialQ);
+
+  // Sync URL-driven filters when navigation changes params while component is already mounted
+  // (e.g. navigating from budget page "View Transactions" while already on /transactions)
+  useEffect(() => {
+    setFilters((f) => ({
+      ...f,
+      tag: searchParams.get('tag') || undefined,
+      categoryId: searchParams.get('categoryId') || undefined,
+      accountId: searchParams.get('accountId') || undefined,
+      page: 1,
+    }));
+  }, [searchParams]);
 
   // Debounce search input → update filters.q after 300 ms idle
   useEffect(() => {

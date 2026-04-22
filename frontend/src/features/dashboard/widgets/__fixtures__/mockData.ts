@@ -133,6 +133,7 @@ const baseTransaction: Transaction = {
   notes: null,
   date: '2026-02-20',
   categoryId: 'cat-1',
+  budgetLineId: null,
   isTransfer: false,
   isCleared: true,
   createdAt: '2026-02-20T10:00:00Z',

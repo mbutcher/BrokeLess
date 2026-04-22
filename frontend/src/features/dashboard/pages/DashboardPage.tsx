@@ -10,25 +10,35 @@ import { buildDefaultConfig, DEFAULT_WIDGET_VISIBILITY, DEFAULT_LAYOUTS } from '
 import { useAuthStore } from '@features/auth/stores/authStore';
 import type { DashboardConfig, WidgetId, GridLayoutItem } from '../types/dashboard';
 
-/** Fill in any new widget keys missing from a saved config (backwards-compat). */
+/** Migrate a saved config: add new widget keys, remove stale/unknown widget IDs. */
 function migrateConfig(saved: DashboardConfig): DashboardConfig {
-  const allKeys = Object.keys(DEFAULT_WIDGET_VISIBILITY) as WidgetId[];
-  const visibility = { ...saved.widgetVisibility };
+  const knownIds = new Set(Object.keys(DEFAULT_WIDGET_VISIBILITY) as WidgetId[]);
+
+  // Rebuild visibility: drop unknown IDs, add missing known IDs
+  const visibility: Record<string, boolean> = {};
   let visibilityDirty = false;
-  for (const key of allKeys) {
+  for (const [key, val] of Object.entries(saved.widgetVisibility)) {
+    if (knownIds.has(key as WidgetId)) {
+      visibility[key] = val;
+    } else {
+      visibilityDirty = true; // stale key removed
+    }
+  }
+  for (const key of knownIds) {
     if (!(key in visibility)) {
       visibility[key] = DEFAULT_WIDGET_VISIBILITY[key];
       visibilityDirty = true;
     }
   }
 
-  // Ensure each layout breakpoint has entries for new widgets
+  // Rebuild each layout: drop unknown IDs, add missing known ones from defaults
   const buildBp = (bp: keyof typeof saved.layouts) => {
-    const existing = saved.layouts[bp];
-    const existingIds = new Set(existing.map((i) => i.i));
+    const filtered = saved.layouts[bp].filter((item) => knownIds.has(item.i as WidgetId));
+    const filteredIds = new Set(filtered.map((i) => i.i));
     const defaults = DEFAULT_LAYOUTS[bp];
-    const missing = defaults.filter((d) => !existingIds.has(d.i));
-    return missing.length > 0 ? [...existing, ...missing] : existing;
+    const missing = defaults.filter((d) => !filteredIds.has(d.i));
+    const result = missing.length > 0 ? [...filtered, ...missing] : filtered;
+    return result.length !== saved.layouts[bp].length || missing.length > 0 ? result : saved.layouts[bp];
   };
 
   const xs = buildBp('xs');
@@ -42,7 +52,11 @@ function migrateConfig(saved: DashboardConfig): DashboardConfig {
     xl !== saved.layouts.xl;
 
   if (!visibilityDirty && !layoutDirty) return saved;
-  return { ...saved, widgetVisibility: visibility, layouts: { xs, sm, lg, xl } };
+  return {
+    ...saved,
+    widgetVisibility: visibility as DashboardConfig['widgetVisibility'],
+    layouts: { xs, sm, lg, xl },
+  };
 }
 
 export function DashboardPage() {
@@ -99,9 +113,30 @@ export function DashboardPage() {
   const handleToggleWidget = (id: WidgetId, enabled: boolean) => {
     setDraftConfig((prev) => {
       if (!prev) return prev;
+
+      let layouts = prev.layouts;
+      if (enabled) {
+        // Ensure a layout entry exists at every breakpoint; place new entries at bottom
+        const bps = ['xs', 'sm', 'lg', 'xl'] as const;
+        let changed = false;
+        const newLayouts = { ...layouts };
+        for (const bp of bps) {
+          if (!newLayouts[bp].some((item) => item.i === id)) {
+            const defaultEntry = DEFAULT_LAYOUTS[bp].find((d) => d.i === id);
+            if (defaultEntry) {
+              const maxY = newLayouts[bp].reduce((m, item) => Math.max(m, item.y + item.h), 0);
+              newLayouts[bp] = [...newLayouts[bp], { ...defaultEntry, y: maxY }];
+              changed = true;
+            }
+          }
+        }
+        if (changed) layouts = newLayouts;
+      }
+
       return {
         ...prev,
         widgetVisibility: { ...prev.widgetVisibility, [id]: enabled },
+        layouts,
       };
     });
   };

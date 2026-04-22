@@ -84,6 +84,7 @@ interface AddBudgetLineDialogProps {
   defaultAccountId?: string;
   defaultNotes?: string;
   onClose: () => void;
+  onCreated?: (budgetLineId: string) => void;
 }
 
 export function AddBudgetLineDialog({
@@ -96,6 +97,7 @@ export function AddBudgetLineDialog({
   defaultAccountId,
   defaultNotes,
   onClose,
+  onCreated,
 }: AddBudgetLineDialogProps) {
   const createLine = useCreateBudgetLine();
   const { data: allCategories = [] } = useCategories();
@@ -174,9 +176,12 @@ export function AddBudgetLineDialog({
         notes: values.notes ?? null,
       },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
           reset();
           onClose();
+          if (onCreated && data) {
+            onCreated(data.data.data.budgetLine.id);
+          }
         },
       }
     );

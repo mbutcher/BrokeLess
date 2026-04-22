@@ -98,6 +98,8 @@ export interface Transaction {
   notes: string | null;
   date: Date;
   categoryId: string | null;
+  /** Optional link to a budget line — set when this transaction was used to create one. */
+  budgetLineId: string | null;
   isTransfer: boolean;
   isCleared: boolean;
   createdAt: Date;
@@ -135,6 +137,7 @@ export interface UpdateTransactionData {
   notes?: string | null;
   date?: string;
   categoryId?: string | null;
+  budgetLineId?: string | null;
   isCleared?: boolean;
   tags?: string[];
 }
