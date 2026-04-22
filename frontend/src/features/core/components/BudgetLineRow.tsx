@@ -328,11 +328,7 @@ export function BudgetLineRow({ viewLine, subcategoryName }: BudgetLineRowProps)
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => {
-                const params = new URLSearchParams({ categoryId: line.categoryId });
-                if (line.accountId) params.set('accountId', line.accountId);
-                navigate(`/transactions?${params.toString()}`);
-              }}
+              onClick={() => navigate(`/transactions?budgetLineId=${line.id}`)}
             >
               View Transactions
             </Button>
