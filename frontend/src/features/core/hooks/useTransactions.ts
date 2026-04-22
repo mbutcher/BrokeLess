@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { transactionApi, TAGS_QUERY_KEY } from '../api/transactionApi';
+import { categorizationRuleApi } from '../api/categorizationRuleApi';
 import { useAuthStore } from '@features/auth/stores/authStore';
 import { db } from '@lib/db';
 import {
@@ -207,3 +208,57 @@ export function useAllTags() {
     staleTime: 5 * 60 * 1000,
   });
 }
+
+export function useSimilarTransactions(transactionId: string | null) {
+  return useQuery({
+    queryKey: ['similar-transactions', transactionId],
+    queryFn: async () => {
+      const res = await transactionApi.getSimilar(transactionId!);
+      return res.data.data.transactions;
+    },
+    enabled: transactionId !== null,
+    staleTime: 0,
+  });
+}
+
+export function useBulkCategorizeTx() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      transactionIds: string[];
+      categoryId?: string | null;
+      budgetLineId?: string | null;
+    }) => transactionApi.bulkCategorize(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: TRANSACTIONS_KEY }),
+  });
+}
+
+export const CATEGORIZATION_RULES_KEY = ['categorization-rules'] as const;
+
+export function useCategorizationRules() {
+  return useQuery({
+    queryKey: CATEGORIZATION_RULES_KEY,
+    queryFn: async () => {
+      const res = await categorizationRuleApi.list();
+      return res.data.data.rules;
+    },
+  });
+}
+
+export function useCreateCategorizationRule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { payee: string; categoryId?: string | null; budgetLineId?: string | null }) =>
+      categorizationRuleApi.create(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: CATEGORIZATION_RULES_KEY }),
+  });
+}
+
+export function useDeleteCategorizationRule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => categorizationRuleApi.delete(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: CATEGORIZATION_RULES_KEY }),
+  });
+}
+

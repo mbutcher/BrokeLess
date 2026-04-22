@@ -62,6 +62,7 @@ export function BudgetLineGroup({ category, viewLines, allCategories }: BudgetLi
                   ? subcategoryMap.get(viewLine.budgetLine.subcategoryId)?.name
                   : undefined
               }
+              allCategories={allCategories}
             />
           ))}
         </div>

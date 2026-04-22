@@ -790,6 +790,26 @@
     "currency": "Devise",
     "confirmLink": "Confirmer"
   },
+  "similar": {
+    "title": "Catégoriser des transactions similaires",
+    "description": "D'autres transactions du payeur « {{payee}} » ont été trouvées. Appliquez « {{label}} » à celles que vous sélectionnez.",
+    "noOthersFound": "Aucune autre transaction du même payeur n'a été trouvée. Vous avez appliqué « {{label}} ».",
+    "selectAll": "Toutes ({{count}})",
+    "selectedCount": "{{count}} sélectionnée(s)",
+    "saveRule": "Catégoriser automatiquement les futures importations de ce payeur",
+    "saveRuleBtn": "Enregistrer la règle",
+    "applyToCount": "Appliquer à {{count}} transaction(s)",
+    "close": "Fermer"
+  },
+  "categorizationRules": {
+    "title": "Règles de catégorisation automatique",
+    "subtitle": "Modèles de payeurs enregistrés depuis le dialogue « Catégoriser les similaires ». Appliqués automatiquement lors de l'importation depuis SimpleFIN.",
+    "none": "Aucune règle enregistrée pour l'instant.",
+    "payee": "Modèle de payeur",
+    "appliesTo": "S'applique à",
+    "noCategory": "Aucune catégorie",
+    "deleteRule": "Supprimer la règle"
+  },
   "categories": {
     "title": "Catégories",
     "subtitle": "Gérez vos catégories de revenus et de dépenses ainsi que vos sous-catégories.",

@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@lib/utils';
 import { CategoryBadge } from './CategoryBadge';
 import { AddBudgetLineDialog } from './AddBudgetLineDialog';
+import { SimilarTransactionsDialog } from './SimilarTransactionsDialog';
 import { useDeleteTransaction, useUpdateTransaction } from '../hooks/useTransactions';
 import type { Transaction, Category, Account, BudgetLineClassification } from '../types';
 
@@ -15,10 +17,16 @@ export interface TransactionListItemProps {
 
 export function TransactionListItem({ transaction: tx, category, account, onEdit }: TransactionListItemProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const deleteTx = useDeleteTransaction();
   const updateTx = useUpdateTransaction();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showBudgetLineDialog, setShowBudgetLineDialog] = useState(false);
+  const [similarTarget, setSimilarTarget] = useState<{
+    budgetLineId: string;
+    categoryId: string | null;
+    categoryName: string;
+  } | null>(null);
   const isExpense = tx.amount < 0;
 
   return (
@@ -72,9 +80,13 @@ export function TransactionListItem({ transaction: tx, category, account, onEdit
               )}
               {!tx.isTransfer && (
                 tx.budgetLineId ? (
-                  <span className="text-xs text-primary/70 px-2 py-1">
-                    {t('transactions.budgetLine')} ✓
-                  </span>
+                  <button
+                    onClick={() => navigate('/budget')}
+                    className="text-xs text-primary/70 hover:text-primary px-2 py-1 rounded hover:bg-muted"
+                    title={t('transactions.viewBudgetLine')}
+                  >
+                    {t('transactions.budgetLine')} ↗
+                  </button>
                 ) : (
                   <button
                     onClick={() => setShowBudgetLineDialog(true)}
@@ -128,9 +140,21 @@ export function TransactionListItem({ transaction: tx, category, account, onEdit
         defaultAnchorDate={tx.date.split('T')[0]}
         defaultNotes={tx.notes ?? undefined}
         onClose={() => setShowBudgetLineDialog(false)}
-        onCreated={(budgetLineId) => {
-          void updateTx.mutateAsync({ id: tx.id, data: { budgetLineId } });
+        onCreated={(budgetLineId, categoryId, categoryName) => {
+          void updateTx.mutateAsync({ id: tx.id, data: { budgetLineId, categoryId } }).then(() => {
+            setSimilarTarget({ budgetLineId, categoryId, categoryName });
+          });
         }}
+      />
+    )}
+
+    {similarTarget && (
+      <SimilarTransactionsDialog
+        sourceTransaction={{ ...tx, budgetLineId: similarTarget.budgetLineId, categoryId: similarTarget.categoryId }}
+        categoryId={similarTarget.categoryId}
+        budgetLineId={similarTarget.budgetLineId}
+        appliedLabel={similarTarget.categoryName}
+        onClose={() => setSimilarTarget(null)}
       />
     )}
     </>

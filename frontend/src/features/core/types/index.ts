@@ -551,6 +551,18 @@ export interface NetWorthSnapshot {
   createdAt: string;
 }
 
+// ─── Categorization Rules ─────────────────────────────────────────────────────
+
+export interface CategorizationRule {
+  id: string;
+  userId: string;
+  payee: string;
+  categoryId: string | null;
+  budgetLineId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ─── Spending by Category ─────────────────────────────────────────────────────
 
 export interface SpendingByCategoryItem {

@@ -133,6 +133,11 @@ export function useDeleteBudgetLine() {
             updatedAt: new Date().toISOString(),
           });
         }
+        // Clear budgetLineId on any locally-cached transactions that referenced this line
+        const linked = await db.transactions.filter((tx) => tx.budgetLineId === id).toArray();
+        await Promise.all(
+          linked.map((tx) => db.transactions.put({ ...tx, budgetLineId: null }))
+        );
         await queueMutation({
           method: 'DELETE',
           url: `/budget-lines/${id}`,
@@ -148,6 +153,8 @@ export function useDeleteBudgetLine() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: BUDGET_LINES_KEY });
       void qc.invalidateQueries({ queryKey: BUDGET_VIEW_KEY });
+      // The server nulls budget_line_id via FK ON DELETE SET NULL; refresh transactions so the UI reflects it
+      void qc.invalidateQueries({ queryKey: ['transactions'] });
     },
   });
 }

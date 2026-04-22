@@ -26,6 +26,20 @@ class TransactionSearchRepository {
   }
 
   /**
+   * Returns transaction IDs that contain ANY of the given token hashes (OR semantics).
+   * Used for "find similar" suggestions — broader match than findMatchingIds.
+   */
+  async findMatchingIdsByAny(userId: string, tokenHashes: string[]): Promise<string[]> {
+    if (tokenHashes.length === 0) return [];
+    const rows = (await this.db('transaction_search_index')
+      .where('user_id', userId)
+      .whereIn('search_token', tokenHashes)
+      .distinct('transaction_id')
+      .select('transaction_id')) as Array<{ transaction_id: string }>;
+    return rows.map((r) => r.transaction_id);
+  }
+
+  /**
    * Returns transaction IDs that contain ALL of the given token hashes (AND semantics).
    * Returns an empty array when tokenHashes is empty.
    */
