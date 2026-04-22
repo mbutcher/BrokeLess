@@ -4,6 +4,7 @@ import { authenticate } from '@middleware/authenticate';
 import { loadHousehold, requireOwner } from '@middleware/requireHousehold';
 import { validateRequest } from '@middleware/validateRequest';
 import {
+  onboardingSchema,
   setupHouseholdSchema,
   updateHouseholdSchema,
   addMemberSchema,
@@ -17,6 +18,15 @@ router.post(
   authenticate,
   validateRequest(setupHouseholdSchema),
   householdController.setup
+);
+
+// POST /household/onboarding — seeds categories; requires existing household
+router.post(
+  '/onboarding',
+  authenticate,
+  loadHousehold,
+  validateRequest(onboardingSchema),
+  householdController.onboarding
 );
 
 // All remaining routes require an existing household

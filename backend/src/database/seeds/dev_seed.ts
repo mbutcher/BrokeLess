@@ -19,6 +19,7 @@ import * as argon2 from 'argon2';
 import { env } from '../../config/env';
 import { encryptionService } from '../../services/encryption/encryptionService';
 import { dialectHelper } from '../../utils/db/dialectHelper';
+import { categoryService } from '../../services/core/categoryService';
 
 // ─── Environment Guard ────────────────────────────────────────────────────────
 
@@ -99,133 +100,6 @@ const B_SAVINGS = uid('0002', 12); // Ally High-Yield Savings
 const B_DISCOVER = uid('0002', 13); // Discover It Cash Back
 const B_STUDENT_LOAN = uid('0002', 14); // Federal Student Loan
 const B_ROTH = uid('0002', 15); // Roth IRA (Vanguard)
-
-// ─── Categories — Alpha ───────────────────────────────────────────────────────
-
-// Top-level expense
-const A_C_HOUSING = uid('0003', 1);
-const A_C_FOOD = uid('0003', 2);
-const A_C_TRANSPORT = uid('0003', 3);
-const A_C_HEALTH = uid('0003', 4);
-const A_C_PERSONAL = uid('0003', 5);
-const A_C_ENTERTAIN = uid('0003', 6);
-const A_C_SHOPPING = uid('0003', 7);
-const A_C_FINANCIAL = uid('0003', 8);
-const A_C_SUBS = uid('0003', 9);
-const A_C_TRANSFERS = uid('0003', 10);
-const A_C_MISC = uid('0003', 11);
-// Top-level income
-const A_C_EMPLOYMENT = uid('0003', 12);
-const A_C_OTHER_INC = uid('0003', 13);
-
-// Housing subcategories
-const A_S_RENT = uid('0004', 1);
-const A_S_UTILITIES = uid('0004', 2);
-const A_S_INTERNET = uid('0004', 3);
-const A_S_HOME_INS = uid('0004', 4);
-const A_S_REPAIRS = uid('0004', 5);
-// Food & Dining subcategories
-const A_S_GROCERIES = uid('0004', 6);
-const A_S_RESTAURANTS = uid('0004', 7);
-const A_S_COFFEE = uid('0004', 8);
-const A_S_FASTFOOD = uid('0004', 9);
-const A_S_ALCOHOL = uid('0004', 10);
-// Transportation subcategories
-const A_S_GAS = uid('0004', 11);
-const A_S_CAR_PMT = uid('0004', 12);
-const A_S_CAR_INS = uid('0004', 13);
-const A_S_PARKING = uid('0004', 14);
-const A_S_TRANSIT = uid('0004', 15);
-// Healthcare subcategories
-const A_S_DOCTOR = uid('0004', 16);
-const A_S_PHARMACY = uid('0004', 17);
-const A_S_GYM = uid('0004', 18);
-const A_S_MENTAL = uid('0004', 19);
-// Personal Care subcategories
-const A_S_HAIRCUT = uid('0004', 20);
-const A_S_CLOTHING = uid('0004', 21);
-// Entertainment subcategories
-const A_S_STREAMING = uid('0004', 22);
-const A_S_MOVIES = uid('0004', 23);
-const A_S_BOOKS = uid('0004', 24);
-const A_S_HOBBIES = uid('0004', 25);
-// Shopping subcategories
-const A_S_AMAZON = uid('0004', 26);
-const A_S_ELECTRONICS = uid('0004', 27);
-const A_S_HOME_GARDEN = uid('0004', 28);
-const A_S_GIFTS = uid('0004', 29);
-// Financial subcategories
-const A_S_CC_PMT = uid('0004', 30);
-const A_S_LOAN_PMT = uid('0004', 31);
-const A_S_BANK_FEES = uid('0004', 32);
-// Subscriptions subcategories
-const A_S_SOFTWARE = uid('0004', 33);
-const A_S_MEMBERSHIPS = uid('0004', 34);
-// Employment subcategories
-const A_S_SALARY = uid('0004', 35);
-const A_S_BONUS = uid('0004', 36);
-const A_S_FREELANCE = uid('0004', 37);
-// Other Income subcategories
-const A_S_TAX_REFUND = uid('0004', 38);
-const A_S_GIFTS_RECV = uid('0004', 39);
-const A_S_CASHBACK = uid('0004', 40);
-
-// ─── Categories — Beta ────────────────────────────────────────────────────────
-
-const B_C_HOUSING = uid('0005', 1);
-const B_C_FOOD = uid('0005', 2);
-const B_C_TRANSPORT = uid('0005', 3);
-const B_C_HEALTH = uid('0005', 4);
-const B_C_PERSONAL = uid('0005', 5);
-const B_C_ENTERTAIN = uid('0005', 6);
-const B_C_SHOPPING = uid('0005', 7);
-const B_C_FINANCIAL = uid('0005', 8);
-const B_C_SUBS = uid('0005', 9);
-const B_C_TRANSFERS = uid('0005', 10);
-const B_C_MISC = uid('0005', 11);
-const B_C_EMPLOYMENT = uid('0005', 12);
-const B_C_OTHER_INC = uid('0005', 13);
-
-const B_S_MORTGAGE = uid('0006', 1);
-const B_S_UTILITIES = uid('0006', 2);
-const B_S_INTERNET = uid('0006', 3);
-const B_S_HOME_INS = uid('0006', 4);
-const B_S_REPAIRS = uid('0006', 5);
-const B_S_GROCERIES = uid('0006', 6);
-const B_S_RESTAURANTS = uid('0006', 7);
-const B_S_COFFEE = uid('0006', 8);
-const B_S_FASTFOOD = uid('0006', 9);
-const B_S_ALCOHOL = uid('0006', 10);
-const B_S_GAS = uid('0006', 11);
-const B_S_CAR_INS = uid('0006', 12);
-const B_S_PARKING = uid('0006', 13);
-const B_S_RIDESHARE = uid('0006', 14);
-const B_S_DOCTOR = uid('0006', 15);
-const B_S_PHARMACY = uid('0006', 16);
-const B_S_GYM = uid('0006', 17);
-const B_S_MENTAL = uid('0006', 18);
-const B_S_HAIRCUT = uid('0006', 19);
-const B_S_CLOTHING = uid('0006', 20);
-const B_S_STREAMING = uid('0006', 21);
-const B_S_MOVIES = uid('0006', 22);
-const B_S_BOOKS = uid('0006', 23);
-const B_S_HOBBIES = uid('0006', 24);
-const B_S_AMAZON = uid('0006', 25);
-const B_S_ELECTRONICS = uid('0006', 26);
-const B_S_HOME_GARDEN = uid('0006', 27);
-const B_S_GIFTS = uid('0006', 28);
-const B_S_CC_PMT = uid('0006', 29);
-const B_S_LOAN_PMT = uid('0006', 30);
-const B_S_BANK_FEES = uid('0006', 31);
-const B_S_SOFTWARE = uid('0006', 32);
-const B_S_MEMBERSHIPS = uid('0006', 33);
-const B_S_SALARY = uid('0006', 34);
-const B_S_BONUS = uid('0006', 35);
-const B_S_FREELANCE = uid('0006', 36);
-const B_S_TAX_REFUND = uid('0006', 37);
-const B_S_GIFTS_RECV = uid('0006', 38);
-const B_S_CASHBACK = uid('0006', 39);
-const B_S_CAR_PMT_PH = uid('0006', 40); // Beta placeholder — Beta has no Car Payment subcategory
 
 // ─── Budget Line IDs ──────────────────────────────────────────────────────────
 
@@ -334,158 +208,6 @@ const TRUNCATE_TABLES = [
   'households',
   'users',
 ];
-
-// ─── Categories Data ──────────────────────────────────────────────────────────
-
-function buildCategories(
-  householdId: string,
-  ids: {
-    housing: string;
-    food: string;
-    transport: string;
-    health: string;
-    personal: string;
-    entertain: string;
-    shopping: string;
-    financial: string;
-    subs: string;
-    transfers: string;
-    misc: string;
-    employment: string;
-    otherInc: string;
-    sRent: string;
-    sUtilities: string;
-    sInternet: string;
-    sHomeIns: string;
-    sRepairs: string;
-    sGroceries: string;
-    sRestaurants: string;
-    sCoffee: string;
-    sFastFood: string;
-    sAlcohol: string;
-    sGas: string;
-    sCarPmt: string;
-    sCarIns: string;
-    sParking: string;
-    sTransit: string;
-    sDoctor: string;
-    sPharmacy: string;
-    sGym: string;
-    sMental: string;
-    sHaircut: string;
-    sClothing: string;
-    sStreaming: string;
-    sMovies: string;
-    sBooks: string;
-    sHobbies: string;
-    sAmazon: string;
-    sElectronics: string;
-    sHomeGarden: string;
-    sGifts: string;
-    sCcPmt: string;
-    sLoanPmt: string;
-    sBankFees: string;
-    sSoftware: string;
-    sMemberships: string;
-    sSalary: string;
-    sBonus: string;
-    sFreelance: string;
-    sTaxRefund: string;
-    sGiftsRecv: string;
-    sCashback: string;
-  }
-): object[] {
-  const top = (id: string, name: string, color: string, icon: string, isIncome = false) => ({
-    id,
-    household_id: householdId,
-    name,
-    color,
-    icon,
-    is_income: isIncome,
-    parent_id: null,
-    is_active: true,
-  });
-
-  const sub = (id: string, parentId: string, name: string, isIncome = false) => ({
-    id,
-    household_id: householdId,
-    name,
-    color: null,
-    icon: null,
-    is_income: isIncome,
-    parent_id: parentId,
-    is_active: true,
-  });
-
-  return [
-    // Top-level expense categories
-    top(ids.housing, 'Housing', '#3b82f6', 'Home'),
-    top(ids.food, 'Food & Dining', '#f59e0b', 'UtensilsCrossed'),
-    top(ids.transport, 'Transportation', '#10b981', 'Car'),
-    top(ids.health, 'Healthcare', '#ef4444', 'Heart'),
-    top(ids.personal, 'Personal Care', '#a855f7', 'User'),
-    top(ids.entertain, 'Entertainment', '#f97316', 'Tv'),
-    top(ids.shopping, 'Shopping', '#ec4899', 'ShoppingBag'),
-    top(ids.financial, 'Financial', '#6366f1', 'CreditCard'),
-    top(ids.subs, 'Subscriptions', '#14b8a6', 'Repeat'),
-    top(ids.transfers, 'Transfers', '#9ca3af', 'ArrowRightLeft'),
-    top(ids.misc, 'Miscellaneous', '#6b7280', 'MoreHorizontal'),
-    // Top-level income categories
-    top(ids.employment, 'Employment', '#22c55e', 'Briefcase', true),
-    top(ids.otherInc, 'Other Income', '#84cc16', 'PlusCircle', true),
-    // Housing subcategories
-    sub(ids.sRent, ids.housing, 'Rent / Mortgage'),
-    sub(ids.sUtilities, ids.housing, 'Utilities'),
-    sub(ids.sInternet, ids.housing, 'Internet & Phone'),
-    sub(ids.sHomeIns, ids.housing, 'Home Insurance'),
-    sub(ids.sRepairs, ids.housing, 'Repairs & Maintenance'),
-    // Food & Dining subcategories
-    sub(ids.sGroceries, ids.food, 'Groceries'),
-    sub(ids.sRestaurants, ids.food, 'Restaurants'),
-    sub(ids.sCoffee, ids.food, 'Coffee & Cafés'),
-    sub(ids.sFastFood, ids.food, 'Fast Food'),
-    sub(ids.sAlcohol, ids.food, 'Alcohol & Bars'),
-    // Transportation subcategories
-    sub(ids.sGas, ids.transport, 'Gas'),
-    sub(ids.sCarPmt, ids.transport, 'Car Payment'),
-    sub(ids.sCarIns, ids.transport, 'Car Insurance'),
-    sub(ids.sParking, ids.transport, 'Parking & Tolls'),
-    sub(ids.sTransit, ids.transport, 'Public Transit'),
-    // Healthcare subcategories
-    sub(ids.sDoctor, ids.health, 'Doctor & Dentist'),
-    sub(ids.sPharmacy, ids.health, 'Pharmacy'),
-    sub(ids.sGym, ids.health, 'Gym & Fitness'),
-    sub(ids.sMental, ids.health, 'Mental Health'),
-    // Personal Care subcategories
-    sub(ids.sHaircut, ids.personal, 'Haircuts & Grooming'),
-    sub(ids.sClothing, ids.personal, 'Clothing & Accessories'),
-    // Entertainment subcategories
-    sub(ids.sStreaming, ids.entertain, 'Streaming Services'),
-    sub(ids.sMovies, ids.entertain, 'Movies & Events'),
-    sub(ids.sBooks, ids.entertain, 'Books & Games'),
-    sub(ids.sHobbies, ids.entertain, 'Hobbies & Sports'),
-    // Shopping subcategories
-    sub(ids.sAmazon, ids.shopping, 'Amazon & Online'),
-    sub(ids.sElectronics, ids.shopping, 'Electronics'),
-    sub(ids.sHomeGarden, ids.shopping, 'Home & Garden'),
-    sub(ids.sGifts, ids.shopping, 'Gifts & Giving'),
-    // Financial subcategories
-    sub(ids.sCcPmt, ids.financial, 'Credit Card Payment'),
-    sub(ids.sLoanPmt, ids.financial, 'Loan Payment'),
-    sub(ids.sBankFees, ids.financial, 'Banking Fees'),
-    // Subscriptions subcategories
-    sub(ids.sSoftware, ids.subs, 'Software & Apps'),
-    sub(ids.sMemberships, ids.subs, 'Memberships'),
-    // Employment subcategories
-    sub(ids.sSalary, ids.employment, 'Salary & Wages', true),
-    sub(ids.sBonus, ids.employment, 'Bonus & Commission', true),
-    sub(ids.sFreelance, ids.employment, 'Freelance & Contract', true),
-    // Other Income subcategories
-    sub(ids.sTaxRefund, ids.otherInc, 'Tax Refund', true),
-    sub(ids.sGiftsRecv, ids.otherInc, 'Gifts Received', true),
-    sub(ids.sCashback, ids.otherInc, 'Cashback & Rewards', true),
-  ];
-}
 
 // ─── Transaction Builder ──────────────────────────────────────────────────────
 
@@ -638,8 +360,20 @@ export async function seed(knex: Knex): Promise<void> {
     { id: BETA_HH_ID, name: "Mike Beta's Household" },
   ]);
   await knex('household_members').insert([
-    { id: uid('000d', 1), household_id: ALPHA_HH_ID, user_id: ALPHA_ID, role: 'owner', joined_at: new Date().toISOString() },
-    { id: uid('000d', 2), household_id: BETA_HH_ID, user_id: BETA_ID, role: 'owner', joined_at: new Date().toISOString() },
+    {
+      id: uid('000d', 1),
+      household_id: ALPHA_HH_ID,
+      user_id: ALPHA_ID,
+      role: 'owner',
+      joined_at: new Date().toISOString(),
+    },
+    {
+      id: uid('000d', 2),
+      household_id: BETA_HH_ID,
+      user_id: BETA_ID,
+      role: 'owner',
+      joined_at: new Date().toISOString(),
+    },
   ]);
 
   // ── Accounts ───────────────────────────────────────────────────────────────
@@ -789,122 +523,35 @@ export async function seed(knex: Knex): Promise<void> {
     },
   ]);
 
-  // ── Categories ─────────────────────────────────────────────────────────────
-  console.log('[dev_seed] Inserting categories...');
-
-  const alphaCategories = buildCategories(ALPHA_HH_ID, {
-    housing: A_C_HOUSING,
-    food: A_C_FOOD,
-    transport: A_C_TRANSPORT,
-    health: A_C_HEALTH,
-    personal: A_C_PERSONAL,
-    entertain: A_C_ENTERTAIN,
-    shopping: A_C_SHOPPING,
-    financial: A_C_FINANCIAL,
-    subs: A_C_SUBS,
-    transfers: A_C_TRANSFERS,
-    misc: A_C_MISC,
-    employment: A_C_EMPLOYMENT,
-    otherInc: A_C_OTHER_INC,
-    sRent: A_S_RENT,
-    sUtilities: A_S_UTILITIES,
-    sInternet: A_S_INTERNET,
-    sHomeIns: A_S_HOME_INS,
-    sRepairs: A_S_REPAIRS,
-    sGroceries: A_S_GROCERIES,
-    sRestaurants: A_S_RESTAURANTS,
-    sCoffee: A_S_COFFEE,
-    sFastFood: A_S_FASTFOOD,
-    sAlcohol: A_S_ALCOHOL,
-    sGas: A_S_GAS,
-    sCarPmt: A_S_CAR_PMT,
-    sCarIns: A_S_CAR_INS,
-    sParking: A_S_PARKING,
-    sTransit: A_S_TRANSIT,
-    sDoctor: A_S_DOCTOR,
-    sPharmacy: A_S_PHARMACY,
-    sGym: A_S_GYM,
-    sMental: A_S_MENTAL,
-    sHaircut: A_S_HAIRCUT,
-    sClothing: A_S_CLOTHING,
-    sStreaming: A_S_STREAMING,
-    sMovies: A_S_MOVIES,
-    sBooks: A_S_BOOKS,
-    sHobbies: A_S_HOBBIES,
-    sAmazon: A_S_AMAZON,
-    sElectronics: A_S_ELECTRONICS,
-    sHomeGarden: A_S_HOME_GARDEN,
-    sGifts: A_S_GIFTS,
-    sCcPmt: A_S_CC_PMT,
-    sLoanPmt: A_S_LOAN_PMT,
-    sBankFees: A_S_BANK_FEES,
-    sSoftware: A_S_SOFTWARE,
-    sMemberships: A_S_MEMBERSHIPS,
-    sSalary: A_S_SALARY,
-    sBonus: A_S_BONUS,
-    sFreelance: A_S_FREELANCE,
-    sTaxRefund: A_S_TAX_REFUND,
-    sGiftsRecv: A_S_GIFTS_RECV,
-    sCashback: A_S_CASHBACK,
+  // ── Categories ──────────────────────────────────────────────────────────────
+  console.log('[dev_seed] Seeding categories via service...');
+  await categoryService.seedDefaultsForHousehold(ALPHA_HH_ID, {
+    region: 'CA',
+    isFreelancer: true,
+    hasPets: false,
+    hasKids: false,
+    isStudent: false,
+  });
+  await categoryService.seedDefaultsForHousehold(BETA_HH_ID, {
+    region: 'US',
+    isFreelancer: false,
+    hasPets: false,
+    hasKids: false,
+    isStudent: true,
   });
 
-  const betaCategories = buildCategories(BETA_HH_ID, {
-    housing: B_C_HOUSING,
-    food: B_C_FOOD,
-    transport: B_C_TRANSPORT,
-    health: B_C_HEALTH,
-    personal: B_C_PERSONAL,
-    entertain: B_C_ENTERTAIN,
-    shopping: B_C_SHOPPING,
-    financial: B_C_FINANCIAL,
-    subs: B_C_SUBS,
-    transfers: B_C_TRANSFERS,
-    misc: B_C_MISC,
-    employment: B_C_EMPLOYMENT,
-    otherInc: B_C_OTHER_INC,
-    sRent: B_S_MORTGAGE,
-    sUtilities: B_S_UTILITIES,
-    sInternet: B_S_INTERNET,
-    sHomeIns: B_S_HOME_INS,
-    sRepairs: B_S_REPAIRS,
-    sGroceries: B_S_GROCERIES,
-    sRestaurants: B_S_RESTAURANTS,
-    sCoffee: B_S_COFFEE,
-    sFastFood: B_S_FASTFOOD,
-    sAlcohol: B_S_ALCOHOL,
-    sGas: B_S_GAS,
-    sCarPmt: B_S_CAR_PMT_PH, // Beta has no car payment; placeholder (not referenced by any budget line or transaction)
-    sCarIns: B_S_CAR_INS,
-    sParking: B_S_PARKING,
-    sTransit: B_S_RIDESHARE,
-    sDoctor: B_S_DOCTOR,
-    sPharmacy: B_S_PHARMACY,
-    sGym: B_S_GYM,
-    sMental: B_S_MENTAL,
-    sHaircut: B_S_HAIRCUT,
-    sClothing: B_S_CLOTHING,
-    sStreaming: B_S_STREAMING,
-    sMovies: B_S_MOVIES,
-    sBooks: B_S_BOOKS,
-    sHobbies: B_S_HOBBIES,
-    sAmazon: B_S_AMAZON,
-    sElectronics: B_S_ELECTRONICS,
-    sHomeGarden: B_S_HOME_GARDEN,
-    sGifts: B_S_GIFTS,
-    sCcPmt: B_S_CC_PMT,
-    sLoanPmt: B_S_LOAN_PMT,
-    sBankFees: B_S_BANK_FEES,
-    sSoftware: B_S_SOFTWARE,
-    sMemberships: B_S_MEMBERSHIPS,
-    sSalary: B_S_SALARY,
-    sBonus: B_S_BONUS,
-    sFreelance: B_S_FREELANCE,
-    sTaxRefund: B_S_TAX_REFUND,
-    sGiftsRecv: B_S_GIFTS_RECV,
-    sCashback: B_S_CASHBACK,
-  });
+  // Build category lookup maps (name → id) for each household
+  type CatRow = { id: string; name: string; parent_id: string | null };
+  const alphaCats = (await knex('categories')
+    .where('household_id', ALPHA_HH_ID)
+    .select('id', 'name', 'parent_id')) as CatRow[];
+  const betaCats = (await knex('categories')
+    .where('household_id', BETA_HH_ID)
+    .select('id', 'name', 'parent_id')) as CatRow[];
 
-  await knex('categories').insert([...alphaCategories, ...betaCategories]);
+  function catId(cats: CatRow[], name: string): string | null {
+    return cats.find((c) => c.name === name)?.id ?? null;
+  }
 
   // ── Budget Lines ───────────────────────────────────────────────────────────
   console.log('[dev_seed] Inserting budget lines...');
@@ -916,8 +563,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Employment Income',
       classification: 'income',
       flexibility: 'fixed',
-      category_id: A_C_EMPLOYMENT,
-      subcategory_id: A_S_SALARY,
+      category_id: catId(alphaCats, 'Earned Income'),
+      subcategory_id: catId(alphaCats, 'Salary / Wages'),
       amount: 3200.0,
       frequency: 'biweekly',
       frequency_interval: null,
@@ -932,8 +579,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Monthly Freelance',
       classification: 'income',
       flexibility: 'flexible',
-      category_id: A_C_EMPLOYMENT,
-      subcategory_id: A_S_FREELANCE,
+      category_id: catId(alphaCats, 'Freelance / Self-Employment'),
+      subcategory_id: catId(alphaCats, 'Client Payments'),
       amount: 850.0,
       frequency: 'monthly',
       frequency_interval: null,
@@ -948,8 +595,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Rent',
       classification: 'expense',
       flexibility: 'fixed',
-      category_id: A_C_HOUSING,
-      subcategory_id: A_S_RENT,
+      category_id: catId(alphaCats, 'Housing'),
+      subcategory_id: catId(alphaCats, 'Rent / Mortgage'),
       amount: 1800.0,
       frequency: 'monthly',
       frequency_interval: null,
@@ -964,8 +611,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Car Loan Payment',
       classification: 'expense',
       flexibility: 'fixed',
-      category_id: A_C_FINANCIAL,
-      subcategory_id: A_S_LOAN_PMT,
+      category_id: catId(alphaCats, 'Debt Payments'),
+      subcategory_id: catId(alphaCats, 'Vehicle Loan'),
       amount: 548.0,
       frequency: 'monthly',
       frequency_interval: null,
@@ -980,8 +627,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Hydro & Electricity',
       classification: 'expense',
       flexibility: 'flexible',
-      category_id: A_C_HOUSING,
-      subcategory_id: A_S_UTILITIES,
+      category_id: catId(alphaCats, 'Utilities'),
+      subcategory_id: catId(alphaCats, 'Electricity'),
       amount: 115.0,
       frequency: 'monthly',
       frequency_interval: null,
@@ -996,8 +643,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Internet & Phone Bundle',
       classification: 'expense',
       flexibility: 'fixed',
-      category_id: A_C_HOUSING,
-      subcategory_id: A_S_INTERNET,
+      category_id: catId(alphaCats, 'Utilities'),
+      subcategory_id: catId(alphaCats, 'Internet'),
       amount: 85.0,
       frequency: 'monthly',
       frequency_interval: null,
@@ -1012,8 +659,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Groceries',
       classification: 'expense',
       flexibility: 'flexible',
-      category_id: A_C_FOOD,
-      subcategory_id: A_S_GROCERIES,
+      category_id: catId(alphaCats, 'Food'),
+      subcategory_id: catId(alphaCats, 'Groceries'),
       amount: 175.0,
       frequency: 'weekly',
       frequency_interval: null,
@@ -1028,8 +675,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Gas',
       classification: 'expense',
       flexibility: 'flexible',
-      category_id: A_C_TRANSPORT,
-      subcategory_id: A_S_GAS,
+      category_id: catId(alphaCats, 'Transportation'),
+      subcategory_id: catId(alphaCats, 'Fuel / Gas'),
       amount: 60.0,
       frequency: 'every_n_days',
       frequency_interval: 10,
@@ -1044,8 +691,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Netflix',
       classification: 'expense',
       flexibility: 'fixed',
-      category_id: A_C_SUBS,
-      subcategory_id: A_S_STREAMING,
+      category_id: catId(alphaCats, 'Entertainment'),
+      subcategory_id: catId(alphaCats, 'Streaming Services'),
       amount: 17.99,
       frequency: 'monthly',
       frequency_interval: null,
@@ -1060,8 +707,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Spotify',
       classification: 'expense',
       flexibility: 'fixed',
-      category_id: A_C_SUBS,
-      subcategory_id: A_S_STREAMING,
+      category_id: catId(alphaCats, 'Entertainment'),
+      subcategory_id: catId(alphaCats, 'Streaming Services'),
       amount: 10.99,
       frequency: 'monthly',
       frequency_interval: null,
@@ -1076,8 +723,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Gym Membership',
       classification: 'expense',
       flexibility: 'fixed',
-      category_id: A_C_HEALTH,
-      subcategory_id: A_S_GYM,
+      category_id: catId(alphaCats, 'Health & Wellness'),
+      subcategory_id: catId(alphaCats, 'Fitness / Gym'),
       amount: 45.0,
       frequency: 'monthly',
       frequency_interval: null,
@@ -1092,8 +739,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: "Tenant's Insurance",
       classification: 'expense',
       flexibility: 'fixed',
-      category_id: A_C_HOUSING,
-      subcategory_id: A_S_HOME_INS,
+      category_id: catId(alphaCats, 'Housing'),
+      subcategory_id: catId(alphaCats, 'Home Insurance'),
       amount: 420.0,
       frequency: 'annually',
       frequency_interval: null,
@@ -1108,8 +755,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Car Insurance',
       classification: 'expense',
       flexibility: 'fixed',
-      category_id: A_C_TRANSPORT,
-      subcategory_id: A_S_CAR_INS,
+      category_id: catId(alphaCats, 'Transportation'),
+      subcategory_id: catId(alphaCats, 'Vehicle Insurance'),
       amount: 95.0,
       frequency: 'semi_monthly',
       frequency_interval: null,
@@ -1124,8 +771,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Dental Checkup',
       classification: 'expense',
       flexibility: 'flexible',
-      category_id: A_C_HEALTH,
-      subcategory_id: A_S_DOCTOR,
+      category_id: catId(alphaCats, 'Health & Wellness'),
+      subcategory_id: catId(alphaCats, 'Dental'),
       amount: 250.0,
       frequency: 'annually',
       frequency_interval: null,
@@ -1140,8 +787,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Haircut',
       classification: 'expense',
       flexibility: 'flexible',
-      category_id: A_C_PERSONAL,
-      subcategory_id: A_S_HAIRCUT,
+      category_id: catId(alphaCats, 'Shopping'),
+      subcategory_id: catId(alphaCats, 'Personal Care'),
       amount: 35.0,
       frequency: 'every_n_days',
       frequency_interval: 42,
@@ -1156,8 +803,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Dining Out',
       classification: 'expense',
       flexibility: 'flexible',
-      category_id: A_C_FOOD,
-      subcategory_id: A_S_RESTAURANTS,
+      category_id: catId(alphaCats, 'Food'),
+      subcategory_id: catId(alphaCats, 'Dining Out'),
       amount: 200.0,
       frequency: 'monthly',
       frequency_interval: null,
@@ -1172,8 +819,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Coffee',
       classification: 'expense',
       flexibility: 'flexible',
-      category_id: A_C_FOOD,
-      subcategory_id: A_S_COFFEE,
+      category_id: catId(alphaCats, 'Food'),
+      subcategory_id: catId(alphaCats, 'Coffee & Cafes'),
       amount: 25.0,
       frequency: 'weekly',
       frequency_interval: null,
@@ -1188,8 +835,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Holiday Gift Fund',
       classification: 'expense',
       flexibility: 'flexible',
-      category_id: A_C_SHOPPING,
-      subcategory_id: A_S_GIFTS,
+      category_id: catId(alphaCats, 'Shopping'),
+      subcategory_id: catId(alphaCats, 'Gifts Given'),
       amount: 500.0,
       frequency: 'one_time',
       frequency_interval: null,
@@ -1205,8 +852,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Software Engineer Salary',
       classification: 'income',
       flexibility: 'fixed',
-      category_id: B_C_EMPLOYMENT,
-      subcategory_id: B_S_SALARY,
+      category_id: catId(betaCats, 'Earned Income'),
+      subcategory_id: catId(betaCats, 'Salary / Wages'),
       amount: 4800.0,
       frequency: 'semi_monthly',
       frequency_interval: null,
@@ -1221,8 +868,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Freelance Dev Work',
       classification: 'income',
       flexibility: 'flexible',
-      category_id: B_C_EMPLOYMENT,
-      subcategory_id: B_S_FREELANCE,
+      category_id: catId(betaCats, 'Other Income'),
+      subcategory_id: catId(betaCats, 'Gifts Received'),
       amount: 600.0,
       frequency: 'monthly',
       frequency_interval: null,
@@ -1237,8 +884,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Mortgage',
       classification: 'expense',
       flexibility: 'fixed',
-      category_id: B_C_HOUSING,
-      subcategory_id: B_S_MORTGAGE,
+      category_id: catId(betaCats, 'Housing'),
+      subcategory_id: catId(betaCats, 'Rent / Mortgage'),
       amount: 2150.0,
       frequency: 'monthly',
       frequency_interval: null,
@@ -1253,8 +900,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Utilities',
       classification: 'expense',
       flexibility: 'flexible',
-      category_id: B_C_HOUSING,
-      subcategory_id: B_S_UTILITIES,
+      category_id: catId(betaCats, 'Utilities'),
+      subcategory_id: catId(betaCats, 'Electricity'),
       amount: 145.0,
       frequency: 'monthly',
       frequency_interval: null,
@@ -1269,8 +916,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Internet',
       classification: 'expense',
       flexibility: 'fixed',
-      category_id: B_C_HOUSING,
-      subcategory_id: B_S_INTERNET,
+      category_id: catId(betaCats, 'Utilities'),
+      subcategory_id: catId(betaCats, 'Internet'),
       amount: 90.0,
       frequency: 'monthly',
       frequency_interval: null,
@@ -1285,8 +932,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Groceries',
       classification: 'expense',
       flexibility: 'flexible',
-      category_id: B_C_FOOD,
-      subcategory_id: B_S_GROCERIES,
+      category_id: catId(betaCats, 'Food'),
+      subcategory_id: catId(betaCats, 'Groceries'),
       amount: 220.0,
       frequency: 'weekly',
       frequency_interval: null,
@@ -1301,8 +948,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Student Loan Payment',
       classification: 'expense',
       flexibility: 'fixed',
-      category_id: B_C_FINANCIAL,
-      subcategory_id: B_S_LOAN_PMT,
+      category_id: catId(betaCats, 'Debt Payments'),
+      subcategory_id: catId(betaCats, 'Student Loan'),
       amount: 363.0,
       frequency: 'monthly',
       frequency_interval: null,
@@ -1317,8 +964,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Planet Fitness',
       classification: 'expense',
       flexibility: 'fixed',
-      category_id: B_C_HEALTH,
-      subcategory_id: B_S_GYM,
+      category_id: catId(betaCats, 'Health & Wellness'),
+      subcategory_id: catId(betaCats, 'Fitness / Gym'),
       amount: 25.0,
       frequency: 'monthly',
       frequency_interval: null,
@@ -1333,8 +980,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Gas',
       classification: 'expense',
       flexibility: 'flexible',
-      category_id: B_C_TRANSPORT,
-      subcategory_id: B_S_GAS,
+      category_id: catId(betaCats, 'Transportation'),
+      subcategory_id: catId(betaCats, 'Fuel / Gas'),
       amount: 70.0,
       frequency: 'every_n_days',
       frequency_interval: 12,
@@ -1349,8 +996,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Coffee',
       classification: 'expense',
       flexibility: 'flexible',
-      category_id: B_C_FOOD,
-      subcategory_id: B_S_COFFEE,
+      category_id: catId(betaCats, 'Food'),
+      subcategory_id: catId(betaCats, 'Coffee & Cafes'),
       amount: 30.0,
       frequency: 'weekly',
       frequency_interval: null,
@@ -1365,8 +1012,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Netflix',
       classification: 'expense',
       flexibility: 'fixed',
-      category_id: B_C_SUBS,
-      subcategory_id: B_S_STREAMING,
+      category_id: catId(betaCats, 'Entertainment'),
+      subcategory_id: catId(betaCats, 'Streaming Services'),
       amount: 15.99,
       frequency: 'monthly',
       frequency_interval: null,
@@ -1381,8 +1028,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Spotify',
       classification: 'expense',
       flexibility: 'fixed',
-      category_id: B_C_SUBS,
-      subcategory_id: B_S_STREAMING,
+      category_id: catId(betaCats, 'Entertainment'),
+      subcategory_id: catId(betaCats, 'Streaming Services'),
       amount: 10.99,
       frequency: 'monthly',
       frequency_interval: null,
@@ -1397,8 +1044,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Amazon Prime',
       classification: 'expense',
       flexibility: 'fixed',
-      category_id: B_C_SUBS,
-      subcategory_id: B_S_MEMBERSHIPS,
+      category_id: catId(betaCats, 'Shopping'),
+      subcategory_id: catId(betaCats, 'Memberships'),
       amount: 139.0,
       frequency: 'annually',
       frequency_interval: null,
@@ -1413,8 +1060,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Car Insurance',
       classification: 'expense',
       flexibility: 'fixed',
-      category_id: B_C_TRANSPORT,
-      subcategory_id: B_S_CAR_INS,
+      category_id: catId(betaCats, 'Transportation'),
+      subcategory_id: catId(betaCats, 'Vehicle Insurance'),
       amount: 195.0,
       frequency: 'semi_monthly',
       frequency_interval: null,
@@ -1429,8 +1076,8 @@ export async function seed(knex: Knex): Promise<void> {
       name: 'Dining Out',
       classification: 'expense',
       flexibility: 'flexible',
-      category_id: B_C_FOOD,
-      subcategory_id: B_S_RESTAURANTS,
+      category_id: catId(betaCats, 'Food'),
+      subcategory_id: catId(betaCats, 'Dining Out'),
       amount: 250.0,
       frequency: 'monthly',
       frequency_interval: null,
@@ -1516,8 +1163,55 @@ export async function seed(knex: Knex): Promise<void> {
   // Helper aliases
   const A = ALPHA_ID;
 
+  // Shorthand category lookups for Alpha
+  const aClientPmts = catId(alphaCats, 'Client Payments');
+  const aSalary = catId(alphaCats, 'Salary / Wages');
+  const aRentMortgage = catId(alphaCats, 'Rent / Mortgage');
+  const aElectricity = catId(alphaCats, 'Electricity');
+  const aInternet = catId(alphaCats, 'Internet');
+  const aHomeInsurance = catId(alphaCats, 'Home Insurance');
+  const aGroceries = catId(alphaCats, 'Groceries');
+  const aDiningOut = catId(alphaCats, 'Dining Out');
+  const aCoffee = catId(alphaCats, 'Coffee & Cafes');
+  const aFuel = catId(alphaCats, 'Fuel / Gas');
+  const aVehicleIns = catId(alphaCats, 'Vehicle Insurance');
+  const aVehicleLoan = catId(alphaCats, 'Vehicle Loan');
+  const aDoctor = catId(alphaCats, 'Medical / Doctor');
+  const aPharmacy = catId(alphaCats, 'Vision & Pharmacy');
+  const aGym = catId(alphaCats, 'Fitness / Gym');
+  const aPersonalCare = catId(alphaCats, 'Personal Care');
+  const aClothing = catId(alphaCats, 'Clothing');
+  const aStreaming = catId(alphaCats, 'Streaming Services');
+  const aEvents = catId(alphaCats, 'Events & Tickets');
+  const aHouseholdGoods = catId(alphaCats, 'Household Goods');
+  const aGiftsGiven = catId(alphaCats, 'Gifts Given');
+  const aCcPayment = catId(alphaCats, 'Credit Card Payment');
+  const aTransfers = catId(alphaCats, 'Transfers');
+
+  // Shorthand category lookups for Beta
+  const B = BETA_ID;
+  const bSalary = catId(betaCats, 'Salary / Wages');
+  const bOtherIncome = catId(betaCats, 'Other Income');
+  const bRentMortgage = catId(betaCats, 'Rent / Mortgage');
+  const bElectricity = catId(betaCats, 'Electricity');
+  const bInternet = catId(betaCats, 'Internet');
+  const bGroceries = catId(betaCats, 'Groceries');
+  const bDiningOut = catId(betaCats, 'Dining Out');
+  const bCoffee = catId(betaCats, 'Coffee & Cafes');
+  const bFuel = catId(betaCats, 'Fuel / Gas');
+  const bVehicleIns = catId(betaCats, 'Vehicle Insurance');
+  const bGym = catId(betaCats, 'Fitness / Gym');
+  const bStreaming = catId(betaCats, 'Streaming Services');
+  const bEvents = catId(betaCats, 'Events & Tickets');
+  const bHouseholdGoods = catId(betaCats, 'Household Goods');
+  const bElectronics = catId(betaCats, 'Electronics');
+  const bGiftsGiven = catId(betaCats, 'Gifts Given');
+  const bCcPayment = catId(betaCats, 'Credit Card Payment');
+  const bStudentLoan = catId(betaCats, 'Student Loan');
+  const bTransfers = catId(betaCats, 'Transfers');
+
   // September 2025
-  addTx(txns, atx(), A, A_CHECKING, 3200.0, 'Employer Direct Deposit', '2025-09-03', A_S_SALARY);
+  addTx(txns, atx(), A, A_CHECKING, 3200.0, 'Employer Direct Deposit', '2025-09-03', aSalary);
   addTx(
     txns,
     atx(),
@@ -1526,23 +1220,23 @@ export async function seed(knex: Knex): Promise<void> {
     -1800.0,
     'Landlord Property Mgmt',
     '2025-09-01',
-    A_S_RENT,
+    aRentMortgage,
     false,
     true,
     'September rent'
   );
-  addTx(txns, atx(), A, A_CHECKING, -45.0, 'GoodLife Fitness', '2025-09-01', A_S_GYM);
-  addTx(txns, atx(), A, A_CHECKING, -95.0, 'Intact Insurance', '2025-09-01', A_S_CAR_INS);
-  addTx(txns, atx(), A, A_CHECKING, -11.5, "Timothy's Coffee", '2025-09-03', A_S_COFFEE);
-  addTx(txns, atx(), A, A_CHECKING, -134.28, 'Loblaw Companies', '2025-09-05', A_S_GROCERIES);
-  addTx(txns, atx(), A, A_CHECKING, -17.99, 'Netflix', '2025-09-08', A_S_STREAMING);
-  addTx(txns, atx(), A, A_CHECKING, -10.99, 'Spotify', '2025-09-09', A_S_STREAMING);
-  addTx(txns, atx(), A, A_CHECKING, -58.4, 'Shell Gas Station', '2025-09-09', A_S_GAS);
-  addTx(txns, atx(), A, A_CHECKING, -9.25, 'Tim Hortons', '2025-09-10', A_S_COFFEE);
-  addTx(txns, atx(), A, A_CHECKING, -89.15, 'Metro Grocery', '2025-09-12', A_S_GROCERIES);
-  addTx(txns, atx(), A, A_CHECKING, -45.6, "East Side Mario's", '2025-09-14', A_S_RESTAURANTS);
-  addTx(txns, atx(), A, A_CHECKING, -85.0, 'Rogers Communications', '2025-09-15', A_S_INTERNET);
-  addTx(txns, atx(), A, A_CHECKING, -95.0, 'Intact Insurance', '2025-09-15', A_S_CAR_INS);
+  addTx(txns, atx(), A, A_CHECKING, -45.0, 'GoodLife Fitness', '2025-09-01', aGym);
+  addTx(txns, atx(), A, A_CHECKING, -95.0, 'Intact Insurance', '2025-09-01', aVehicleIns);
+  addTx(txns, atx(), A, A_CHECKING, -11.5, "Timothy's Coffee", '2025-09-03', aCoffee);
+  addTx(txns, atx(), A, A_CHECKING, -134.28, 'Loblaw Companies', '2025-09-05', aGroceries);
+  addTx(txns, atx(), A, A_CHECKING, -17.99, 'Netflix', '2025-09-08', aStreaming);
+  addTx(txns, atx(), A, A_CHECKING, -10.99, 'Spotify', '2025-09-09', aStreaming);
+  addTx(txns, atx(), A, A_CHECKING, -58.4, 'Shell Gas Station', '2025-09-09', aFuel);
+  addTx(txns, atx(), A, A_CHECKING, -9.25, 'Tim Hortons', '2025-09-10', aCoffee);
+  addTx(txns, atx(), A, A_CHECKING, -89.15, 'Metro Grocery', '2025-09-12', aGroceries);
+  addTx(txns, atx(), A, A_CHECKING, -45.6, "East Side Mario's", '2025-09-14', aDiningOut);
+  addTx(txns, atx(), A, A_CHECKING, -85.0, 'Rogers Communications', '2025-09-15', aInternet);
+  addTx(txns, atx(), A, A_CHECKING, -95.0, 'Intact Insurance', '2025-09-15', aVehicleIns);
   const aSep15LoanTx = atx();
   addDebtPayment(
     txns,
@@ -1555,19 +1249,19 @@ export async function seed(knex: Knex): Promise<void> {
     139.65,
     'Toyota Financial Services',
     '2025-09-15',
-    A_S_LOAN_PMT
+    aVehicleLoan
   );
-  addTx(txns, atx(), A, A_CHECKING, 3200.0, 'Employer Direct Deposit', '2025-09-17', A_S_SALARY);
-  addTx(txns, atx(), A, A_CHECKING, -13.75, 'Second Cup', '2025-09-17', A_S_COFFEE);
-  addTx(txns, atx(), A, A_CHECKING, -156.3, 'Loblaws', '2025-09-19', A_S_GROCERIES);
-  addTx(txns, atx(), A, A_CHECKING, -52.1, 'Esso Gas', '2025-09-19', A_S_GAS);
-  addTx(txns, atx(), A, A_VISA, -34.99, 'Amazon.ca', '2025-09-20', A_S_AMAZON);
-  addTx(txns, atx(), A, A_CHECKING, -67.8, 'The Keg Steakhouse', '2025-09-22', A_S_RESTAURANTS);
-  addTx(txns, atx(), A, A_CHECKING, -12.0, 'Starbucks', '2025-09-24', A_S_COFFEE);
-  addTx(txns, atx(), A, A_CHECKING, -35.0, 'Great Clips', '2025-09-25', A_S_HAIRCUT);
-  addTx(txns, atx(), A, A_CHECKING, -108.45, 'No Frills', '2025-09-26', A_S_GROCERIES);
-  addTx(txns, atx(), A, A_CHECKING, -61.2, 'Petro Canada', '2025-09-29', A_S_GAS);
-  addTx(txns, atx(), A, A_CHECKING, -112.4, 'Toronto Hydro', '2025-09-30', A_S_UTILITIES);
+  addTx(txns, atx(), A, A_CHECKING, 3200.0, 'Employer Direct Deposit', '2025-09-17', aSalary);
+  addTx(txns, atx(), A, A_CHECKING, -13.75, 'Second Cup', '2025-09-17', aCoffee);
+  addTx(txns, atx(), A, A_CHECKING, -156.3, 'Loblaws', '2025-09-19', aGroceries);
+  addTx(txns, atx(), A, A_CHECKING, -52.1, 'Esso Gas', '2025-09-19', aFuel);
+  addTx(txns, atx(), A, A_VISA, -34.99, 'Amazon.ca', '2025-09-20', aHouseholdGoods);
+  addTx(txns, atx(), A, A_CHECKING, -67.8, 'The Keg Steakhouse', '2025-09-22', aDiningOut);
+  addTx(txns, atx(), A, A_CHECKING, -12.0, 'Starbucks', '2025-09-24', aCoffee);
+  addTx(txns, atx(), A, A_CHECKING, -35.0, 'Great Clips', '2025-09-25', aPersonalCare);
+  addTx(txns, atx(), A, A_CHECKING, -108.45, 'No Frills', '2025-09-26', aGroceries);
+  addTx(txns, atx(), A, A_CHECKING, -61.2, 'Petro Canada', '2025-09-29', aFuel);
+  addTx(txns, atx(), A, A_CHECKING, -112.4, 'Toronto Hydro', '2025-09-30', aElectricity);
   const aSepCcFromId = atx();
   const aSepCcToId = atx();
   addTransfer(
@@ -1582,13 +1276,13 @@ export async function seed(knex: Knex): Promise<void> {
     1200.0,
     'Credit Card Payment',
     '2025-09-30',
-    A_S_CC_PMT,
-    A_C_TRANSFERS,
+    aCcPayment,
+    aTransfers,
     'payment'
   );
 
   // October 2025
-  addTx(txns, atx(), A, A_CHECKING, 3200.0, 'Employer Direct Deposit', '2025-10-01', A_S_SALARY);
+  addTx(txns, atx(), A, A_CHECKING, 3200.0, 'Employer Direct Deposit', '2025-10-01', aSalary);
   addTx(
     txns,
     atx(),
@@ -1597,23 +1291,23 @@ export async function seed(knex: Knex): Promise<void> {
     -1800.0,
     'Landlord Property Mgmt',
     '2025-10-01',
-    A_S_RENT,
+    aRentMortgage,
     false,
     true,
     'October rent'
   );
-  addTx(txns, atx(), A, A_CHECKING, -45.0, 'GoodLife Fitness', '2025-10-01', A_S_GYM);
-  addTx(txns, atx(), A, A_CHECKING, -95.0, 'Intact Insurance', '2025-10-01', A_S_CAR_INS);
-  addTx(txns, atx(), A, A_CHECKING, -10.5, "Timothy's Coffee", '2025-10-03', A_S_COFFEE);
-  addTx(txns, atx(), A, A_CHECKING, -142.8, 'Loblaws', '2025-10-04', A_S_GROCERIES);
-  addTx(txns, atx(), A, A_CHECKING, -54.3, 'Shell Gas Station', '2025-10-07', A_S_GAS);
-  addTx(txns, atx(), A, A_CHECKING, -17.99, 'Netflix', '2025-10-08', A_S_STREAMING);
-  addTx(txns, atx(), A, A_CHECKING, -10.99, 'Spotify', '2025-10-09', A_S_STREAMING);
-  addTx(txns, atx(), A, A_CHECKING, -8.75, 'Tim Hortons', '2025-10-11', A_S_COFFEE);
-  addTx(txns, atx(), A, A_CHECKING, -52.4, "Jack Astor's", '2025-10-14', A_S_RESTAURANTS);
-  addTx(txns, atx(), A, A_CHECKING, 3200.0, 'Employer Direct Deposit', '2025-10-15', A_S_SALARY);
-  addTx(txns, atx(), A, A_CHECKING, -85.0, 'Rogers Communications', '2025-10-15', A_S_INTERNET);
-  addTx(txns, atx(), A, A_CHECKING, -95.0, 'Intact Insurance', '2025-10-15', A_S_CAR_INS);
+  addTx(txns, atx(), A, A_CHECKING, -45.0, 'GoodLife Fitness', '2025-10-01', aGym);
+  addTx(txns, atx(), A, A_CHECKING, -95.0, 'Intact Insurance', '2025-10-01', aVehicleIns);
+  addTx(txns, atx(), A, A_CHECKING, -10.5, "Timothy's Coffee", '2025-10-03', aCoffee);
+  addTx(txns, atx(), A, A_CHECKING, -142.8, 'Loblaws', '2025-10-04', aGroceries);
+  addTx(txns, atx(), A, A_CHECKING, -54.3, 'Shell Gas Station', '2025-10-07', aFuel);
+  addTx(txns, atx(), A, A_CHECKING, -17.99, 'Netflix', '2025-10-08', aStreaming);
+  addTx(txns, atx(), A, A_CHECKING, -10.99, 'Spotify', '2025-10-09', aStreaming);
+  addTx(txns, atx(), A, A_CHECKING, -8.75, 'Tim Hortons', '2025-10-11', aCoffee);
+  addTx(txns, atx(), A, A_CHECKING, -52.4, "Jack Astor's", '2025-10-14', aDiningOut);
+  addTx(txns, atx(), A, A_CHECKING, 3200.0, 'Employer Direct Deposit', '2025-10-15', aSalary);
+  addTx(txns, atx(), A, A_CHECKING, -85.0, 'Rogers Communications', '2025-10-15', aInternet);
+  addTx(txns, atx(), A, A_CHECKING, -95.0, 'Intact Insurance', '2025-10-15', aVehicleIns);
   const aOct15LoanTx = atx();
   addDebtPayment(
     txns,
@@ -1626,11 +1320,11 @@ export async function seed(knex: Knex): Promise<void> {
     137.64,
     'Toyota Financial Services',
     '2025-10-15',
-    A_S_LOAN_PMT
+    aVehicleLoan
   );
-  addTx(txns, atx(), A, A_CHECKING, -89.35, 'Metro Grocery', '2025-10-16', A_S_GROCERIES);
-  addTx(txns, atx(), A, A_CHECKING, -63.1, 'Esso Gas', '2025-10-17', A_S_GAS);
-  addTx(txns, atx(), A, A_CHECKING, -122.45, 'Loblaws', '2025-10-17', A_S_GROCERIES);
+  addTx(txns, atx(), A, A_CHECKING, -89.35, 'Metro Grocery', '2025-10-16', aGroceries);
+  addTx(txns, atx(), A, A_CHECKING, -63.1, 'Esso Gas', '2025-10-17', aFuel);
+  addTx(txns, atx(), A, A_CHECKING, -122.45, 'Loblaws', '2025-10-17', aGroceries);
   addTx(
     txns,
     atx(),
@@ -1639,16 +1333,16 @@ export async function seed(knex: Knex): Promise<void> {
     -67.99,
     'Amazon.ca',
     '2025-10-19',
-    A_S_AMAZON,
+    aHouseholdGoods,
     false,
     true,
     'Fall shoes'
   );
-  addTx(txns, atx(), A, A_CHECKING, -14.0, 'Second Cup', '2025-10-20', A_S_COFFEE);
-  addTx(txns, atx(), A, A_CHECKING, -78.5, 'Milestones Restaurant', '2025-10-21', A_S_RESTAURANTS);
-  addTx(txns, atx(), A, A_VISA, -28.0, 'Cineplex Entertainment', '2025-10-22', A_S_MOVIES);
-  addTx(txns, atx(), A, A_CHECKING, -135.2, 'No Frills', '2025-10-25', A_S_GROCERIES);
-  addTx(txns, atx(), A, A_CHECKING, -55.8, 'Petro Canada', '2025-10-27', A_S_GAS);
+  addTx(txns, atx(), A, A_CHECKING, -14.0, 'Second Cup', '2025-10-20', aCoffee);
+  addTx(txns, atx(), A, A_CHECKING, -78.5, 'Milestones Restaurant', '2025-10-21', aDiningOut);
+  addTx(txns, atx(), A, A_VISA, -28.0, 'Cineplex Entertainment', '2025-10-22', aEvents);
+  addTx(txns, atx(), A, A_CHECKING, -135.2, 'No Frills', '2025-10-25', aGroceries);
+  addTx(txns, atx(), A, A_CHECKING, -55.8, 'Petro Canada', '2025-10-27', aFuel);
   addTx(
     txns,
     atx(),
@@ -1657,12 +1351,12 @@ export async function seed(knex: Knex): Promise<void> {
     -156.49,
     'Amazon.ca',
     '2025-10-30',
-    A_S_CLOTHING,
+    aClothing,
     false,
     true,
     'Clothing'
   );
-  addTx(txns, atx(), A, A_CHECKING, -118.9, 'Toronto Hydro', '2025-10-31', A_S_UTILITIES);
+  addTx(txns, atx(), A, A_CHECKING, -118.9, 'Toronto Hydro', '2025-10-31', aElectricity);
   const aOctCcFromId = atx();
   const aOctCcToId = atx();
   addTransfer(
@@ -1677,8 +1371,8 @@ export async function seed(knex: Knex): Promise<void> {
     1500.0,
     'Credit Card Payment',
     '2025-10-31',
-    A_S_CC_PMT,
-    A_C_TRANSFERS,
+    aCcPayment,
+    aTransfers,
     'payment'
   );
 
@@ -1691,25 +1385,25 @@ export async function seed(knex: Knex): Promise<void> {
     -1800.0,
     'Landlord Property Mgmt',
     '2025-11-01',
-    A_S_RENT,
+    aRentMortgage,
     false,
     true,
     'November rent'
   );
-  addTx(txns, atx(), A, A_CHECKING, -45.0, 'GoodLife Fitness', '2025-11-01', A_S_GYM);
-  addTx(txns, atx(), A, A_CHECKING, -95.0, 'Intact Insurance', '2025-11-01', A_S_CAR_INS);
-  addTx(txns, atx(), A, A_CHECKING, 850.0, 'Freelance Client Payment', '2025-11-01', A_S_FREELANCE);
-  addTx(txns, atx(), A, A_CHECKING, 3200.0, 'Employer Direct Deposit', '2025-11-12', A_S_SALARY);
-  addTx(txns, atx(), A, A_CHECKING, -12.25, "Timothy's Coffee", '2025-11-05', A_S_COFFEE);
-  addTx(txns, atx(), A, A_CHECKING, -148.6, 'Loblaws', '2025-11-06', A_S_GROCERIES);
-  addTx(txns, atx(), A, A_CHECKING, -17.99, 'Netflix', '2025-11-08', A_S_STREAMING);
-  addTx(txns, atx(), A, A_CHECKING, -10.99, 'Spotify', '2025-11-09', A_S_STREAMING);
-  addTx(txns, atx(), A, A_CHECKING, -59.7, 'Shell Gas Station', '2025-11-11', A_S_GAS);
-  addTx(txns, atx(), A, A_CHECKING, -24.95, 'Shoppers Drug Mart', '2025-11-11', A_S_PHARMACY);
-  addTx(txns, atx(), A, A_CHECKING, -9.5, 'Tim Hortons', '2025-11-12', A_S_COFFEE);
-  addTx(txns, atx(), A, A_CHECKING, -61.2, 'Boston Pizza', '2025-11-13', A_S_RESTAURANTS);
-  addTx(txns, atx(), A, A_CHECKING, -85.0, 'Rogers Communications', '2025-11-15', A_S_INTERNET);
-  addTx(txns, atx(), A, A_CHECKING, -95.0, 'Intact Insurance', '2025-11-15', A_S_CAR_INS);
+  addTx(txns, atx(), A, A_CHECKING, -45.0, 'GoodLife Fitness', '2025-11-01', aGym);
+  addTx(txns, atx(), A, A_CHECKING, -95.0, 'Intact Insurance', '2025-11-01', aVehicleIns);
+  addTx(txns, atx(), A, A_CHECKING, 850.0, 'Freelance Client Payment', '2025-11-01', aClientPmts);
+  addTx(txns, atx(), A, A_CHECKING, 3200.0, 'Employer Direct Deposit', '2025-11-12', aSalary);
+  addTx(txns, atx(), A, A_CHECKING, -12.25, "Timothy's Coffee", '2025-11-05', aCoffee);
+  addTx(txns, atx(), A, A_CHECKING, -148.6, 'Loblaws', '2025-11-06', aGroceries);
+  addTx(txns, atx(), A, A_CHECKING, -17.99, 'Netflix', '2025-11-08', aStreaming);
+  addTx(txns, atx(), A, A_CHECKING, -10.99, 'Spotify', '2025-11-09', aStreaming);
+  addTx(txns, atx(), A, A_CHECKING, -59.7, 'Shell Gas Station', '2025-11-11', aFuel);
+  addTx(txns, atx(), A, A_CHECKING, -24.95, 'Shoppers Drug Mart', '2025-11-11', aPharmacy);
+  addTx(txns, atx(), A, A_CHECKING, -9.5, 'Tim Hortons', '2025-11-12', aCoffee);
+  addTx(txns, atx(), A, A_CHECKING, -61.2, 'Boston Pizza', '2025-11-13', aDiningOut);
+  addTx(txns, atx(), A, A_CHECKING, -85.0, 'Rogers Communications', '2025-11-15', aInternet);
+  addTx(txns, atx(), A, A_CHECKING, -95.0, 'Intact Insurance', '2025-11-15', aVehicleIns);
   const aNov15LoanTx = atx();
   addDebtPayment(
     txns,
@@ -1722,12 +1416,12 @@ export async function seed(knex: Knex): Promise<void> {
     135.62,
     'Toyota Financial Services',
     '2025-11-15',
-    A_S_LOAN_PMT
+    aVehicleLoan
   );
-  addTx(txns, atx(), A, A_CHECKING, 3200.0, 'Employer Direct Deposit', '2025-11-26', A_S_SALARY);
-  addTx(txns, atx(), A, A_CHECKING, -132.1, 'Metro Grocery', '2025-11-18', A_S_GROCERIES);
-  addTx(txns, atx(), A, A_CHECKING, -57.4, 'Petro Canada', '2025-11-20', A_S_GAS);
-  addTx(txns, atx(), A, A_CHECKING, -98.45, 'No Frills', '2025-11-21', A_S_GROCERIES);
+  addTx(txns, atx(), A, A_CHECKING, 3200.0, 'Employer Direct Deposit', '2025-11-26', aSalary);
+  addTx(txns, atx(), A, A_CHECKING, -132.1, 'Metro Grocery', '2025-11-18', aGroceries);
+  addTx(txns, atx(), A, A_CHECKING, -57.4, 'Petro Canada', '2025-11-20', aFuel);
+  addTx(txns, atx(), A, A_CHECKING, -98.45, 'No Frills', '2025-11-21', aGroceries);
   addTx(
     txns,
     atx(),
@@ -1736,14 +1430,14 @@ export async function seed(knex: Knex): Promise<void> {
     -89.99,
     'Amazon.ca',
     '2025-11-21',
-    A_S_AMAZON,
+    aHouseholdGoods,
     false,
     true,
     'Holiday pre-shopping'
   );
-  addTx(txns, atx(), A, A_CHECKING, -35.0, 'Great Clips', '2025-11-24', A_S_HAIRCUT);
-  addTx(txns, atx(), A, A_CHECKING, -11.25, 'Starbucks', '2025-11-25', A_S_COFFEE);
-  addTx(txns, atx(), A, A_CHECKING, -54.8, 'The Keg Steakhouse', '2025-11-26', A_S_RESTAURANTS);
+  addTx(txns, atx(), A, A_CHECKING, -35.0, 'Great Clips', '2025-11-24', aPersonalCare);
+  addTx(txns, atx(), A, A_CHECKING, -11.25, 'Starbucks', '2025-11-25', aCoffee);
+  addTx(txns, atx(), A, A_CHECKING, -54.8, 'The Keg Steakhouse', '2025-11-26', aDiningOut);
   addTx(
     txns,
     atx(),
@@ -1752,13 +1446,13 @@ export async function seed(knex: Knex): Promise<void> {
     -189.3,
     'Loblaws',
     '2025-11-27',
-    A_S_GROCERIES,
+    aGroceries,
     false,
     true,
     'Holiday groceries'
   );
-  addTx(txns, atx(), A, A_CHECKING, -49.8, 'Esso Gas', '2025-11-28', A_S_GAS);
-  addTx(txns, atx(), A, A_CHECKING, -125.7, 'Toronto Hydro', '2025-11-30', A_S_UTILITIES);
+  addTx(txns, atx(), A, A_CHECKING, -49.8, 'Esso Gas', '2025-11-28', aFuel);
+  addTx(txns, atx(), A, A_CHECKING, -125.7, 'Toronto Hydro', '2025-11-30', aElectricity);
   const aNovSavFromId = atx();
   const aNovSavToId = atx();
   addTransfer(
@@ -1773,8 +1467,8 @@ export async function seed(knex: Knex): Promise<void> {
     500.0,
     'Savings Transfer',
     '2025-11-29',
-    A_C_TRANSFERS,
-    A_C_TRANSFERS,
+    aTransfers,
+    aTransfers,
     'transfer'
   );
   const aNovCcFromId = atx();
@@ -1791,13 +1485,13 @@ export async function seed(knex: Knex): Promise<void> {
     1100.0,
     'Credit Card Payment',
     '2025-11-30',
-    A_S_CC_PMT,
-    A_C_TRANSFERS,
+    aCcPayment,
+    aTransfers,
     'payment'
   );
 
   // December 2025
-  addTx(txns, atx(), A, A_CHECKING, 3200.0, 'Employer Direct Deposit', '2025-12-10', A_S_SALARY);
+  addTx(txns, atx(), A, A_CHECKING, 3200.0, 'Employer Direct Deposit', '2025-12-10', aSalary);
   addTx(
     txns,
     atx(),
@@ -1806,13 +1500,13 @@ export async function seed(knex: Knex): Promise<void> {
     -1800.0,
     'Landlord Property Mgmt',
     '2025-12-01',
-    A_S_RENT,
+    aRentMortgage,
     false,
     true,
     'December rent'
   );
-  addTx(txns, atx(), A, A_CHECKING, -45.0, 'GoodLife Fitness', '2025-12-01', A_S_GYM);
-  addTx(txns, atx(), A, A_CHECKING, -95.0, 'Intact Insurance', '2025-12-01', A_S_CAR_INS);
+  addTx(txns, atx(), A, A_CHECKING, -45.0, 'GoodLife Fitness', '2025-12-01', aGym);
+  addTx(txns, atx(), A, A_CHECKING, -95.0, 'Intact Insurance', '2025-12-01', aVehicleIns);
   addTx(
     txns,
     atx(),
@@ -1821,16 +1515,16 @@ export async function seed(knex: Knex): Promise<void> {
     -245.67,
     'Amazon.ca',
     '2025-12-05',
-    A_S_GIFTS,
+    aGiftsGiven,
     false,
     true,
     'Holiday gifts'
   );
-  addTx(txns, atx(), A, A_CHECKING, -13.5, "Timothy's Coffee", '2025-12-06', A_S_COFFEE);
-  addTx(txns, atx(), A, A_CHECKING, -165.4, 'Loblaws', '2025-12-07', A_S_GROCERIES);
-  addTx(txns, atx(), A, A_CHECKING, -17.99, 'Netflix', '2025-12-08', A_S_STREAMING);
-  addTx(txns, atx(), A, A_CHECKING, -10.99, 'Spotify', '2025-12-09', A_S_STREAMING);
-  addTx(txns, atx(), A, A_CHECKING, -62.3, 'Shell Gas Station', '2025-12-10', A_S_GAS);
+  addTx(txns, atx(), A, A_CHECKING, -13.5, "Timothy's Coffee", '2025-12-06', aCoffee);
+  addTx(txns, atx(), A, A_CHECKING, -165.4, 'Loblaws', '2025-12-07', aGroceries);
+  addTx(txns, atx(), A, A_CHECKING, -17.99, 'Netflix', '2025-12-08', aStreaming);
+  addTx(txns, atx(), A, A_CHECKING, -10.99, 'Spotify', '2025-12-09', aStreaming);
+  addTx(txns, atx(), A, A_CHECKING, -62.3, 'Shell Gas Station', '2025-12-10', aFuel);
   addTx(
     txns,
     atx(),
@@ -1839,15 +1533,15 @@ export async function seed(knex: Knex): Promise<void> {
     -129.99,
     'Winners / HomeSense',
     '2025-12-12',
-    A_S_CLOTHING,
+    aClothing,
     false,
     true,
     'Winter clothing'
   );
-  addTx(txns, atx(), A, A_CHECKING, -10.25, 'Tim Hortons', '2025-12-12', A_S_COFFEE);
-  addTx(txns, atx(), A, A_CHECKING, -142.85, 'Metro Grocery', '2025-12-14', A_S_GROCERIES);
-  addTx(txns, atx(), A, A_CHECKING, -85.0, 'Rogers Communications', '2025-12-15', A_S_INTERNET);
-  addTx(txns, atx(), A, A_CHECKING, -95.0, 'Intact Insurance', '2025-12-15', A_S_CAR_INS);
+  addTx(txns, atx(), A, A_CHECKING, -10.25, 'Tim Hortons', '2025-12-12', aCoffee);
+  addTx(txns, atx(), A, A_CHECKING, -142.85, 'Metro Grocery', '2025-12-14', aGroceries);
+  addTx(txns, atx(), A, A_CHECKING, -85.0, 'Rogers Communications', '2025-12-15', aInternet);
+  addTx(txns, atx(), A, A_CHECKING, -95.0, 'Intact Insurance', '2025-12-15', aVehicleIns);
   const aDec15LoanTx = atx();
   addDebtPayment(
     txns,
@@ -1860,9 +1554,9 @@ export async function seed(knex: Knex): Promise<void> {
     133.6,
     'Toyota Financial Services',
     '2025-12-15',
-    A_S_LOAN_PMT
+    aVehicleLoan
   );
-  addTx(txns, atx(), A, A_CHECKING, 3200.0, 'Employer Direct Deposit', '2025-12-24', A_S_SALARY);
+  addTx(txns, atx(), A, A_CHECKING, 3200.0, 'Employer Direct Deposit', '2025-12-24', aSalary);
   addTx(
     txns,
     atx(),
@@ -1871,12 +1565,12 @@ export async function seed(knex: Knex): Promise<void> {
     850.0,
     'Freelance Client Payment',
     '2025-12-24',
-    A_S_FREELANCE,
+    aClientPmts,
     false,
     true,
     'End of year freelance'
   );
-  addTx(txns, atx(), A, A_CHECKING, -58.8, 'Esso Gas', '2025-12-17', A_S_GAS);
+  addTx(txns, atx(), A, A_CHECKING, -58.8, 'Esso Gas', '2025-12-17', aFuel);
   addTx(
     txns,
     atx(),
@@ -1885,7 +1579,7 @@ export async function seed(knex: Knex): Promise<void> {
     -312.4,
     'Amazon.ca',
     '2025-12-19',
-    A_S_GIFTS,
+    aGiftsGiven,
     false,
     true,
     'More holiday gifts'
@@ -1898,7 +1592,7 @@ export async function seed(knex: Knex): Promise<void> {
     -89.5,
     'Milestones Restaurant',
     '2025-12-20',
-    A_S_RESTAURANTS,
+    aDiningOut,
     false,
     true,
     'Holiday dinner'
@@ -1911,12 +1605,12 @@ export async function seed(knex: Knex): Promise<void> {
     -198.25,
     'Loblaws',
     '2025-12-21',
-    A_S_GROCERIES,
+    aGroceries,
     false,
     true,
     'Christmas groceries'
   );
-  addTx(txns, atx(), A, A_CHECKING, -15.0, 'Starbucks', '2025-12-22', A_S_COFFEE);
+  addTx(txns, atx(), A, A_CHECKING, -15.0, 'Starbucks', '2025-12-22', aCoffee);
   addTx(
     txns,
     atx(),
@@ -1925,13 +1619,13 @@ export async function seed(knex: Knex): Promise<void> {
     -78.99,
     'Amazon.ca',
     '2025-12-26',
-    A_S_AMAZON,
+    aHouseholdGoods,
     false,
     true,
     'Boxing Day deal'
   );
-  addTx(txns, atx(), A, A_CHECKING, -65.1, 'Shell Gas Station', '2025-12-28', A_S_GAS);
-  addTx(txns, atx(), A, A_CHECKING, -138.2, 'Toronto Hydro', '2025-12-31', A_S_UTILITIES);
+  addTx(txns, atx(), A, A_CHECKING, -65.1, 'Shell Gas Station', '2025-12-28', aFuel);
+  addTx(txns, atx(), A, A_CHECKING, -138.2, 'Toronto Hydro', '2025-12-31', aElectricity);
   const aDecCcFromId = atx();
   const aDecCcToId = atx();
   addTransfer(
@@ -1946,8 +1640,8 @@ export async function seed(knex: Knex): Promise<void> {
     2200.0,
     'Credit Card Payment',
     '2025-12-31',
-    A_S_CC_PMT,
-    A_C_TRANSFERS,
+    aCcPayment,
+    aTransfers,
     'payment'
   );
 
@@ -1960,13 +1654,13 @@ export async function seed(knex: Knex): Promise<void> {
     -1800.0,
     'Landlord Property Mgmt',
     '2026-01-01',
-    A_S_RENT,
+    aRentMortgage,
     false,
     true,
     'January rent'
   );
-  addTx(txns, atx(), A, A_CHECKING, -45.0, 'GoodLife Fitness', '2026-01-01', A_S_GYM);
-  addTx(txns, atx(), A, A_CHECKING, -95.0, 'Intact Insurance', '2026-01-01', A_S_CAR_INS);
+  addTx(txns, atx(), A, A_CHECKING, -45.0, 'GoodLife Fitness', '2026-01-01', aGym);
+  addTx(txns, atx(), A, A_CHECKING, -95.0, 'Intact Insurance', '2026-01-01', aVehicleIns);
   addTx(
     txns,
     atx(),
@@ -1975,20 +1669,20 @@ export async function seed(knex: Knex): Promise<void> {
     -420.0,
     'Aviva Insurance',
     '2026-01-15',
-    A_S_HOME_INS,
+    aHomeInsurance,
     false,
     true,
     'Annual tenant insurance'
   );
-  addTx(txns, atx(), A, A_CHECKING, -11.5, "Timothy's Coffee", '2026-01-03', A_S_COFFEE);
-  addTx(txns, atx(), A, A_CHECKING, -152.6, 'No Frills', '2026-01-04', A_S_GROCERIES);
-  addTx(txns, atx(), A, A_CHECKING, 3200.0, 'Employer Direct Deposit', '2026-01-07', A_S_SALARY);
-  addTx(txns, atx(), A, A_CHECKING, 850.0, 'Freelance Client Payment', '2026-01-07', A_S_FREELANCE);
-  addTx(txns, atx(), A, A_CHECKING, -17.99, 'Netflix', '2026-01-08', A_S_STREAMING);
-  addTx(txns, atx(), A, A_CHECKING, -10.99, 'Spotify', '2026-01-09', A_S_STREAMING);
-  addTx(txns, atx(), A, A_CHECKING, -55.6, 'Shell Gas Station', '2026-01-09', A_S_GAS);
-  addTx(txns, atx(), A, A_CHECKING, -12.75, 'Tim Hortons', '2026-01-10', A_S_COFFEE);
-  addTx(txns, atx(), A, A_CHECKING, -113.4, 'Metro Grocery', '2026-01-11', A_S_GROCERIES);
+  addTx(txns, atx(), A, A_CHECKING, -11.5, "Timothy's Coffee", '2026-01-03', aCoffee);
+  addTx(txns, atx(), A, A_CHECKING, -152.6, 'No Frills', '2026-01-04', aGroceries);
+  addTx(txns, atx(), A, A_CHECKING, 3200.0, 'Employer Direct Deposit', '2026-01-07', aSalary);
+  addTx(txns, atx(), A, A_CHECKING, 850.0, 'Freelance Client Payment', '2026-01-07', aClientPmts);
+  addTx(txns, atx(), A, A_CHECKING, -17.99, 'Netflix', '2026-01-08', aStreaming);
+  addTx(txns, atx(), A, A_CHECKING, -10.99, 'Spotify', '2026-01-09', aStreaming);
+  addTx(txns, atx(), A, A_CHECKING, -55.6, 'Shell Gas Station', '2026-01-09', aFuel);
+  addTx(txns, atx(), A, A_CHECKING, -12.75, 'Tim Hortons', '2026-01-10', aCoffee);
+  addTx(txns, atx(), A, A_CHECKING, -113.4, 'Metro Grocery', '2026-01-11', aGroceries);
   addTx(
     txns,
     atx(),
@@ -1997,14 +1691,14 @@ export async function seed(knex: Knex): Promise<void> {
     -180.0,
     'Sunnybrook Family Health',
     '2026-01-12',
-    A_S_DOCTOR,
+    aDoctor,
     false,
     true,
     'Annual physical'
   );
-  addTx(txns, atx(), A, A_CHECKING, -42.3, "Montana's BBQ", '2026-01-14', A_S_RESTAURANTS);
-  addTx(txns, atx(), A, A_CHECKING, -85.0, 'Rogers Communications', '2026-01-15', A_S_INTERNET);
-  addTx(txns, atx(), A, A_CHECKING, -95.0, 'Intact Insurance', '2026-01-15', A_S_CAR_INS);
+  addTx(txns, atx(), A, A_CHECKING, -42.3, "Montana's BBQ", '2026-01-14', aDiningOut);
+  addTx(txns, atx(), A, A_CHECKING, -85.0, 'Rogers Communications', '2026-01-15', aInternet);
+  addTx(txns, atx(), A, A_CHECKING, -95.0, 'Intact Insurance', '2026-01-15', aVehicleIns);
   const aJan15LoanTx = atx();
   addDebtPayment(
     txns,
@@ -2017,19 +1711,19 @@ export async function seed(knex: Knex): Promise<void> {
     131.56,
     'Toyota Financial Services',
     '2026-01-15',
-    A_S_LOAN_PMT
+    aVehicleLoan
   );
-  addTx(txns, atx(), A, A_CHECKING, -60.2, 'Petro Canada', '2026-01-17', A_S_GAS);
-  addTx(txns, atx(), A, A_CHECKING, -127.85, 'Loblaws', '2026-01-18', A_S_GROCERIES);
-  addTx(txns, atx(), A, A_CHECKING, -58.4, 'Esso Gas', '2026-01-19', A_S_GAS);
-  addTx(txns, atx(), A, A_CHECKING, -35.0, 'Great Clips', '2026-01-19', A_S_HAIRCUT);
-  addTx(txns, atx(), A, A_CHECKING, 3200.0, 'Employer Direct Deposit', '2026-01-21', A_S_SALARY);
-  addTx(txns, atx(), A, A_VISA, -45.99, 'Amazon.ca', '2026-01-23', A_S_AMAZON);
-  addTx(txns, atx(), A, A_CHECKING, -13.5, 'Second Cup', '2026-01-24', A_S_COFFEE);
-  addTx(txns, atx(), A, A_CHECKING, -139.2, 'No Frills', '2026-01-25', A_S_GROCERIES);
-  addTx(txns, atx(), A, A_CHECKING, -72.4, "Jack Astor's", '2026-01-26', A_S_RESTAURANTS);
-  addTx(txns, atx(), A, A_CHECKING, -63.7, 'Shell Gas Station', '2026-01-28', A_S_GAS);
-  addTx(txns, atx(), A, A_CHECKING, -129.8, 'Toronto Hydro', '2026-01-30', A_S_UTILITIES);
+  addTx(txns, atx(), A, A_CHECKING, -60.2, 'Petro Canada', '2026-01-17', aFuel);
+  addTx(txns, atx(), A, A_CHECKING, -127.85, 'Loblaws', '2026-01-18', aGroceries);
+  addTx(txns, atx(), A, A_CHECKING, -58.4, 'Esso Gas', '2026-01-19', aFuel);
+  addTx(txns, atx(), A, A_CHECKING, -35.0, 'Great Clips', '2026-01-19', aPersonalCare);
+  addTx(txns, atx(), A, A_CHECKING, 3200.0, 'Employer Direct Deposit', '2026-01-21', aSalary);
+  addTx(txns, atx(), A, A_VISA, -45.99, 'Amazon.ca', '2026-01-23', aHouseholdGoods);
+  addTx(txns, atx(), A, A_CHECKING, -13.5, 'Second Cup', '2026-01-24', aCoffee);
+  addTx(txns, atx(), A, A_CHECKING, -139.2, 'No Frills', '2026-01-25', aGroceries);
+  addTx(txns, atx(), A, A_CHECKING, -72.4, "Jack Astor's", '2026-01-26', aDiningOut);
+  addTx(txns, atx(), A, A_CHECKING, -63.7, 'Shell Gas Station', '2026-01-28', aFuel);
+  addTx(txns, atx(), A, A_CHECKING, -129.8, 'Toronto Hydro', '2026-01-30', aElectricity);
   const aJanCcFromId = atx();
   const aJanCcToId = atx();
   addTransfer(
@@ -2044,8 +1738,8 @@ export async function seed(knex: Knex): Promise<void> {
     1400.0,
     'Credit Card Payment',
     '2026-01-31',
-    A_S_CC_PMT,
-    A_C_TRANSFERS,
+    aCcPayment,
+    aTransfers,
     'payment'
   );
 
@@ -2058,23 +1752,23 @@ export async function seed(knex: Knex): Promise<void> {
     -1800.0,
     'Landlord Property Mgmt',
     '2026-02-01',
-    A_S_RENT,
+    aRentMortgage,
     false,
     true,
     'February rent'
   );
-  addTx(txns, atx(), A, A_CHECKING, -45.0, 'GoodLife Fitness', '2026-02-01', A_S_GYM);
-  addTx(txns, atx(), A, A_CHECKING, -95.0, 'Intact Insurance', '2026-02-01', A_S_CAR_INS);
-  addTx(txns, atx(), A, A_CHECKING, 3200.0, 'Employer Direct Deposit', '2026-02-04', A_S_SALARY);
-  addTx(txns, atx(), A, A_CHECKING, 850.0, 'Freelance Client Payment', '2026-02-04', A_S_FREELANCE);
-  addTx(txns, atx(), A, A_CHECKING, -10.25, 'Tim Hortons', '2026-02-05', A_S_COFFEE);
-  addTx(txns, atx(), A, A_CHECKING, -148.3, 'Loblaws', '2026-02-06', A_S_GROCERIES);
-  addTx(txns, atx(), A, A_CHECKING, -57.8, 'Shell Gas Station', '2026-02-07', A_S_GAS);
-  addTx(txns, atx(), A, A_CHECKING, -17.99, 'Netflix', '2026-02-08', A_S_STREAMING);
-  addTx(txns, atx(), A, A_CHECKING, -10.99, 'Spotify', '2026-02-09', A_S_STREAMING);
-  addTx(txns, atx(), A, A_CHECKING, -12.0, "Timothy's Coffee", '2026-02-11', A_S_COFFEE);
-  addTx(txns, atx(), A, A_CHECKING, -98.45, 'Metro Grocery', '2026-02-12', A_S_GROCERIES);
-  addTx(txns, atx(), A, A_CHECKING, -61.3, 'Petro Canada', '2026-02-13', A_S_GAS);
+  addTx(txns, atx(), A, A_CHECKING, -45.0, 'GoodLife Fitness', '2026-02-01', aGym);
+  addTx(txns, atx(), A, A_CHECKING, -95.0, 'Intact Insurance', '2026-02-01', aVehicleIns);
+  addTx(txns, atx(), A, A_CHECKING, 3200.0, 'Employer Direct Deposit', '2026-02-04', aSalary);
+  addTx(txns, atx(), A, A_CHECKING, 850.0, 'Freelance Client Payment', '2026-02-04', aClientPmts);
+  addTx(txns, atx(), A, A_CHECKING, -10.25, 'Tim Hortons', '2026-02-05', aCoffee);
+  addTx(txns, atx(), A, A_CHECKING, -148.3, 'Loblaws', '2026-02-06', aGroceries);
+  addTx(txns, atx(), A, A_CHECKING, -57.8, 'Shell Gas Station', '2026-02-07', aFuel);
+  addTx(txns, atx(), A, A_CHECKING, -17.99, 'Netflix', '2026-02-08', aStreaming);
+  addTx(txns, atx(), A, A_CHECKING, -10.99, 'Spotify', '2026-02-09', aStreaming);
+  addTx(txns, atx(), A, A_CHECKING, -12.0, "Timothy's Coffee", '2026-02-11', aCoffee);
+  addTx(txns, atx(), A, A_CHECKING, -98.45, 'Metro Grocery', '2026-02-12', aGroceries);
+  addTx(txns, atx(), A, A_CHECKING, -61.3, 'Petro Canada', '2026-02-13', aFuel);
   addTx(
     txns,
     atx(),
@@ -2083,13 +1777,13 @@ export async function seed(knex: Knex): Promise<void> {
     -92.45,
     'The Keg Steakhouse',
     '2026-02-14',
-    A_S_RESTAURANTS,
+    aDiningOut,
     false,
     true,
     "Valentine's Day dinner"
   );
-  addTx(txns, atx(), A, A_CHECKING, -85.0, 'Rogers Communications', '2026-02-15', A_S_INTERNET);
-  addTx(txns, atx(), A, A_CHECKING, -95.0, 'Intact Insurance', '2026-02-15', A_S_CAR_INS);
+  addTx(txns, atx(), A, A_CHECKING, -85.0, 'Rogers Communications', '2026-02-15', aInternet);
+  addTx(txns, atx(), A, A_CHECKING, -95.0, 'Intact Insurance', '2026-02-15', aVehicleIns);
   const aFeb15LoanTx = atx();
   addDebtPayment(
     txns,
@@ -2102,21 +1796,20 @@ export async function seed(knex: Knex): Promise<void> {
     129.51,
     'Toyota Financial Services',
     '2026-02-15',
-    A_S_LOAN_PMT
+    aVehicleLoan
   );
-  addTx(txns, atx(), A, A_CHECKING, -134.6, 'No Frills', '2026-02-17', A_S_GROCERIES);
-  addTx(txns, atx(), A, A_CHECKING, 3200.0, 'Employer Direct Deposit', '2026-02-18', A_S_SALARY);
-  addTx(txns, atx(), A, A_CHECKING, -11.75, 'Second Cup', '2026-02-18', A_S_COFFEE);
-  addTx(txns, atx(), A, A_CHECKING, -52.4, 'Shell Gas Station', '2026-02-19', A_S_GAS);
-  addTx(txns, atx(), A, A_CHECKING, -35.0, 'Great Clips', '2026-02-20', A_S_HAIRCUT);
-  addTx(txns, atx(), A, A_CHECKING, -112.8, 'Loblaws', '2026-02-22', A_S_GROCERIES);
-  addTx(txns, atx(), A, A_CHECKING, -14.25, 'Starbucks', '2026-02-24', A_S_COFFEE);
+  addTx(txns, atx(), A, A_CHECKING, -134.6, 'No Frills', '2026-02-17', aGroceries);
+  addTx(txns, atx(), A, A_CHECKING, 3200.0, 'Employer Direct Deposit', '2026-02-18', aSalary);
+  addTx(txns, atx(), A, A_CHECKING, -11.75, 'Second Cup', '2026-02-18', aCoffee);
+  addTx(txns, atx(), A, A_CHECKING, -52.4, 'Shell Gas Station', '2026-02-19', aFuel);
+  addTx(txns, atx(), A, A_CHECKING, -35.0, 'Great Clips', '2026-02-20', aPersonalCare);
+  addTx(txns, atx(), A, A_CHECKING, -112.8, 'Loblaws', '2026-02-22', aGroceries);
+  addTx(txns, atx(), A, A_CHECKING, -14.25, 'Starbucks', '2026-02-24', aCoffee);
 
   // ── Beta transactions ──────────────────────────────────────────────────────
-  const B = BETA_ID;
 
   // November 2025
-  addTx(txns, btx(), B, B_CHECKING, 4800.0, 'Acme Corp - Direct Deposit', '2025-11-01', B_S_SALARY);
+  addTx(txns, btx(), B, B_CHECKING, 4800.0, 'Acme Corp - Direct Deposit', '2025-11-01', bSalary);
   addTx(
     txns,
     btx(),
@@ -2125,13 +1818,13 @@ export async function seed(knex: Knex): Promise<void> {
     -2150.0,
     'Chase Mortgage Auto-Pay',
     '2025-11-01',
-    B_S_MORTGAGE,
+    bRentMortgage,
     false,
     true,
     'November mortgage'
   );
-  addTx(txns, btx(), B, B_CHECKING, -25.0, 'Planet Fitness', '2025-11-01', B_S_GYM);
-  addTx(txns, btx(), B, B_CHECKING, -195.0, 'GEICO Insurance', '2025-11-01', B_S_CAR_INS);
+  addTx(txns, btx(), B, B_CHECKING, -25.0, 'Planet Fitness', '2025-11-01', bGym);
+  addTx(txns, btx(), B, B_CHECKING, -195.0, 'GEICO Insurance', '2025-11-01', bVehicleIns);
   const bNovStudentTx = btx();
   addDebtPayment(
     txns,
@@ -2144,22 +1837,22 @@ export async function seed(knex: Knex): Promise<void> {
     95.84,
     'Federal Student Aid',
     '2025-11-01',
-    B_S_LOAN_PMT
+    bStudentLoan
   );
-  addTx(txns, btx(), B, B_CHECKING, -9.5, 'Dunkin Donuts', '2025-11-03', B_S_COFFEE);
-  addTx(txns, btx(), B, B_CHECKING, -187.42, 'Whole Foods Market', '2025-11-04', B_S_GROCERIES);
-  addTx(txns, btx(), B, B_CHECKING, -15.99, 'Netflix', '2025-11-08', B_S_STREAMING);
-  addTx(txns, btx(), B, B_CHECKING, -10.99, 'Spotify', '2025-11-09', B_S_STREAMING);
-  addTx(txns, btx(), B, B_CHECKING, -62.4, 'Shell Gas Station', '2025-11-10', B_S_GAS);
-  addTx(txns, btx(), B, B_CHECKING, 600.0, 'Freelance Project', '2025-11-12', B_S_FREELANCE);
-  addTx(txns, btx(), B, B_CHECKING, -11.0, 'Starbucks', '2025-11-12', B_S_COFFEE);
-  addTx(txns, btx(), B, B_CHECKING, -68.9, 'Olive Garden', '2025-11-14', B_S_RESTAURANTS);
-  addTx(txns, btx(), B, B_CHECKING, 4800.0, 'Acme Corp - Direct Deposit', '2025-11-15', B_S_SALARY);
-  addTx(txns, btx(), B, B_CHECKING, -90.0, 'Comcast Xfinity', '2025-11-15', B_S_INTERNET);
-  addTx(txns, btx(), B, B_CHECKING, -195.0, 'GEICO Insurance', '2025-11-15', B_S_CAR_INS);
-  addTx(txns, btx(), B, B_CHECKING, -148.65, 'Kroger', '2025-11-17', B_S_GROCERIES);
-  addTx(txns, btx(), B, B_CHECKING, -59.2, 'Chevron Gas', '2025-11-20', B_S_GAS);
-  addTx(txns, btx(), B, B_CHECKING, -122.3, 'Whole Foods Market', '2025-11-21', B_S_GROCERIES);
+  addTx(txns, btx(), B, B_CHECKING, -9.5, 'Dunkin Donuts', '2025-11-03', bCoffee);
+  addTx(txns, btx(), B, B_CHECKING, -187.42, 'Whole Foods Market', '2025-11-04', bGroceries);
+  addTx(txns, btx(), B, B_CHECKING, -15.99, 'Netflix', '2025-11-08', bStreaming);
+  addTx(txns, btx(), B, B_CHECKING, -10.99, 'Spotify', '2025-11-09', bStreaming);
+  addTx(txns, btx(), B, B_CHECKING, -62.4, 'Shell Gas Station', '2025-11-10', bFuel);
+  addTx(txns, btx(), B, B_CHECKING, 600.0, 'Freelance Project', '2025-11-12', bOtherIncome);
+  addTx(txns, btx(), B, B_CHECKING, -11.0, 'Starbucks', '2025-11-12', bCoffee);
+  addTx(txns, btx(), B, B_CHECKING, -68.9, 'Olive Garden', '2025-11-14', bDiningOut);
+  addTx(txns, btx(), B, B_CHECKING, 4800.0, 'Acme Corp - Direct Deposit', '2025-11-15', bSalary);
+  addTx(txns, btx(), B, B_CHECKING, -90.0, 'Comcast Xfinity', '2025-11-15', bInternet);
+  addTx(txns, btx(), B, B_CHECKING, -195.0, 'GEICO Insurance', '2025-11-15', bVehicleIns);
+  addTx(txns, btx(), B, B_CHECKING, -148.65, 'Kroger', '2025-11-17', bGroceries);
+  addTx(txns, btx(), B, B_CHECKING, -59.2, 'Chevron Gas', '2025-11-20', bFuel);
+  addTx(txns, btx(), B, B_CHECKING, -122.3, 'Whole Foods Market', '2025-11-21', bGroceries);
   addTx(
     txns,
     btx(),
@@ -2168,7 +1861,7 @@ export async function seed(knex: Knex): Promise<void> {
     -89.99,
     'Amazon.com',
     '2025-11-21',
-    B_S_AMAZON,
+    bHouseholdGoods,
     false,
     true,
     'Pre-holiday shopping'
@@ -2181,7 +1874,7 @@ export async function seed(knex: Knex): Promise<void> {
     -134.0,
     'ConEdison',
     '2025-11-25',
-    B_S_UTILITIES,
+    bElectricity,
     false,
     true,
     'Electric + gas bill'
@@ -2194,7 +1887,7 @@ export async function seed(knex: Knex): Promise<void> {
     -210.4,
     'Whole Foods Market',
     '2025-11-27',
-    B_S_GROCERIES,
+    bGroceries,
     false,
     true,
     'Thanksgiving groceries'
@@ -2207,12 +1900,12 @@ export async function seed(knex: Knex): Promise<void> {
     -112.5,
     'Target.com',
     '2025-11-28',
-    B_S_GIFTS,
+    bGiftsGiven,
     false,
     true,
     'Black Friday'
   );
-  addTx(txns, btx(), B, B_CHECKING, -28.0, 'Regal Cinemas', '2025-11-29', B_S_MOVIES);
+  addTx(txns, btx(), B, B_CHECKING, -28.0, 'Regal Cinemas', '2025-11-29', bEvents);
   const bNovCcFromId = btx();
   const bNovCcToId = btx();
   addTransfer(
@@ -2227,13 +1920,13 @@ export async function seed(knex: Knex): Promise<void> {
     900.0,
     'Credit Card Payment',
     '2025-11-30',
-    B_S_CC_PMT,
-    B_C_TRANSFERS,
+    bCcPayment,
+    bTransfers,
     'payment'
   );
 
   // December 2025
-  addTx(txns, btx(), B, B_CHECKING, 4800.0, 'Acme Corp - Direct Deposit', '2025-12-01', B_S_SALARY);
+  addTx(txns, btx(), B, B_CHECKING, 4800.0, 'Acme Corp - Direct Deposit', '2025-12-01', bSalary);
   addTx(
     txns,
     btx(),
@@ -2242,13 +1935,13 @@ export async function seed(knex: Knex): Promise<void> {
     -2150.0,
     'Chase Mortgage Auto-Pay',
     '2025-12-01',
-    B_S_MORTGAGE,
+    bRentMortgage,
     false,
     true,
     'December mortgage'
   );
-  addTx(txns, btx(), B, B_CHECKING, -25.0, 'Planet Fitness', '2025-12-01', B_S_GYM);
-  addTx(txns, btx(), B, B_CHECKING, -195.0, 'GEICO Insurance', '2025-12-01', B_S_CAR_INS);
+  addTx(txns, btx(), B, B_CHECKING, -25.0, 'Planet Fitness', '2025-12-01', bGym);
+  addTx(txns, btx(), B, B_CHECKING, -195.0, 'GEICO Insurance', '2025-12-01', bVehicleIns);
   const bDecStudentTx = btx();
   addDebtPayment(
     txns,
@@ -2261,7 +1954,7 @@ export async function seed(knex: Knex): Promise<void> {
     94.84,
     'Federal Student Aid',
     '2025-12-01',
-    B_S_LOAN_PMT
+    bStudentLoan
   );
   addTx(
     txns,
@@ -2271,17 +1964,17 @@ export async function seed(knex: Knex): Promise<void> {
     -278.45,
     'Amazon.com',
     '2025-12-05',
-    B_S_GIFTS,
+    bGiftsGiven,
     false,
     true,
     'Christmas gifts'
   );
-  addTx(txns, btx(), B, B_CHECKING, -14.0, 'Dunkin Donuts', '2025-12-06', B_S_COFFEE);
-  addTx(txns, btx(), B, B_CHECKING, -163.2, "Trader Joe's", '2025-12-07', B_S_GROCERIES);
-  addTx(txns, btx(), B, B_CHECKING, -15.99, 'Netflix', '2025-12-08', B_S_STREAMING);
-  addTx(txns, btx(), B, B_CHECKING, -10.99, 'Spotify', '2025-12-09', B_S_STREAMING);
-  addTx(txns, btx(), B, B_CHECKING, 600.0, 'Freelance Project', '2025-12-10', B_S_FREELANCE);
-  addTx(txns, btx(), B, B_CHECKING, -71.8, 'Chevron Gas', '2025-12-10', B_S_GAS);
+  addTx(txns, btx(), B, B_CHECKING, -14.0, 'Dunkin Donuts', '2025-12-06', bCoffee);
+  addTx(txns, btx(), B, B_CHECKING, -163.2, "Trader Joe's", '2025-12-07', bGroceries);
+  addTx(txns, btx(), B, B_CHECKING, -15.99, 'Netflix', '2025-12-08', bStreaming);
+  addTx(txns, btx(), B, B_CHECKING, -10.99, 'Spotify', '2025-12-09', bStreaming);
+  addTx(txns, btx(), B, B_CHECKING, 600.0, 'Freelance Project', '2025-12-10', bOtherIncome);
+  addTx(txns, btx(), B, B_CHECKING, -71.8, 'Chevron Gas', '2025-12-10', bFuel);
   addTx(
     txns,
     btx(),
@@ -2290,16 +1983,16 @@ export async function seed(knex: Knex): Promise<void> {
     -199.99,
     'Best Buy',
     '2025-12-12',
-    B_S_ELECTRONICS,
+    bElectronics,
     false,
     true,
     'Christmas gift'
   );
-  addTx(txns, btx(), B, B_CHECKING, 4800.0, 'Acme Corp - Direct Deposit', '2025-12-15', B_S_SALARY);
-  addTx(txns, btx(), B, B_CHECKING, -90.0, 'Comcast Xfinity', '2025-12-15', B_S_INTERNET);
-  addTx(txns, btx(), B, B_CHECKING, -195.0, 'GEICO Insurance', '2025-12-15', B_S_CAR_INS);
-  addTx(txns, btx(), B, B_CHECKING, -178.9, 'Whole Foods Market', '2025-12-17', B_S_GROCERIES);
-  addTx(txns, btx(), B, B_CHECKING, -67.3, 'Shell Gas Station', '2025-12-18', B_S_GAS);
+  addTx(txns, btx(), B, B_CHECKING, 4800.0, 'Acme Corp - Direct Deposit', '2025-12-15', bSalary);
+  addTx(txns, btx(), B, B_CHECKING, -90.0, 'Comcast Xfinity', '2025-12-15', bInternet);
+  addTx(txns, btx(), B, B_CHECKING, -195.0, 'GEICO Insurance', '2025-12-15', bVehicleIns);
+  addTx(txns, btx(), B, B_CHECKING, -178.9, 'Whole Foods Market', '2025-12-17', bGroceries);
+  addTx(txns, btx(), B, B_CHECKING, -67.3, 'Shell Gas Station', '2025-12-18', bFuel);
   addTx(
     txns,
     btx(),
@@ -2308,7 +2001,7 @@ export async function seed(knex: Knex): Promise<void> {
     -218.6,
     'Whole Foods Market',
     '2025-12-21',
-    B_S_GROCERIES,
+    bGroceries,
     false,
     true,
     'Christmas groceries'
@@ -2321,12 +2014,12 @@ export async function seed(knex: Knex): Promise<void> {
     -108.5,
     'Pottery Barn',
     '2025-12-22',
-    B_S_HOME_GARDEN,
+    bHouseholdGoods,
     false,
     true,
     'Christmas decor'
   );
-  addTx(txns, btx(), B, B_CHECKING, -153.8, 'ConEdison', '2025-12-28', B_S_UTILITIES);
+  addTx(txns, btx(), B, B_CHECKING, -153.8, 'ConEdison', '2025-12-28', bElectricity);
   const bDecSavFromId = btx();
   const bDecSavToId = btx();
   addTransfer(
@@ -2341,8 +2034,8 @@ export async function seed(knex: Knex): Promise<void> {
     800.0,
     'Transfer to Savings',
     '2025-12-30',
-    B_C_TRANSFERS,
-    B_C_TRANSFERS,
+    bTransfers,
+    bTransfers,
     'transfer'
   );
   const bDecCcFromId = btx();
@@ -2359,13 +2052,13 @@ export async function seed(knex: Knex): Promise<void> {
     1400.0,
     'Credit Card Payment',
     '2025-12-31',
-    B_S_CC_PMT,
-    B_C_TRANSFERS,
+    bCcPayment,
+    bTransfers,
     'payment'
   );
 
   // January 2026
-  addTx(txns, btx(), B, B_CHECKING, 4800.0, 'Acme Corp - Direct Deposit', '2026-01-01', B_S_SALARY);
+  addTx(txns, btx(), B, B_CHECKING, 4800.0, 'Acme Corp - Direct Deposit', '2026-01-01', bSalary);
   addTx(
     txns,
     btx(),
@@ -2374,13 +2067,13 @@ export async function seed(knex: Knex): Promise<void> {
     -2150.0,
     'Chase Mortgage Auto-Pay',
     '2026-01-01',
-    B_S_MORTGAGE,
+    bRentMortgage,
     false,
     true,
     'January mortgage'
   );
-  addTx(txns, btx(), B, B_CHECKING, -25.0, 'Planet Fitness', '2026-01-01', B_S_GYM);
-  addTx(txns, btx(), B, B_CHECKING, -195.0, 'GEICO Insurance', '2026-01-01', B_S_CAR_INS);
+  addTx(txns, btx(), B, B_CHECKING, -25.0, 'Planet Fitness', '2026-01-01', bGym);
+  addTx(txns, btx(), B, B_CHECKING, -195.0, 'GEICO Insurance', '2026-01-01', bVehicleIns);
   const bJanStudentTx = btx();
   addDebtPayment(
     txns,
@@ -2393,25 +2086,25 @@ export async function seed(knex: Knex): Promise<void> {
     93.83,
     'Federal Student Aid',
     '2026-01-01',
-    B_S_LOAN_PMT
+    bStudentLoan
   );
-  addTx(txns, btx(), B, B_CHECKING, -10.5, 'Starbucks', '2026-01-03', B_S_COFFEE);
-  addTx(txns, btx(), B, B_CHECKING, -155.7, "Trader Joe's", '2026-01-05', B_S_GROCERIES);
-  addTx(txns, btx(), B, B_DISCOVER, -42.99, 'Amazon.com', '2026-01-06', B_S_AMAZON);
-  addTx(txns, btx(), B, B_CHECKING, 4800.0, 'Acme Corp - Direct Deposit', '2026-01-15', B_S_SALARY);
-  addTx(txns, btx(), B, B_CHECKING, -15.99, 'Netflix', '2026-01-08', B_S_STREAMING);
-  addTx(txns, btx(), B, B_CHECKING, -10.99, 'Spotify', '2026-01-09', B_S_STREAMING);
-  addTx(txns, btx(), B, B_CHECKING, -63.4, 'Chevron Gas', '2026-01-10', B_S_GAS);
-  addTx(txns, btx(), B, B_CHECKING, 600.0, 'Freelance Project', '2026-01-12', B_S_FREELANCE);
-  addTx(txns, btx(), B, B_CHECKING, -75.6, 'The Cheesecake Factory', '2026-01-14', B_S_RESTAURANTS);
-  addTx(txns, btx(), B, B_CHECKING, -90.0, 'Comcast Xfinity', '2026-01-15', B_S_INTERNET);
-  addTx(txns, btx(), B, B_CHECKING, -195.0, 'GEICO Insurance', '2026-01-15', B_S_CAR_INS);
-  addTx(txns, btx(), B, B_CHECKING, -132.8, 'Kroger', '2026-01-17', B_S_GROCERIES);
-  addTx(txns, btx(), B, B_CHECKING, -68.5, 'Shell Gas Station', '2026-01-19', B_S_GAS);
-  addTx(txns, btx(), B, B_CHECKING, -38.0, 'Regal Cinemas', '2026-01-21', B_S_MOVIES);
-  addTx(txns, btx(), B, B_CHECKING, -148.2, 'Whole Foods Market', '2026-01-22', B_S_GROCERIES);
-  addTx(txns, btx(), B, B_CHECKING, -145.0, 'ConEdison', '2026-01-26', B_S_UTILITIES);
-  addTx(txns, btx(), B, B_CHECKING, -62.3, 'Chevron Gas', '2026-01-28', B_S_GAS);
+  addTx(txns, btx(), B, B_CHECKING, -10.5, 'Starbucks', '2026-01-03', bCoffee);
+  addTx(txns, btx(), B, B_CHECKING, -155.7, "Trader Joe's", '2026-01-05', bGroceries);
+  addTx(txns, btx(), B, B_DISCOVER, -42.99, 'Amazon.com', '2026-01-06', bHouseholdGoods);
+  addTx(txns, btx(), B, B_CHECKING, 4800.0, 'Acme Corp - Direct Deposit', '2026-01-15', bSalary);
+  addTx(txns, btx(), B, B_CHECKING, -15.99, 'Netflix', '2026-01-08', bStreaming);
+  addTx(txns, btx(), B, B_CHECKING, -10.99, 'Spotify', '2026-01-09', bStreaming);
+  addTx(txns, btx(), B, B_CHECKING, -63.4, 'Chevron Gas', '2026-01-10', bFuel);
+  addTx(txns, btx(), B, B_CHECKING, 600.0, 'Freelance Project', '2026-01-12', bOtherIncome);
+  addTx(txns, btx(), B, B_CHECKING, -75.6, 'The Cheesecake Factory', '2026-01-14', bDiningOut);
+  addTx(txns, btx(), B, B_CHECKING, -90.0, 'Comcast Xfinity', '2026-01-15', bInternet);
+  addTx(txns, btx(), B, B_CHECKING, -195.0, 'GEICO Insurance', '2026-01-15', bVehicleIns);
+  addTx(txns, btx(), B, B_CHECKING, -132.8, 'Kroger', '2026-01-17', bGroceries);
+  addTx(txns, btx(), B, B_CHECKING, -68.5, 'Shell Gas Station', '2026-01-19', bFuel);
+  addTx(txns, btx(), B, B_CHECKING, -38.0, 'Regal Cinemas', '2026-01-21', bEvents);
+  addTx(txns, btx(), B, B_CHECKING, -148.2, 'Whole Foods Market', '2026-01-22', bGroceries);
+  addTx(txns, btx(), B, B_CHECKING, -145.0, 'ConEdison', '2026-01-26', bElectricity);
+  addTx(txns, btx(), B, B_CHECKING, -62.3, 'Chevron Gas', '2026-01-28', bFuel);
   const bJanCcFromId = btx();
   const bJanCcToId = btx();
   addTransfer(
@@ -2426,13 +2119,13 @@ export async function seed(knex: Knex): Promise<void> {
     800.0,
     'Credit Card Payment',
     '2026-01-31',
-    B_S_CC_PMT,
-    B_C_TRANSFERS,
+    bCcPayment,
+    bTransfers,
     'payment'
   );
 
   // February 2026 (to Feb 24)
-  addTx(txns, btx(), B, B_CHECKING, 4800.0, 'Acme Corp - Direct Deposit', '2026-02-01', B_S_SALARY);
+  addTx(txns, btx(), B, B_CHECKING, 4800.0, 'Acme Corp - Direct Deposit', '2026-02-01', bSalary);
   addTx(
     txns,
     btx(),
@@ -2441,13 +2134,13 @@ export async function seed(knex: Knex): Promise<void> {
     -2150.0,
     'Chase Mortgage Auto-Pay',
     '2026-02-01',
-    B_S_MORTGAGE,
+    bRentMortgage,
     false,
     true,
     'February mortgage'
   );
-  addTx(txns, btx(), B, B_CHECKING, -25.0, 'Planet Fitness', '2026-02-01', B_S_GYM);
-  addTx(txns, btx(), B, B_CHECKING, -195.0, 'GEICO Insurance', '2026-02-01', B_S_CAR_INS);
+  addTx(txns, btx(), B, B_CHECKING, -25.0, 'Planet Fitness', '2026-02-01', bGym);
+  addTx(txns, btx(), B, B_CHECKING, -195.0, 'GEICO Insurance', '2026-02-01', bVehicleIns);
   const bFebStudentTx = btx();
   addDebtPayment(
     txns,
@@ -2460,17 +2153,17 @@ export async function seed(knex: Knex): Promise<void> {
     92.82,
     'Federal Student Aid',
     '2026-02-01',
-    B_S_LOAN_PMT
+    bStudentLoan
   );
-  addTx(txns, btx(), B, B_CHECKING, -11.25, 'Dunkin Donuts', '2026-02-03', B_S_COFFEE);
-  addTx(txns, btx(), B, B_CHECKING, -162.45, 'Whole Foods Market', '2026-02-04', B_S_GROCERIES);
-  addTx(txns, btx(), B, B_CHECKING, -59.8, 'Shell Gas Station', '2026-02-05', B_S_GAS);
-  addTx(txns, btx(), B, B_CHECKING, 600.0, 'Freelance Project', '2026-02-07', B_S_FREELANCE);
-  addTx(txns, btx(), B, B_CHECKING, -15.99, 'Netflix', '2026-02-08', B_S_STREAMING);
-  addTx(txns, btx(), B, B_CHECKING, -10.99, 'Spotify', '2026-02-09', B_S_STREAMING);
-  addTx(txns, btx(), B, B_CHECKING, -12.5, 'Starbucks', '2026-02-10', B_S_COFFEE);
-  addTx(txns, btx(), B, B_CHECKING, -138.9, "Trader Joe's", '2026-02-11', B_S_GROCERIES);
-  addTx(txns, btx(), B, B_CHECKING, -67.1, 'Chevron Gas', '2026-02-13', B_S_GAS);
+  addTx(txns, btx(), B, B_CHECKING, -11.25, 'Dunkin Donuts', '2026-02-03', bCoffee);
+  addTx(txns, btx(), B, B_CHECKING, -162.45, 'Whole Foods Market', '2026-02-04', bGroceries);
+  addTx(txns, btx(), B, B_CHECKING, -59.8, 'Shell Gas Station', '2026-02-05', bFuel);
+  addTx(txns, btx(), B, B_CHECKING, 600.0, 'Freelance Project', '2026-02-07', bOtherIncome);
+  addTx(txns, btx(), B, B_CHECKING, -15.99, 'Netflix', '2026-02-08', bStreaming);
+  addTx(txns, btx(), B, B_CHECKING, -10.99, 'Spotify', '2026-02-09', bStreaming);
+  addTx(txns, btx(), B, B_CHECKING, -12.5, 'Starbucks', '2026-02-10', bCoffee);
+  addTx(txns, btx(), B, B_CHECKING, -138.9, "Trader Joe's", '2026-02-11', bGroceries);
+  addTx(txns, btx(), B, B_CHECKING, -67.1, 'Chevron Gas', '2026-02-13', bFuel);
   addTx(
     txns,
     btx(),
@@ -2479,18 +2172,18 @@ export async function seed(knex: Knex): Promise<void> {
     -178.9,
     'OpenTable Restaurant',
     '2026-02-14',
-    B_S_RESTAURANTS,
+    bDiningOut,
     false,
     true,
     "Valentine's Day dinner"
   );
-  addTx(txns, btx(), B, B_CHECKING, 4800.0, 'Acme Corp - Direct Deposit', '2026-02-15', B_S_SALARY);
-  addTx(txns, btx(), B, B_CHECKING, -90.0, 'Comcast Xfinity', '2026-02-15', B_S_INTERNET);
-  addTx(txns, btx(), B, B_CHECKING, -195.0, 'GEICO Insurance', '2026-02-15', B_S_CAR_INS);
-  addTx(txns, btx(), B, B_CHECKING, -182.3, 'Kroger', '2026-02-17', B_S_GROCERIES);
-  addTx(txns, btx(), B, B_CHECKING, -72.4, 'Shell Gas Station', '2026-02-19', B_S_GAS);
-  addTx(txns, btx(), B, B_CHECKING, -155.6, 'Whole Foods Market', '2026-02-22', B_S_GROCERIES);
-  addTx(txns, btx(), B, B_CHECKING, -14.75, 'Dunkin Donuts', '2026-02-24', B_S_COFFEE);
+  addTx(txns, btx(), B, B_CHECKING, 4800.0, 'Acme Corp - Direct Deposit', '2026-02-15', bSalary);
+  addTx(txns, btx(), B, B_CHECKING, -90.0, 'Comcast Xfinity', '2026-02-15', bInternet);
+  addTx(txns, btx(), B, B_CHECKING, -195.0, 'GEICO Insurance', '2026-02-15', bVehicleIns);
+  addTx(txns, btx(), B, B_CHECKING, -182.3, 'Kroger', '2026-02-17', bGroceries);
+  addTx(txns, btx(), B, B_CHECKING, -72.4, 'Shell Gas Station', '2026-02-19', bFuel);
+  addTx(txns, btx(), B, B_CHECKING, -155.6, 'Whole Foods Market', '2026-02-22', bGroceries);
+  addTx(txns, btx(), B, B_CHECKING, -14.75, 'Dunkin Donuts', '2026-02-24', bCoffee);
 
   // ── Insert all transactions in batches ────────────────────────────────────
   console.log(

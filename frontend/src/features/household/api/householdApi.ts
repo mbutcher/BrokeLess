@@ -44,6 +44,18 @@ export async function setupHousehold(name: string): Promise<HouseholdWithMembers
   return res.data.data.household;
 }
 
+export interface OnboardingOptions {
+  region: 'CA' | 'US' | 'EU';
+  isFreelancer: boolean;
+  hasPets: boolean;
+  hasKids: boolean;
+  isStudent: boolean;
+}
+
+export async function completeOnboarding(opts: OnboardingOptions): Promise<void> {
+  await apiClient.post('/household/onboarding', opts);
+}
+
 export async function fetchHousehold(): Promise<HouseholdWithMembers> {
   const res = await apiClient.get<HouseholdResponse>('/household');
   return res.data.data.household;

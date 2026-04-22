@@ -10,8 +10,9 @@ import {
   fetchAccountShares,
   putAccountShares,
   patchAccountShare,
+  completeOnboarding,
 } from '../api/householdApi';
-import type { AddMemberInput, PutSharesInput, AccountShareAccessLevel } from '../types';
+import type { AddMemberInput, PutSharesInput, AccountShareAccessLevel, OnboardingOptions } from '../types';
 
 export const HOUSEHOLD_KEY = ['household'] as const;
 export const REGISTRATION_STATUS_KEY = ['registration-status'] as const;
@@ -45,6 +46,17 @@ export function useSetupHousehold() {
       if (user) {
         updateUser({ ...user, householdSetupRequired: false });
       }
+    },
+  });
+}
+
+export function useCompleteOnboarding() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (opts: OnboardingOptions) => completeOnboarding(opts),
+    onSuccess: () => {
+      // Invalidate categories so any cached empty list is refreshed
+      void queryClient.invalidateQueries({ queryKey: ['categories'] });
     },
   });
 }

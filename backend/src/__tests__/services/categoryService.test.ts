@@ -1,4 +1,4 @@
-import { categoryService } from '@services/core/categoryService';
+import { categoryService, type OnboardingOptions } from '@services/core/categoryService';
 import { categoryRepository } from '@repositories/categoryRepository';
 
 jest.mock('@repositories/categoryRepository');
@@ -21,19 +21,79 @@ const mockCategory = {
   updatedAt: new Date(),
 };
 
+const defaultOpts: OnboardingOptions = {
+  region: 'CA',
+  isFreelancer: false,
+  hasPets: false,
+  hasKids: false,
+  isStudent: false,
+};
+
 describe('categoryService.seedDefaultsForHousehold', () => {
-  it('calls createBatch with 20 categories', async () => {
+  it('creates top-level categories and their subcategories', async () => {
+    mockRepo.create.mockResolvedValue({ ...mockCategory, id: 'parent-1' });
     mockRepo.createBatch.mockResolvedValue();
-    await categoryService.seedDefaultsForHousehold(HOUSEHOLD_ID);
-    expect(mockRepo.createBatch).toHaveBeenCalledTimes(1);
-    const [categories] = mockRepo.createBatch.mock.calls[0] ?? [];
-    expect(categories).toHaveLength(20);
-    expect(categories?.every((c) => c.householdId === HOUSEHOLD_ID)).toBe(true);
-    // 5 income + 15 expense categories
-    const income = categories?.filter((c) => c.isIncome);
-    const expense = categories?.filter((c) => !c.isIncome);
-    expect(income).toHaveLength(5);
-    expect(expense).toHaveLength(15);
+
+    await categoryService.seedDefaultsForHousehold(HOUSEHOLD_ID, defaultOpts);
+
+    // Every call to create should be a top-level (no parentId)
+    for (const call of mockRepo.create.mock.calls) {
+      const [data] = call;
+      expect(data.householdId).toBe(HOUSEHOLD_ID);
+      expect(data.parentId).toBeUndefined();
+    }
+
+    // createBatch calls should all have parentId set
+    for (const call of mockRepo.createBatch.mock.calls) {
+      const [rows] = call;
+      for (const row of rows ?? []) {
+        expect(row.householdId).toBe(HOUSEHOLD_ID);
+        expect(row.parentId).toBe('parent-1');
+      }
+    }
+  });
+
+  it('excludes conditional categories when opts do not match', async () => {
+    mockRepo.create.mockResolvedValue({ ...mockCategory, id: 'parent-1' });
+    mockRepo.createBatch.mockResolvedValue();
+
+    const callsBefore = mockRepo.create.mock.calls.length;
+    await categoryService.seedDefaultsForHousehold(HOUSEHOLD_ID, {
+      ...defaultOpts,
+      hasPets: false,
+      hasKids: false,
+      isFreelancer: false,
+      isStudent: false,
+    });
+    const totalCalls = mockRepo.create.mock.calls.length - callsBefore;
+
+    // Pets, Kids, Education, Freelance categories should be excluded
+    const names = mockRepo.create.mock.calls.slice(callsBefore).map(([d]) => d.name);
+    expect(names).not.toContain('Pets');
+    expect(names).not.toContain('Kids & Family');
+    expect(names).not.toContain('Education');
+    expect(names).not.toContain('Freelance / Self-Employment');
+    expect(totalCalls).toBeGreaterThan(0);
+  });
+
+  it('includes conditional categories when opts match', async () => {
+    mockRepo.create.mockResolvedValue({ ...mockCategory, id: 'parent-1' });
+    mockRepo.createBatch.mockResolvedValue();
+
+    const callsBefore = mockRepo.create.mock.calls.length;
+    await categoryService.seedDefaultsForHousehold(HOUSEHOLD_ID, {
+      ...defaultOpts,
+      hasPets: true,
+      hasKids: true,
+      isFreelancer: true,
+      isStudent: true,
+    });
+
+    const names = mockRepo.create.mock.calls.slice(callsBefore).map(([d]) => d.name);
+    expect(names).toContain('Pets');
+    expect(names).toContain('Kids & Family');
+    expect(names).toContain('Education');
+    expect(names).toContain('Freelance / Self-Employment');
   });
 });
 

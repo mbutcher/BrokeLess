@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { asyncHandler } from '@middleware/errorHandler';
 import { householdService } from '@services/core/householdService';
+import type { OnboardingOptions } from '@services/core/categoryService';
 
 class HouseholdController {
   setup = asyncHandler(async (req: Request, res: Response) => {
@@ -31,6 +32,13 @@ class HouseholdController {
   removeMember = asyncHandler(async (req: Request, res: Response) => {
     const { userId } = req.params;
     await householdService.removeMember(req.user!.id, userId!);
+    res.json({ status: 'success', data: null });
+  });
+
+  onboarding = asyncHandler(async (req: Request, res: Response) => {
+    const householdId = req.user!.householdId!;
+    const opts = req.body as OnboardingOptions;
+    await householdService.applyOnboarding(householdId, opts);
     res.json({ status: 'success', data: null });
   });
 }
