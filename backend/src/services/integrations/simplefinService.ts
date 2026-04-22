@@ -77,14 +77,20 @@ class SimplefinService {
     try {
       const plainAccessUrl = encryptionService.decrypt(accessUrlEncrypted);
 
-      // Full sync: no start-date — let SimpleFIN return all available history.
+      // Full sync: pass Unix epoch as start-date so SimpleFIN returns its entire stored history.
+      //   SimpleFIN Bridge maintains a per-connection cursor — omitting start-date returns only
+      //   transactions *since the last API call*, NOT all history. Sending epoch forces a full dump.
       // Normal sync: use lastSyncAt - SYNC_OVERLAP_DAYS for safety overlap.
-      let startDate: Date | undefined;
-      if (!fullSync) {
+      let startDate: Date;
+      if (fullSync) {
+        startDate = new Date(0); // Unix epoch → all available history
+      } else {
         const connection = await simplefinRepository.findConnectionByUser(userId);
         if (connection?.lastSyncAt) {
           startDate = new Date(connection.lastSyncAt);
           startDate.setDate(startDate.getDate() - SYNC_OVERLAP_DAYS);
+        } else {
+          startDate = new Date(0); // First ever sync — grab everything
         }
       }
 
