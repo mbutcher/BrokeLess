@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { CheckCircle2, AlertCircle, Loader2, RefreshCw, Unplug, Server, Copy, Check, Key, Plus } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Loader2, Unplug, Server, Copy, Check, Key, Plus } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
@@ -22,7 +22,7 @@ import {
   useSimplefinSchedule,
   useConnectSimplefin,
   useDisconnectSimplefin,
-  useSyncNow,
+  useManualSync,
   useUpdateSchedule,
 } from '@features/integrations/hooks/useSimplefin';
 import type { UpdateScheduleInput } from '@features/integrations/types';
@@ -58,19 +58,12 @@ function SimplefinSection() {
   const { data: schedule } = useSimplefinSchedule();
   const connectMutation = useConnectSimplefin();
   const disconnectMutation = useDisconnectSimplefin();
-  const syncMutation = useSyncNow();
+  const { activeSyncMode, syncResult, handleSync, isPending: isSyncPending } = useManualSync();
   const updateScheduleMutation = useUpdateSchedule();
 
   const [setupToken, setSetupToken] = useState('');
   const [connectError, setConnectError] = useState<string | null>(null);
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
-  const [syncResult, setSyncResult] = useState<{
-    imported: number;
-    skipped: number;
-    pendingReviews: number;
-    unmappedAccounts: number;
-  } | null>(null);
-  const [activeSyncMode, setActiveSyncMode] = useState<'normal' | 'full' | null>(null);
 
   const [scheduleForm, setScheduleForm] = useState<UpdateScheduleInput>({
     autoSyncEnabled: false,
@@ -100,17 +93,6 @@ function SimplefinSection() {
       setSetupToken('');
     } catch (err) {
       setConnectError(err instanceof Error ? err.message : t('simplefin.connectionFailed'));
-    }
-  }
-
-  async function handleSync(full = false) {
-    setActiveSyncMode(full ? 'full' : 'normal');
-    setSyncResult(null);
-    try {
-      const res = await syncMutation.mutateAsync(full);
-      setSyncResult(res.data.data.result);
-    } finally {
-      setActiveSyncMode(null);
     }
   }
 
@@ -214,20 +196,10 @@ function SimplefinSection() {
               )}
 
               <div className="flex gap-2 flex-wrap">
-                <Button variant="default" onClick={() => void handleSync(false)} disabled={syncMutation.isPending}>
-                  {activeSyncMode === 'normal' ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                  )}
+                <Button variant="default" isLoading={activeSyncMode === 'normal'} onClick={() => void handleSync(false)} disabled={isSyncPending}>
                   {t('simplefin.syncNow')}
                 </Button>
-                <Button variant="outline" onClick={() => void handleSync(true)} disabled={syncMutation.isPending} title={t('simplefin.fullSyncHelp')}>
-                  {activeSyncMode === 'full' ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                  )}
+                <Button variant="outline" isLoading={activeSyncMode === 'full'} onClick={() => void handleSync(true)} disabled={isSyncPending} title={t('simplefin.fullSyncHelp')}>
                   {t('simplefin.fullSync')}
                 </Button>
 

@@ -1,6 +1,14 @@
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { simplefinApi } from '../api/simplefinApi';
 import type { MapAccountAction, ResolveReviewAction, UpdateScheduleInput } from '../types';
+
+export interface SyncResult {
+  imported: number;
+  skipped: number;
+  pendingReviews: number;
+  unmappedAccounts: number;
+}
 
 const KEYS = {
   status: ['simplefin', 'status'] as const,
@@ -114,6 +122,34 @@ export function useSyncNow() {
       void qc.invalidateQueries({ queryKey: ['dashboard', 'hints'] });
     },
   });
+}
+
+/**
+ * Wraps useSyncNow with local UI state for per-button spinner tracking and result display.
+ * Both the ImportsPage and IntegrationsSettingsPage use this identical pattern.
+ */
+export function useManualSync() {
+  const syncMutation = useSyncNow();
+  const [activeSyncMode, setActiveSyncMode] = useState<'normal' | 'full' | null>(null);
+  const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
+
+  async function handleSync(full = false) {
+    setSyncResult(null);
+    setActiveSyncMode(full ? 'full' : 'normal');
+    try {
+      const res = await syncMutation.mutateAsync(full);
+      setSyncResult(res.data.data.result);
+    } finally {
+      setActiveSyncMode(null);
+    }
+  }
+
+  return {
+    activeSyncMode,
+    syncResult,
+    handleSync,
+    isPending: syncMutation.isPending,
+  };
 }
 
 export function useUpdateSchedule() {
