@@ -31,7 +31,11 @@ router.patch(
   accountController.update
 );
 router.delete('/:id', requireScope('accounts:write'), accountController.archive);
-router.get('/:id/transaction-count', requireScope('accounts:read'), accountController.transactionCount);
+router.get(
+  '/:id/transaction-count',
+  requireScope('accounts:read'),
+  accountController.transactionCount
+);
 router.delete('/:id/permanent', requireScope('accounts:write'), accountController.destroy);
 
 // ─── Account share management ─────────────────────────────────────────────────

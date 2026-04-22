@@ -109,10 +109,9 @@ function safeJsonParse<T>(raw: unknown, fallback: T): T {
 function mapRow(row: Record<string, unknown>): DashboardConfig {
   return {
     userId: String(row['user_id']),
-    widgetVisibility: safeJsonParse<Record<WidgetId, boolean>>(
-      row['widget_visibility'],
-      { ...DEFAULT_WIDGET_VISIBILITY }
-    ),
+    widgetVisibility: safeJsonParse<Record<WidgetId, boolean>>(row['widget_visibility'], {
+      ...DEFAULT_WIDGET_VISIBILITY,
+    }),
     excludedAccountIds: safeJsonParse<string[]>(row['excluded_account_ids'], []),
     layouts: safeJsonParse<DashboardLayouts>(row['layouts'], buildDefaultLayouts()),
     updatedAt: new Date(String(row['updated_at'])),

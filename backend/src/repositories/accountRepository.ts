@@ -126,7 +126,10 @@ class AccountRepository {
   }
 
   async countTransactions(id: string): Promise<number> {
-    const result = await this.db('transactions').where({ account_id: id }).count('* as cnt').first();
+    const result = await this.db('transactions')
+      .where({ account_id: id })
+      .count('* as cnt')
+      .first();
     return Number((result as Record<string, unknown>)?.['cnt'] ?? 0);
   }
 
