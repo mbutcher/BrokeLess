@@ -15,6 +15,7 @@ class TransactionController {
     const filters: TransactionFilters = {
       accountId: query['accountId'],
       categoryId: query['categoryId'],
+      budgetLineId: query['budgetLineId'],
       startDate: query['startDate'],
       endDate: query['endDate'],
       isTransfer: query['isTransfer'] !== undefined ? query['isTransfer'] === 'true' : undefined,

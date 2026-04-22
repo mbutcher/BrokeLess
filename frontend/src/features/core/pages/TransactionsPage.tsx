@@ -46,6 +46,7 @@ export function TransactionsPage() {
     tag: searchParams.get('tag') || undefined,
     categoryId: searchParams.get('categoryId') || undefined,
     accountId: searchParams.get('accountId') || undefined,
+    budgetLineId: searchParams.get('budgetLineId') || undefined,
   });
   const [searchInput, setSearchInput] = useState(initialQ);
 
@@ -57,6 +58,7 @@ export function TransactionsPage() {
       tag: searchParams.get('tag') || undefined,
       categoryId: searchParams.get('categoryId') || undefined,
       accountId: searchParams.get('accountId') || undefined,
+      budgetLineId: searchParams.get('budgetLineId') || undefined,
       page: 1,
     }));
   }, [searchParams]);

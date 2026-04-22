@@ -145,6 +145,7 @@ export interface UpdateTransactionData {
 export interface TransactionFilters {
   accountId?: string;
   categoryId?: string;
+  budgetLineId?: string;
   startDate?: string;
   endDate?: string;
   isTransfer?: boolean;

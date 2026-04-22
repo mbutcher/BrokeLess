@@ -344,27 +344,26 @@ class BudgetLineService {
 
     const lines = await budgetLineRepository.findAllForUser(userId);
 
-    // Gather all category + subcategory IDs for batch actuals query
-    const expenseCategoryIds = new Set<string>();
-    const incomeCategoryIds = new Set<string>();
-
-    for (const line of lines) {
-      const effectiveId = line.subcategoryId ?? line.categoryId;
-      if (line.classification === 'expense') {
-        expenseCategoryIds.add(effectiveId);
-      } else {
-        incomeCategoryIds.add(effectiveId);
-      }
-    }
-
-    // Fetch actuals for all budget lines in one query each
-    const [expenseActuals, incomeActuals] = await Promise.all([
-      budgetLineRepository.getActuals(userId, [...expenseCategoryIds], start, end),
-      budgetLineRepository.getIncomeActuals(userId, [...incomeCategoryIds], start, end),
-    ]);
-
-    const expenseActualsMap = new Map(expenseActuals.map((a) => [a.categoryId, a.actualAmount]));
-    const incomeActualsMap = new Map(incomeActuals.map((a) => [a.categoryId, a.actualAmount]));
+    // Fetch actuals per budget line: budget_line_id match OR (no link + category match).
+    // Running in parallel is fine — users typically have < 40 lines.
+    const actualsPerLine = new Map(
+      await Promise.all(
+        lines.map(
+          async (line) =>
+            [
+              line.id,
+              await budgetLineRepository.getActualsForLine(
+                userId,
+                line.id,
+                line.subcategoryId ?? line.categoryId,
+                start,
+                end,
+                line.classification === 'income'
+              ),
+            ] as [string, number]
+        )
+      )
+    );
 
     // Build Budget View Lines
     const viewLines: BudgetViewLine[] = lines.map((line) => {
@@ -378,9 +377,7 @@ class BudgetLineService {
         windowEnd
       );
 
-      const effectiveCategoryId = line.subcategoryId ?? line.categoryId;
-      const actualsMap = line.classification === 'income' ? incomeActualsMap : expenseActualsMap;
-      const actual = actualsMap.get(effectiveCategoryId) ?? 0;
+      const actual = actualsPerLine.get(line.id) ?? 0;
 
       const occurrenceDates = computeOccurrences(
         anchor,
