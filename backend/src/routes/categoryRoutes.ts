@@ -18,6 +18,7 @@ router.post(
   categoryController.create
 );
 router.get('/:id', requireScope('categories:read'), categoryController.getById);
+router.get('/:id/usage', requireScope('categories:read'), categoryController.getUsage);
 router.patch(
   '/:id',
   requireScope('categories:write'),
@@ -25,5 +26,10 @@ router.patch(
   categoryController.update
 );
 router.delete('/:id', requireScope('categories:write'), categoryController.archive);
+router.post(
+  '/:id/reassign',
+  requireScope('categories:write'),
+  categoryController.reassignAndArchive
+);
 
 export default router;

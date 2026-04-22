@@ -131,6 +131,26 @@ class BudgetLineRepository {
     return this.findById(id, userId);
   }
 
+  /** Count active budget lines referencing a category (either as category_id or subcategory_id). */
+  async countByCategoryId(userId: string, categoryId: string): Promise<number> {
+    const result = await this.db('budget_lines')
+      .where('user_id', userId)
+      .where('is_active', true)
+      .where(this.db.raw('(category_id = ? OR subcategory_id = ?)', [categoryId, categoryId]))
+      .count('id as count')
+      .first();
+    return Number(result?.['count'] ?? 0);
+  }
+
+  /** Count transactions referencing a category. */
+  async countTransactionsByCategoryId(userId: string, categoryId: string): Promise<number> {
+    const result = await this.db('transactions')
+      .where({ user_id: userId, category_id: categoryId })
+      .count('id as count')
+      .first();
+    return Number(result?.['count'] ?? 0);
+  }
+
   /** Soft-delete: sets is_active = false. */
   async softDelete(id: string, userId: string): Promise<void> {
     await this.db('budget_lines').where({ id, user_id: userId }).update({ is_active: false });

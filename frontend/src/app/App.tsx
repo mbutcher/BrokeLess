@@ -25,6 +25,7 @@ import { AccountSettingsPage } from '@features/settings/pages/AccountSettingsPag
 import { IntegrationsSettingsPage } from '@features/settings/pages/IntegrationsSettingsPage';
 import { HouseholdSetupPage } from '@features/household/pages/HouseholdSetupPage';
 import { HouseholdSettingsPage } from '@features/household/pages/HouseholdSettingsPage';
+import { CategoriesSettingsPage } from '@features/settings/pages/CategoriesSettingsPage';
 
 /**
  * AuthInitializer calls GET /auth/me on mount to restore session from
@@ -89,6 +90,7 @@ function App() {
           <Route path="/settings/integrations" element={<IntegrationsSettingsPage />} />
           <Route path="/settings/security" element={<SecuritySettingsPage />} />
           <Route path="/settings/household" element={<HouseholdSettingsPage />} />
+          <Route path="/settings/categories" element={<CategoriesSettingsPage />} />
           {/* Legacy route redirects */}
           <Route path="/settings" element={<Navigate to="/settings/account" replace />} />
           <Route path="/settings/preferences" element={<Navigate to="/settings/account" replace />} />

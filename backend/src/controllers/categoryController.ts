@@ -14,6 +14,15 @@ class CategoryController {
     res.json({ status: 'success', data: { category } });
   });
 
+  getUsage = asyncHandler(async (req: Request, res: Response) => {
+    const usage = await categoryService.getCategoryUsage(
+      req.user!.householdId!,
+      req.params['id']!,
+      req.user!.id
+    );
+    res.json({ status: 'success', data: { usage } });
+  });
+
   create = asyncHandler(async (req: Request, res: Response) => {
     const input = req.body as Omit<CreateCategoryData, 'householdId'>;
     const category = await categoryService.createCategory(req.user!.householdId!, input);
@@ -33,6 +42,17 @@ class CategoryController {
   archive = asyncHandler(async (req: Request, res: Response) => {
     await categoryService.archiveCategory(req.user!.householdId!, req.params['id']!);
     res.json({ status: 'success', data: null });
+  });
+
+  reassignAndArchive = asyncHandler(async (req: Request, res: Response) => {
+    const { targetCategoryId } = req.body as { targetCategoryId: string | null };
+    const result = await categoryService.reassignAndArchive(
+      req.user!.householdId!,
+      req.params['id']!,
+      req.user!.id,
+      targetCategoryId ?? null
+    );
+    res.json({ status: 'success', data: result });
   });
 }
 
