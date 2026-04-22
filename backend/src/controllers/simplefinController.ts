@@ -89,6 +89,11 @@ class SimplefinController {
     await simplefinService.resolveReview(req.user!.id, reviewId!, action, targetTransactionId);
     res.json({ status: 'success', data: null });
   });
+
+  bulkAcceptReviews = asyncHandler(async (req: Request, res: Response) => {
+    const result = await simplefinService.bulkAcceptReviews(req.user!.id);
+    res.json({ status: 'success', data: result });
+  });
 }
 
 export const simplefinController = new SimplefinController();

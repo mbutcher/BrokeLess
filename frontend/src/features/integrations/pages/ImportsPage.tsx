@@ -14,6 +14,7 @@ import {
   useMapAccount,
   useResolveReview,
   useManualSync,
+  useBulkAcceptReviews,
 } from '../hooks/useSimplefin';
 import type { SimplefinAccountMapping, SimplefinPendingReview, MapAccountAction } from '../types';
 import { useTranslation } from 'react-i18next';
@@ -298,6 +299,7 @@ export function ImportsPage() {
   const { data: unmapped = [], isLoading: loadingUnmapped } = useUnmappedAccounts();
   const { data: reviews = [], isLoading: loadingReviews } = usePendingReviews();
   const { activeSyncMode, syncResult, handleSync, isPending } = useManualSync();
+  const bulkAccept = useBulkAcceptReviews();
 
   const isLoading = loadingUnmapped || loadingReviews;
 
@@ -347,9 +349,11 @@ export function ImportsPage() {
         <Alert className="border-green-200 bg-green-50">
           <CheckCircle2 className="h-4 w-4 text-green-600" />
           <AlertDescription className="text-green-800 text-sm">
-            Sync complete — {syncResult.imported} imported, {syncResult.skipped} skipped
-            {syncResult.pendingReviews > 0 && `, ${syncResult.pendingReviews} pending review(s)`}
+            Sync complete — SimpleFIN returned {syncResult.total} transaction(s):
+            {' '}{syncResult.imported} imported, {syncResult.skipped} skipped
+            {syncResult.pendingReviews > 0 && `, ${syncResult.pendingReviews} flagged for review`}
             {syncResult.unmappedAccounts > 0 && `, ${syncResult.unmappedAccounts} unmapped account(s)`}
+            {syncResult.total === 0 && ' — your bank may not have more history available.'}
           </AlertDescription>
         </Alert>
       )}
@@ -373,16 +377,31 @@ export function ImportsPage() {
       {/* ─── Pending Reviews ─────────────────────────────────────────────────── */}
       {reviews.length > 0 && (
         <section className="space-y-3">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">Pending Reviews</h2>
-            <Alert className="border-blue-200 bg-blue-50">
-              <AlertCircle className="h-4 w-4 text-blue-600" />
-              <AlertDescription className="text-blue-800 text-sm">
-                These imported transactions closely match existing entries. Review each one to
-                decide whether to import, mark as duplicate, or discard.
-              </AlertDescription>
-            </Alert>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Pending Reviews ({reviews.length})
+              </h2>
+              <p className="text-sm text-gray-500 mt-0.5">
+                These transactions closely match existing entries. Review each one, or import all as new.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              isLoading={bulkAccept.isPending}
+              onClick={() => void bulkAccept.mutateAsync()}
+              className="shrink-0"
+            >
+              Import All as New
+            </Button>
           </div>
+          <Alert className="border-blue-200 bg-blue-50">
+            <AlertCircle className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-800 text-sm">
+              These were flagged because they may already exist. If you manually entered these transactions, use "Mark as duplicate." If they're new, use "Import as new" — or click "Import All as New" above.
+            </AlertDescription>
+          </Alert>
           {reviews.map((r) => (
             <ReviewCard key={r.id} review={r} />
           ))}

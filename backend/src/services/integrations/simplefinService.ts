@@ -66,7 +66,13 @@ class SimplefinService {
 
     await simplefinRepository.updateSyncStatus(userId, 'pending');
 
-    const result: SyncResult = { imported: 0, skipped: 0, pendingReviews: 0, unmappedAccounts: 0 };
+    const result: SyncResult = {
+      imported: 0,
+      skipped: 0,
+      pendingReviews: 0,
+      unmappedAccounts: 0,
+      total: 0,
+    };
 
     try {
       const plainAccessUrl = encryptionService.decrypt(accessUrlEncrypted);
@@ -89,9 +95,7 @@ class SimplefinService {
         simplefinAccountMappingRepository.findAllByUser(userId),
       ]);
 
-      const mappingBySimplefinId = new Map(
-        existingMappings.map((m) => [m.simplefinAccountId, m])
-      );
+      const mappingBySimplefinId = new Map(existingMappings.map((m) => [m.simplefinAccountId, m]));
 
       for (const sfAccount of apiResponse.accounts) {
         const mapping = mappingBySimplefinId.get(sfAccount.id) ?? null;
@@ -134,6 +138,7 @@ class SimplefinService {
         }
 
         // Import transactions for this mapped account
+        result.total += sfAccount.transactions.length;
         const txResult = await this.importTransactions(
           userId,
           mapping.localAccountId,
@@ -390,6 +395,38 @@ class SimplefinService {
     }
 
     await simplefinPendingReviewRepository.delete(userId, reviewId);
+  }
+
+  async bulkAcceptReviews(userId: string): Promise<{ accepted: number }> {
+    const reviews = await simplefinPendingReviewRepository.findAllByUser(userId);
+    let accepted = 0;
+    for (const review of reviews) {
+      if (!review.localAccountId) continue;
+      const sfTx = review.rawData;
+      const sfAmount = parseFloat(sfTx.amount);
+      if (isNaN(sfAmount)) continue;
+      const sfDate = new Date(sfTx.posted * 1000).toISOString().slice(0, 10);
+      try {
+        await transactionRepository.create({
+          userId,
+          accountId: review.localAccountId,
+          amount: sfAmount,
+          payee: encryptionService.encrypt(sfTx.description),
+          date: sfDate,
+          simplefinTransactionId: sfTx.id,
+        });
+        accepted++;
+      } catch (err) {
+        // Unique constraint violation: already imported — remove the stale review and move on
+        logger.warn('bulkAcceptReviews: skipping already-imported review', {
+          reviewId: review.id,
+          simplefinTxId: sfTx.id,
+          err,
+        });
+      }
+      await simplefinPendingReviewRepository.delete(userId, review.id);
+    }
+    return { accepted };
   }
 
   // ─── Schedule ─────────────────────────────────────────────────────────────

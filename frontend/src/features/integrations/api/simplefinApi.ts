@@ -70,4 +70,7 @@ export const simplefinApi = {
 
   resolveReview: (reviewId: string, data: ResolveReviewAction) =>
     apiClient.post<ApiResponse<null>>(`/simplefin/reviews/${reviewId}/resolve`, data),
+
+  bulkAcceptReviews: () =>
+    apiClient.post<ApiResponse<{ accepted: number }>>('/simplefin/reviews/bulk-accept', {}),
 };
