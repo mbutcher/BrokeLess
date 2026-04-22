@@ -104,6 +104,7 @@ export const updateTransactionSchema = Joi.object({
   notes: Joi.string().max(5000).allow(null, ''),
   date: Joi.string().pattern(ISO_DATE),
   categoryId: Joi.string().uuid().allow(null),
+  budgetLineId: Joi.string().uuid().allow(null),
   isCleared: Joi.boolean(),
   tags: Joi.array().items(Joi.string().trim().lowercase().min(1).max(50)).max(20),
 }).min(1);

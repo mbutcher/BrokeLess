@@ -134,6 +134,7 @@ class SyncController {
       notes: r['notes'] != null ? encryptionService.decrypt(String(r['notes'])) : null,
       date: new Date(String(r['date'])),
       categoryId: r['category_id'] != null ? String(r['category_id']) : null,
+      budgetLineId: r['budget_line_id'] != null ? String(r['budget_line_id']) : null,
       isTransfer: Boolean(r['is_transfer']),
       isCleared: Boolean(r['is_cleared']),
       createdAt: new Date(String(r['created_at'])),

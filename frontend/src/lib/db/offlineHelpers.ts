@@ -173,6 +173,7 @@ export function buildLocalTransaction(
     notes: data.notes ?? null,
     date: data.date,
     categoryId: data.categoryId ?? null,
+    budgetLineId: null,
     isTransfer: false,
     isCleared: false,
     createdAt: now,

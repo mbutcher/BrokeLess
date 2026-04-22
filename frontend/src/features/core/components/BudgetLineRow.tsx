@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -63,6 +64,7 @@ export function BudgetLineRow({ viewLine, subcategoryName }: BudgetLineRowProps)
   const [expanded, setExpanded] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const { currency: formatCurrency } = useFormatters();
+  const navigate = useNavigate();
   const updateLine = useUpdateBudgetLine();
   const deleteLine = useDeleteBudgetLine();
 
@@ -321,6 +323,18 @@ export function BudgetLineRow({ viewLine, subcategoryName }: BudgetLineRowProps)
               onClick={() => setExpanded(false)}
             >
               Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const params = new URLSearchParams({ categoryId: line.categoryId });
+                if (line.accountId) params.set('accountId', line.accountId);
+                navigate(`/transactions?${params.toString()}`);
+              }}
+            >
+              View Transactions
             </Button>
             <div className="ml-auto">
               {confirmDelete ? (

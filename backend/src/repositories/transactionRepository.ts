@@ -21,6 +21,7 @@ function rowToTransaction(row: Record<string, unknown>): Transaction {
     notes: (row['notes'] as string | null) ?? null,
     date: new Date(row['date'] as string),
     categoryId: (row['category_id'] as string | null) ?? null,
+    budgetLineId: (row['budget_line_id'] as string | null) ?? null,
     isTransfer: Boolean(row['is_transfer']),
     isCleared: Boolean(row['is_cleared']),
     createdAt: new Date(row['created_at'] as string),
@@ -166,6 +167,7 @@ class TransactionRepository {
     if (data.notes !== undefined) updates['notes'] = data.notes;
     if (data.date !== undefined) updates['date'] = data.date;
     if (data.categoryId !== undefined) updates['category_id'] = data.categoryId;
+    if (data.budgetLineId !== undefined) updates['budget_line_id'] = data.budgetLineId;
     if (data.isCleared !== undefined) updates['is_cleared'] = data.isCleared;
 
     if (Object.keys(updates).length > 0) {

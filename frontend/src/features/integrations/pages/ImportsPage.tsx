@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { RefreshCw, Loader2, CheckCircle2, AlertCircle, Building2, ArrowLeftRight } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Building2, ArrowLeftRight, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@components/ui/card';
 import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
@@ -13,7 +13,7 @@ import {
   useSimplefinStatus,
   useMapAccount,
   useResolveReview,
-  useSyncNow,
+  useManualSync,
 } from '../hooks/useSimplefin';
 import type { SimplefinAccountMapping, SimplefinPendingReview, MapAccountAction } from '../types';
 import { useTranslation } from 'react-i18next';
@@ -297,19 +297,7 @@ export function ImportsPage() {
   const { data: connection } = useSimplefinStatus();
   const { data: unmapped = [], isLoading: loadingUnmapped } = useUnmappedAccounts();
   const { data: reviews = [], isLoading: loadingReviews } = usePendingReviews();
-  const syncMutation = useSyncNow();
-  const [syncResult, setSyncResult] = useState<{
-    imported: number;
-    skipped: number;
-    pendingReviews: number;
-    unmappedAccounts: number;
-  } | null>(null);
-
-  async function handleSync() {
-    setSyncResult(null);
-    const res = await syncMutation.mutateAsync(false);
-    setSyncResult(res.data.data.result);
-  }
+  const { activeSyncMode, syncResult, handleSync, isPending } = useManualSync();
 
   const isLoading = loadingUnmapped || loadingReviews;
 
@@ -333,18 +321,25 @@ export function ImportsPage() {
           </p>
         </div>
         {connection && (
-          <Button
-            variant="outline"
-            onClick={handleSync}
-            disabled={syncMutation.isPending}
-          >
-            {syncMutation.isPending ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="mr-2 h-4 w-4" />
-            )}
-            Sync Now
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              isLoading={activeSyncMode === 'full'}
+              onClick={() => void handleSync(true)}
+              disabled={isPending}
+              title="Fetch all available history from SimpleFIN"
+            >
+              Full Sync
+            </Button>
+            <Button
+              variant="outline"
+              isLoading={activeSyncMode === 'normal'}
+              onClick={() => void handleSync(false)}
+              disabled={isPending}
+            >
+              Sync Now
+            </Button>
+          </div>
         )}
       </div>
 

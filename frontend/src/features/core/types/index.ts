@@ -92,6 +92,7 @@ export interface Transaction {
   notes: string | null;
   date: string;
   categoryId: string | null;
+  budgetLineId: string | null;
   isTransfer: boolean;
   isCleared: boolean;
   createdAt: string;
@@ -118,6 +119,7 @@ export interface UpdateTransactionInput {
   notes?: string | null;
   date?: string;
   categoryId?: string | null;
+  budgetLineId?: string | null;
   isCleared?: boolean;
   tags?: string[];
 }
