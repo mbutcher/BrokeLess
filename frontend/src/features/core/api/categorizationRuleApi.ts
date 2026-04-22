@@ -10,7 +10,7 @@ export const categorizationRuleApi = {
   list: () =>
     apiClient.get<ApiResponse<{ rules: CategorizationRule[] }>>('/categorization-rules'),
 
-  create: (data: { payee: string; categoryId?: string | null; budgetLineId?: string | null }) =>
+  create: (data: { payee: string; budgetLineId?: string | null }) =>
     apiClient.post<ApiResponse<{ rule: CategorizationRule }>>('/categorization-rules', data),
 
   delete: (id: string) =>

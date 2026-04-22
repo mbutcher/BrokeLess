@@ -1,6 +1,5 @@
 import { categoryRepository } from '@repositories/categoryRepository';
 import { budgetLineRepository } from '@repositories/budgetLineRepository';
-import { transactionRepository } from '@repositories/transactionRepository';
 import { AppError } from '@middleware/errorHandler';
 import type { Category, CreateCategoryData, UpdateCategoryData } from '@typings/core.types';
 
@@ -408,26 +407,20 @@ class CategoryService {
   }
 
   /**
-   * Reassigns all transactions from one category to another, then archives the source.
-   * `targetCategoryId` may be null to simply clear the category on those transactions.
+   * Archives the category. Transaction categories are derived from budget lines, so no
+   * transaction reassignment is needed.
    */
   async reassignAndArchive(
     householdId: string,
     id: string,
-    userId: string,
-    targetCategoryId: string | null
+    _userId: string,
+    _targetCategoryId: string | null
   ): Promise<{ reassigned: number }> {
     const existing = await categoryRepository.findById(id, householdId);
     if (!existing) throw new AppError('Category not found', 404);
 
-    if (targetCategoryId) {
-      const target = await categoryRepository.findById(targetCategoryId, householdId);
-      if (!target) throw new AppError('Target category not found', 404);
-    }
-
-    const reassigned = await transactionRepository.reassignCategory(userId, id, targetCategoryId);
     await categoryRepository.softDelete(id, householdId);
-    return { reassigned };
+    return { reassigned: 0 };
   }
 
   async archiveCategory(householdId: string, id: string): Promise<void> {

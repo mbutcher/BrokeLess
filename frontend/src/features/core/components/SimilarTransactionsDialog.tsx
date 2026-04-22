@@ -18,20 +18,17 @@ import {
 import type { Transaction } from '../types';
 
 interface SimilarTransactionsDialogProps {
-  /** The transaction that was just categorized */
+  /** The transaction that was just assigned to a budget line */
   sourceTransaction: Transaction;
-  /** Category that was applied */
-  categoryId: string | null;
   /** Budget line that was applied */
   budgetLineId: string | null;
-  /** Human-readable label for the category / budget line applied */
+  /** Human-readable label for the budget line applied */
   appliedLabel: string;
   onClose: () => void;
 }
 
 export function SimilarTransactionsDialog({
   sourceTransaction,
-  categoryId,
   budgetLineId,
   appliedLabel,
   onClose,
@@ -52,7 +49,7 @@ export function SimilarTransactionsDialog({
       setSelected(
         new Set(
           similar
-            .filter((tx) => !tx.categoryId && !tx.budgetLineId)
+            .filter((tx) => !tx.budgetLineId)
             .map((tx) => tx.id)
         )
       );
@@ -75,12 +72,12 @@ export function SimilarTransactionsDialog({
   async function handleApply() {
     const ids = Array.from(selected);
     if (ids.length > 0) {
-      await bulkCategorize.mutateAsync({ transactionIds: ids, categoryId, budgetLineId });
+      await bulkCategorize.mutateAsync({ transactionIds: ids, budgetLineId });
     }
     if (saveAsRule) {
       const payee = sourceTransaction.payee ?? sourceTransaction.description;
       if (payee) {
-        await createRule.mutateAsync({ payee, categoryId, budgetLineId });
+        await createRule.mutateAsync({ payee, budgetLineId });
       }
     }
     setDone(true);

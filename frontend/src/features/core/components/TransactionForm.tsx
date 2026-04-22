@@ -4,7 +4,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
 import { useAccounts } from '../hooks/useAccounts';
-import { useCategories } from '../hooks/useCategories';
 import { useCreateTransaction, useUpdateTransaction, useAllTags } from '../hooks/useTransactions';
 import type { Transaction } from '../types';
 
@@ -15,7 +14,6 @@ const transactionSchema = z.object({
   payee: z.string().max(512).optional(),
   notes: z.string().max(5000).optional(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
-  categoryId: z.string().uuid().optional().or(z.literal('')),
   isCleared: z.boolean().optional(),
 });
 
@@ -40,7 +38,6 @@ export function TransactionForm({
   const { t } = useTranslation();
   const isEditing = Boolean(transaction);
   const { data: accounts = [] } = useAccounts();
-  const { data: categories = [] } = useCategories();
   const createTx = useCreateTransaction();
   const updateTx = useUpdateTransaction();
   const { data: allTags = [] } = useAllTags();
@@ -66,7 +63,6 @@ export function TransactionForm({
           payee: transaction.payee ?? '',
           notes: transaction.notes ?? '',
           date: transaction.date.split('T')[0] ?? '',
-          categoryId: transaction.categoryId ?? '',
           isCleared: transaction.isCleared,
         }
       : {
@@ -127,7 +123,6 @@ export function TransactionForm({
       payee: data.payee || undefined,
       notes: data.notes || undefined,
       date: data.date,
-      categoryId: data.categoryId || undefined,
       tags,
     };
 
@@ -138,21 +133,6 @@ export function TransactionForm({
     }
     onSuccess();
   }
-
-  const activeCategories = categories.filter((c) => c.isActive);
-  const topLevelIncome = activeCategories.filter((c) => c.isIncome && c.parentId === null);
-  const topLevelExpense = activeCategories.filter((c) => !c.isIncome && c.parentId === null);
-  const subcategoryMap = new Map<string, typeof categories>(
-    activeCategories
-      .filter((c) => c.parentId !== null)
-      .reduce<[string, typeof categories][]>((acc, c) => {
-        const key = c.parentId!;
-        const existing = acc.find(([k]) => k === key);
-        if (existing) existing[1].push(c);
-        else acc.push([key, [c]]);
-        return acc;
-      }, [])
-  );
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -176,59 +156,18 @@ export function TransactionForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-1">
-            Amount <span className="text-muted-foreground text-xs">(negative = expense)</span>
-          </label>
-          <input
-            type="number"
-            step="0.01"
-            {...register('amount', { valueAsNumber: true })}
-            className={inputClass}
-            placeholder="-45.00"
-          />
-          {errors.amount && <p className="text-destructive text-xs mt-1">{errors.amount.message}</p>}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-1">Category</label>
-          <select {...register('categoryId')} className={inputClass}>
-            <option value="">{t('transactions.uncategorised')}</option>
-            {topLevelIncome.length > 0 && (
-              <>
-                <option disabled>── Income ──</option>
-                {topLevelIncome.map((parent) => {
-                  const subs = subcategoryMap.get(parent.id) ?? [];
-                  return subs.length > 0 ? (
-                    <optgroup key={parent.id} label={parent.name}>
-                      <option value={parent.id}>{parent.name} (general)</option>
-                      {subs.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                    </optgroup>
-                  ) : (
-                    <option key={parent.id} value={parent.id}>{parent.name}</option>
-                  );
-                })}
-              </>
-            )}
-            {topLevelExpense.length > 0 && (
-              <>
-                <option disabled>── Expenses ──</option>
-                {topLevelExpense.map((parent) => {
-                  const subs = subcategoryMap.get(parent.id) ?? [];
-                  return subs.length > 0 ? (
-                    <optgroup key={parent.id} label={parent.name}>
-                      <option value={parent.id}>{parent.name} (general)</option>
-                      {subs.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                    </optgroup>
-                  ) : (
-                    <option key={parent.id} value={parent.id}>{parent.name}</option>
-                  );
-                })}
-              </>
-            )}
-          </select>
-        </div>
+      <div>
+        <label className="block text-sm font-medium text-foreground mb-1">
+          Amount <span className="text-muted-foreground text-xs">(negative = expense)</span>
+        </label>
+        <input
+          type="number"
+          step="0.01"
+          {...register('amount', { valueAsNumber: true })}
+          className={inputClass}
+          placeholder="-45.00"
+        />
+        {errors.amount && <p className="text-destructive text-xs mt-1">{errors.amount.message}</p>}
       </div>
 
       <div>

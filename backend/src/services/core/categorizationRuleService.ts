@@ -9,7 +9,6 @@ function rowToRule(row: {
   id: string;
   user_id: string;
   payee_encrypted: string;
-  category_id: string | null;
   budget_line_id: string | null;
   created_at: string;
   updated_at: string;
@@ -18,7 +17,6 @@ function rowToRule(row: {
     id: row.id,
     userId: row.user_id,
     payee: encryptionService.decrypt(row.payee_encrypted),
-    categoryId: row.category_id,
     budgetLineId: row.budget_line_id,
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
@@ -43,7 +41,7 @@ class CategorizationRuleService {
       userId,
       payeeEncrypted,
       tokenHashes,
-      data.categoryId ?? null,
+      null,
       data.budgetLineId ?? null
     );
     return rowToRule(row);
@@ -72,7 +70,6 @@ class CategorizationRuleService {
     await transactionRepository.bulkCategorize(
       userId,
       [transactionId],
-      rule.category_id,
       rule.budget_line_id
     );
   }

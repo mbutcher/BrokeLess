@@ -55,7 +55,7 @@ export function useCreateBudgetLine() {
           categoryId: data.categoryId,
           subcategoryId: data.subcategoryId ?? null,
           accountId: data.accountId ?? null,
-          amount: data.amount,
+          amount: data.amount ?? 0,
           frequency: data.frequency,
           frequencyInterval: data.frequencyInterval ?? null,
           dayOfMonth1: data.dayOfMonth1 ?? null,

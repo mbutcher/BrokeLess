@@ -92,7 +92,6 @@ export const createTransactionSchema = Joi.object({
     'any.required': 'Date is required',
     'string.pattern.base': 'Date must be in YYYY-MM-DD format',
   }),
-  categoryId: Joi.string().uuid().optional().allow(null),
   tags: Joi.array().items(Joi.string().trim().lowercase().min(1).max(50)).max(20).optional(),
 });
 
@@ -103,7 +102,6 @@ export const updateTransactionSchema = Joi.object({
   payee: Joi.string().max(512).allow(null, ''),
   notes: Joi.string().max(5000).allow(null, ''),
   date: Joi.string().pattern(ISO_DATE),
-  categoryId: Joi.string().uuid().allow(null),
   budgetLineId: Joi.string().uuid().allow(null),
   isCleared: Joi.boolean(),
   tags: Joi.array().items(Joi.string().trim().lowercase().min(1).max(50)).max(20),
@@ -111,7 +109,6 @@ export const updateTransactionSchema = Joi.object({
 
 export const transactionFiltersSchema = Joi.object({
   accountId: Joi.string().uuid(),
-  categoryId: Joi.string().uuid(),
   startDate: Joi.string().pattern(ISO_DATE),
   endDate: Joi.string().pattern(ISO_DATE),
   isTransfer: Joi.boolean(),
@@ -274,9 +271,13 @@ export const createBudgetLineSchema = Joi.object({
   }),
   subcategoryId: Joi.string().uuid().optional().allow(null),
   accountId: Joi.string().uuid().optional().allow(null),
-  amount: Joi.number().positive().precision(2).required().messages({
-    'any.required': 'amount is required',
-    'number.positive': 'amount must be a positive number',
+  amount: Joi.when('flexibility', {
+    is: 'flexible',
+    then: Joi.number().positive().precision(2).optional().allow(null),
+    otherwise: Joi.number().positive().precision(2).required().messages({
+      'any.required': 'amount is required',
+      'number.positive': 'amount must be a positive number',
+    }),
   }),
   frequency: Joi.string()
     .valid(...BUDGET_LINE_FREQUENCIES)

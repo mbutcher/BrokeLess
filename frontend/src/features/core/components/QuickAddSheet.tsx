@@ -5,7 +5,6 @@ import { Button } from '@components/ui/button';
 import { Input } from '@components/ui/input';
 import { Label } from '@components/ui/label';
 import { useAccounts } from '../hooks/useAccounts';
-import { useCategories } from '../hooks/useCategories';
 import { useCreateTransaction } from '../hooks/useTransactions';
 import type { CreateTransactionInput } from '../types';
 
@@ -17,18 +16,15 @@ interface Props {
 export function QuickAddSheet({ open, onClose }: Props) {
   const { t } = useTranslation();
   const { data: accounts = [] } = useAccounts();
-  const { data: categories = [] } = useCategories();
   const { mutate: createTx, isPending } = useCreateTransaction();
 
   const activeAccounts = accounts.filter((a) => a.isActive);
-  const expenseCategories = categories.filter((c) => !c.isIncome && c.isActive);
 
   const today = new Date().toISOString().slice(0, 10);
 
   const [amount, setAmount] = useState('');
   const [payee, setPayee] = useState('');
   const [accountId, setAccountId] = useState('');
-  const [categoryId, setCategoryId] = useState('');
   const [date, setDate] = useState(today);
 
   // Sync accountId once accounts load (avoids stale empty string on initial render)
@@ -42,7 +38,6 @@ export function QuickAddSheet({ open, onClose }: Props) {
     setAmount('');
     setPayee('');
     setAccountId(activeAccounts[0]?.id ?? '');
-    setCategoryId('');
     setDate(today);
   }
 
@@ -61,7 +56,6 @@ export function QuickAddSheet({ open, onClose }: Props) {
       amount: -Math.abs(parsed), // expenses are negative
       payee: payee.trim() || undefined,
       date,
-      categoryId: categoryId || undefined,
     };
 
     createTx(input, {
@@ -119,22 +113,6 @@ export function QuickAddSheet({ open, onClose }: Props) {
             >
               {activeAccounts.map((a) => (
                 <option key={a.id} value={a.id}>{a.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Category */}
-          <div className="space-y-1">
-            <Label htmlFor="qa-category">{t('quickAdd.category')}</Label>
-            <select
-              id="qa-category"
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-              className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="">{t('quickAdd.noCategory')}</option>
-              {expenseCategories.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
           </div>

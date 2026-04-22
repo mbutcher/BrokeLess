@@ -14,7 +14,6 @@ class TransactionController {
     const query = req.query as Record<string, string | undefined>;
     const filters: TransactionFilters = {
       accountId: query['accountId'],
-      categoryId: query['categoryId'],
       budgetLineId: query['budgetLineId'],
       startDate: query['startDate'],
       endDate: query['endDate'],
@@ -91,15 +90,13 @@ class TransactionController {
   });
 
   bulkCategorize = asyncHandler(async (req: Request, res: Response) => {
-    const { transactionIds, categoryId, budgetLineId } = req.body as {
+    const { transactionIds, budgetLineId } = req.body as {
       transactionIds: string[];
-      categoryId?: string | null;
       budgetLineId?: string | null;
     };
     const updated = await transactionService.bulkCategorize(
       req.user!.id,
       transactionIds,
-      categoryId,
       budgetLineId
     );
     res.json({ status: 'success', data: { updated } });

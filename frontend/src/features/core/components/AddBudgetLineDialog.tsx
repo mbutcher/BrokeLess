@@ -40,7 +40,7 @@ const schema = z
     categoryId: z.string().uuid('Category is required'),
     subcategoryId: z.preprocess((v) => (v === '' ? null : v), z.string().uuid().optional().nullable()),
     accountId: z.preprocess((v) => (v === '' ? null : v), z.string().uuid().optional().nullable()),
-    amount: z.number().positive('Amount must be positive').finite(),
+    amount: z.number().positive('Amount must be positive').finite().optional(),
     frequency: z.enum([
       'weekly', 'biweekly', 'semi_monthly', 'twice_monthly', 'monthly', 'every_n_days', 'annually', 'one_time',
     ]),
@@ -84,7 +84,7 @@ interface AddBudgetLineDialogProps {
   defaultAccountId?: string;
   defaultNotes?: string;
   onClose: () => void;
-  onCreated?: (budgetLineId: string, categoryId: string, categoryName: string) => void;
+  onCreated?: (budgetLineId: string, categoryName: string) => void;
 }
 
 export function AddBudgetLineDialog({
@@ -181,9 +181,8 @@ export function AddBudgetLineDialog({
           reset();
           onClose();
           if (onCreated && bl) {
-            const catName =
-              allCategories.find((c) => c.id === bl.categoryId)?.name ?? '';
-            onCreated(bl.id, bl.categoryId, catName);
+            const catName = allCategories.find((c) => c.id === bl.categoryId)?.name ?? '';
+            onCreated(bl.id, catName);
           }
         },
       }
@@ -300,21 +299,23 @@ export function AddBudgetLineDialog({
             </div>
           )}
 
-          {/* Amount */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Amount per occurrence</label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
-              <input
-                type="number"
-                step="0.01"
-                min="0.01"
-                {...register('amount', { valueAsNumber: true })}
-                className="w-full pl-7 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+          {/* Amount — hidden for flexible lines */}
+          {watchedFlexibility === 'fixed' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Amount per occurrence</label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  {...register('amount', { valueAsNumber: true })}
+                  className="w-full pl-7 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              {errors.amount && <p className="text-xs text-red-600 mt-1">{errors.amount.message}</p>}
             </div>
-            {errors.amount && <p className="text-xs text-red-600 mt-1">{errors.amount.message}</p>}
-          </div>
+          )}
 
           {/* Frequency */}
           <div>
@@ -381,11 +382,9 @@ export function AddBudgetLineDialog({
             </div>
           )}
 
-          {/* Anchor date */}
+          {/* Start date */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {watchedFrequency === 'twice_monthly' ? 'Starting from (anchor date)' : 'Anchor date'}
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Start date</label>
             <input
               type="date"
               {...register('anchorDate')}

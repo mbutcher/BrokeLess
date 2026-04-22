@@ -17,7 +17,6 @@ function DateFilterInput({ value, onChange }: { value: string; onChange: (v: str
   );
 }
 import { useAccounts } from '../hooks/useAccounts';
-import { useCategories } from '../hooks/useCategories';
 import { useAllTags } from '../hooks/useTransactions';
 import { TransactionList } from '../components/TransactionList';
 import { TransactionForm } from '../components/TransactionForm';
@@ -30,7 +29,6 @@ export function TransactionsPage() {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const { data: accounts = [] } = useAccounts();
-  const { data: categories = [] } = useCategories();
   const { data: allTags = [] } = useAllTags();
   const isOnline = useNetworkStore((s) => s.isOnline);
 
@@ -44,7 +42,6 @@ export function TransactionsPage() {
     limit: 50,
     q: initialQ || undefined,
     tag: searchParams.get('tag') || undefined,
-    categoryId: searchParams.get('categoryId') || undefined,
     accountId: searchParams.get('accountId') || undefined,
     budgetLineId: searchParams.get('budgetLineId') || undefined,
   });
@@ -56,7 +53,6 @@ export function TransactionsPage() {
     setFilters((f) => ({
       ...f,
       tag: searchParams.get('tag') || undefined,
-      categoryId: searchParams.get('categoryId') || undefined,
       accountId: searchParams.get('accountId') || undefined,
       budgetLineId: searchParams.get('budgetLineId') || undefined,
       page: 1,
@@ -85,7 +81,7 @@ export function TransactionsPage() {
 
       {/* Filters */}
       <div className="bg-card border border-border rounded-xl p-4 mb-4 space-y-3">
-        <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
           <div>
             <label className="block text-xs text-muted-foreground mb-1">{t('transactions.filterAccount')}</label>
             <select
@@ -96,19 +92,6 @@ export function TransactionsPage() {
               <option value="">{t('transactions.allAccounts')}</option>
               {accounts.filter((a) => a.isActive).map((a) => (
                 <option key={a.id} value={a.id}>{a.name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-muted-foreground mb-1">{t('transactions.filterCategory')}</label>
-            <select
-              className="w-full border border-border rounded-lg px-2 py-1.5 text-sm bg-background text-foreground"
-              value={filters.categoryId ?? ''}
-              onChange={(e) => setFilters((f) => ({ ...f, categoryId: e.target.value || undefined, page: 1 }))}
-            >
-              <option value="">{t('transactions.allCategories')}</option>
-              {categories.filter((c) => c.isActive).map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
           </div>
