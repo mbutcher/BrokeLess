@@ -1,4 +1,6 @@
 import { categoryRepository } from '@repositories/categoryRepository';
+import { budgetLineRepository } from '@repositories/budgetLineRepository';
+import { transactionRepository } from '@repositories/transactionRepository';
 import { AppError } from '@middleware/errorHandler';
 import type { Category, CreateCategoryData, UpdateCategoryData } from '@typings/core.types';
 
@@ -28,6 +30,11 @@ const DEFAULT_CATEGORIES: Array<Omit<CreateCategoryData, 'householdId'>> = [
   { name: 'Other Expense', icon: 'more-horizontal', color: '#6b7280', isIncome: false },
 ];
 
+export interface CategoryUsage {
+  transactionCount: number;
+  budgetLineCount: number;
+}
+
 class CategoryService {
   /**
    * Called at household setup to populate the category list with sensible defaults.
@@ -44,6 +51,16 @@ class CategoryService {
     const category = await categoryRepository.findById(id, householdId);
     if (!category) throw new AppError('Category not found', 404);
     return category;
+  }
+
+  async getCategoryUsage(householdId: string, id: string, userId: string): Promise<CategoryUsage> {
+    const category = await categoryRepository.findById(id, householdId);
+    if (!category) throw new AppError('Category not found', 404);
+    const [transactionCount, budgetLineCount] = await Promise.all([
+      budgetLineRepository.countTransactionsByCategoryId(userId, id),
+      budgetLineRepository.countByCategoryId(userId, id),
+    ]);
+    return { transactionCount, budgetLineCount };
   }
 
   async createCategory(
@@ -63,6 +80,29 @@ class CategoryService {
 
     const updated = await categoryRepository.update(id, householdId, input);
     return updated!;
+  }
+
+  /**
+   * Reassigns all transactions from one category to another, then archives the source.
+   * `targetCategoryId` may be null to simply clear the category on those transactions.
+   */
+  async reassignAndArchive(
+    householdId: string,
+    id: string,
+    userId: string,
+    targetCategoryId: string | null
+  ): Promise<{ reassigned: number }> {
+    const existing = await categoryRepository.findById(id, householdId);
+    if (!existing) throw new AppError('Category not found', 404);
+
+    if (targetCategoryId) {
+      const target = await categoryRepository.findById(targetCategoryId, householdId);
+      if (!target) throw new AppError('Target category not found', 404);
+    }
+
+    const reassigned = await transactionRepository.reassignCategory(userId, id, targetCategoryId);
+    await categoryRepository.softDelete(id, householdId);
+    return { reassigned };
   }
 
   async archiveCategory(householdId: string, id: string): Promise<void> {

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { categoryApi } from '../api/categoryApi';
+export type { CategoryUsage } from '../api/categoryApi';
 import { db } from '@lib/db';
 import {
   isOfflineError,
@@ -128,5 +129,29 @@ export function useArchiveCategory() {
       return categoryApi.archive(id);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: CATEGORIES_KEY }),
+  });
+}
+
+export function useCategoryUsage(id: string | null) {
+  return useQuery({
+    queryKey: ['category-usage', id],
+    queryFn: async () => {
+      const res = await categoryApi.getUsage(id!);
+      return res.data.data.usage;
+    },
+    enabled: id !== null,
+  });
+}
+
+export function useReassignAndArchiveCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, targetCategoryId }: { id: string; targetCategoryId: string | null }) =>
+      categoryApi.reassignAndArchive(id, targetCategoryId),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: CATEGORIES_KEY });
+      void qc.invalidateQueries({ queryKey: ['transactions'] });
+      void qc.invalidateQueries({ queryKey: ['budget-view'] });
+    },
   });
 }

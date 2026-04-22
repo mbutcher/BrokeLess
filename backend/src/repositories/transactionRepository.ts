@@ -179,6 +179,17 @@ class TransactionRepository {
     return row ? rowToTransaction(row as Record<string, unknown>) : null;
   }
 
+  /** Bulk-reassigns all transactions from one category to another for a user. Returns affected count. */
+  async reassignCategory(
+    userId: string,
+    fromCategoryId: string,
+    toCategoryId: string | null
+  ): Promise<number> {
+    return this.db('transactions')
+      .where({ user_id: userId, category_id: fromCategoryId })
+      .update({ category_id: toCategoryId, updated_at: new Date().toISOString() });
+  }
+
   async delete(id: string, userId: string, trx?: Knex.Transaction): Promise<void> {
     const db = trx ?? this.db;
     await db('transactions').where({ id, user_id: userId }).delete();
