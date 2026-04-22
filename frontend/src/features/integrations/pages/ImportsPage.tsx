@@ -350,7 +350,7 @@ export function ImportsPage() {
           <CheckCircle2 className="h-4 w-4 text-green-600" />
           <AlertDescription className="text-green-800 text-sm">
             Sync complete — SimpleFIN returned {syncResult.total} transaction(s):
-            {' '}{syncResult.imported} imported, {syncResult.skipped} already on file
+            {' '}{syncResult.imported} imported, {syncResult.skipped} skipped
             {syncResult.pendingReviews > 0 && `, ${syncResult.pendingReviews} flagged for review`}
             {syncResult.unmappedAccounts > 0 && `, ${syncResult.unmappedAccounts} unmapped account(s)`}
             {syncResult.total === 0 && ' — your bank may not have more history available.'}

@@ -406,16 +406,25 @@ class SimplefinService {
       const sfAmount = parseFloat(sfTx.amount);
       if (isNaN(sfAmount)) continue;
       const sfDate = new Date(sfTx.posted * 1000).toISOString().slice(0, 10);
-      await transactionRepository.create({
-        userId,
-        accountId: review.localAccountId,
-        amount: sfAmount,
-        payee: encryptionService.encrypt(sfTx.description),
-        date: sfDate,
-        simplefinTransactionId: sfTx.id,
-      });
+      try {
+        await transactionRepository.create({
+          userId,
+          accountId: review.localAccountId,
+          amount: sfAmount,
+          payee: encryptionService.encrypt(sfTx.description),
+          date: sfDate,
+          simplefinTransactionId: sfTx.id,
+        });
+        accepted++;
+      } catch (err) {
+        // Unique constraint violation: already imported — remove the stale review and move on
+        logger.warn('bulkAcceptReviews: skipping already-imported review', {
+          reviewId: review.id,
+          simplefinTxId: sfTx.id,
+          err,
+        });
+      }
       await simplefinPendingReviewRepository.delete(userId, review.id);
-      accepted++;
     }
     return { accepted };
   }
