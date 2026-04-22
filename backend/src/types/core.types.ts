@@ -97,8 +97,7 @@ export interface Transaction {
   /** AES-256-GCM encrypted at rest */
   notes: string | null;
   date: Date;
-  categoryId: string | null;
-  /** Optional link to a budget line — set when this transaction was used to create one. */
+  /** Category is derived from this budget line. */
   budgetLineId: string | null;
   isTransfer: boolean;
   isCleared: boolean;
@@ -123,7 +122,6 @@ export interface CreateTransactionData {
   payee?: string;
   notes?: string;
   date: string; // ISO date string 'YYYY-MM-DD'
-  categoryId?: string;
   /** Set when importing from SimpleFIN — used for deduplication on subsequent syncs */
   simplefinTransactionId?: string;
   tags?: string[];
@@ -136,7 +134,6 @@ export interface UpdateTransactionData {
   payee?: string | null;
   notes?: string | null;
   date?: string;
-  categoryId?: string | null;
   budgetLineId?: string | null;
   isCleared?: boolean;
   tags?: string[];
@@ -144,7 +141,6 @@ export interface UpdateTransactionData {
 
 export interface TransactionFilters {
   accountId?: string;
-  categoryId?: string;
   budgetLineId?: string;
   startDate?: string;
   endDate?: string;
@@ -164,7 +160,6 @@ export interface CategorizationRule {
   userId: string;
   /** Plaintext payee — decrypted in API responses */
   payee: string;
-  categoryId: string | null;
   budgetLineId: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -176,7 +171,6 @@ export interface CategorizationRuleRow {
   user_id: string;
   payee_encrypted: string;
   token_hashes: string; // JSON
-  category_id: string | null;
   budget_line_id: string | null;
   created_at: string;
   updated_at: string;
@@ -185,7 +179,6 @@ export interface CategorizationRuleRow {
 export interface CreateCategorizationRuleData {
   userId: string;
   payee: string;
-  categoryId?: string | null;
   budgetLineId?: string | null;
 }
 

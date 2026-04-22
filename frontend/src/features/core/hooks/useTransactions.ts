@@ -226,7 +226,6 @@ export function useBulkCategorizeTx() {
   return useMutation({
     mutationFn: (data: {
       transactionIds: string[];
-      categoryId?: string | null;
       budgetLineId?: string | null;
     }) => transactionApi.bulkCategorize(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: TRANSACTIONS_KEY }),
@@ -248,7 +247,7 @@ export function useCategorizationRules() {
 export function useCreateCategorizationRule() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { payee: string; categoryId?: string | null; budgetLineId?: string | null }) =>
+    mutationFn: (data: { payee: string; budgetLineId?: string | null }) =>
       categorizationRuleApi.create(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: CATEGORIZATION_RULES_KEY }),
   });

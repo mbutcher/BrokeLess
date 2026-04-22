@@ -20,7 +20,11 @@ class TotpBackupCodeRepository {
   }
 
   async createBatch(userId: string, codeHashes: string[]): Promise<void> {
-    const rows = codeHashes.map((codeHash) => ({ id: randomUUID(), user_id: userId, code_hash: codeHash }));
+    const rows = codeHashes.map((codeHash) => ({
+      id: randomUUID(),
+      user_id: userId,
+      code_hash: codeHash,
+    }));
     await this.db('totp_backup_codes').insert(rows);
   }
 

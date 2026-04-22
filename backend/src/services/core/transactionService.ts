@@ -340,15 +340,14 @@ class TransactionService {
   }
 
   /**
-   * Bulk-updates categoryId and/or budgetLineId on a set of the user's transactions.
+   * Bulk-updates budgetLineId on a set of the user's transactions.
    */
   async bulkCategorize(
     userId: string,
     transactionIds: string[],
-    categoryId: string | null | undefined,
     budgetLineId: string | null | undefined
   ): Promise<number> {
-    return transactionRepository.bulkCategorize(userId, transactionIds, categoryId, budgetLineId);
+    return transactionRepository.bulkCategorize(userId, transactionIds, budgetLineId);
   }
 
   /**

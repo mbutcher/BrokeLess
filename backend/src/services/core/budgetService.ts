@@ -79,7 +79,10 @@ class BudgetService {
       if (!householdId) throw new AppError('Household not found', 404);
 
       const categoryIds = entries.map((e) => e.categoryId);
-      const validCategories = await categoryRepository.findManyByHousehold(categoryIds, householdId);
+      const validCategories = await categoryRepository.findManyByHousehold(
+        categoryIds,
+        householdId
+      );
       if (validCategories.length !== categoryIds.length) {
         throw new AppError('One or more categories not found', 404);
       }

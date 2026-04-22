@@ -166,7 +166,7 @@ interface TxRow {
   payee: string;
   description: string | null;
   date: string;
-  category_id: string | null;
+  budget_line_id: string | null;
   is_transfer: boolean;
   is_cleared: boolean;
 }
@@ -222,7 +222,7 @@ function addTx(
   amount: number,
   payee: string,
   date: string,
-  categoryId: string | null,
+  budgetLineId: string | null,
   isTransfer = false,
   isCleared = true,
   description: string | null = null
@@ -235,7 +235,7 @@ function addTx(
     payee: encryptionService.encrypt(payee),
     description: description ? encryptionService.encrypt(description) : null,
     date: d(date),
-    category_id: categoryId,
+    budget_line_id: budgetLineId,
     is_transfer: isTransfer,
     is_cleared: isCleared,
   });
@@ -253,12 +253,10 @@ function addTransfer(
   amount: number,
   payee: string,
   date: string,
-  fromCatId: string | null,
-  toCatId: string | null,
   linkType: 'transfer' | 'payment' = 'transfer'
 ): void {
-  addTx(arr, fromId, fromUserId, fromAccountId, -amount, payee, date, fromCatId, true);
-  addTx(arr, toId, toUserId, toAccountId, amount, payee, date, toCatId, true);
+  addTx(arr, fromId, fromUserId, fromAccountId, -amount, payee, date, null, true);
+  addTx(arr, toId, toUserId, toAccountId, amount, payee, date, null, true);
   links.push({
     id: uid('000d', ++_linkSeq),
     from_transaction_id: fromId,
@@ -278,9 +276,9 @@ function addDebtPayment(
   interest: number,
   payee: string,
   date: string,
-  categoryId: string | null
+  budgetLineId: string | null
 ): void {
-  addTx(arr, txId, userId, accountId, -total, payee, date, categoryId);
+  addTx(arr, txId, userId, accountId, -total, payee, date, budgetLineId);
   splits.push({
     id: uid('000e', ++_splitSeq),
     transaction_id: txId,
@@ -1162,55 +1160,51 @@ export async function seed(knex: Knex): Promise<void> {
   const splits: SplitRow[] = [];
 
   // ── Alpha transactions ─────────────────────────────────────────────────────
-  // Helper aliases
+  // Helper aliases — map to budget line IDs; null = no matching budget line
   const A = ALPHA_ID;
+  const aSalary = A_BL_SALARY;
+  const aClientPmts = A_BL_FREELANCE;
+  const aRentMortgage = A_BL_RENT;
+  const aElectricity = A_BL_HYDRO;
+  const aInternet = A_BL_INTERNET;
+  const aHomeInsurance = A_BL_HOME_INS;
+  const aGroceries = A_BL_GROCERIES;
+  const aDiningOut = A_BL_DINING;
+  const aCoffee = A_BL_COFFEE;
+  const aFuel = A_BL_GAS;
+  const aVehicleIns = A_BL_CAR_INS;
+  const aVehicleLoan = A_BL_CAR_PMT;
+  const aGym = A_BL_GYM;
+  const aStreaming = A_BL_NETFLIX; // covers Netflix + Spotify transactions
+  // No budget lines for these — will be unassigned
+  const aDoctor: string | null = null;
+  const aPharmacy: string | null = null;
+  const aPersonalCare: string | null = null;
+  const aClothing: string | null = null;
+  const aEvents: string | null = null;
+  const aHouseholdGoods: string | null = null;
+  const aGiftsGiven: string | null = null;
 
-  // Shorthand category lookups for Alpha
-  const aClientPmts = catId(alphaCats, 'Client Payments');
-  const aSalary = catId(alphaCats, 'Salary / Wages');
-  const aRentMortgage = catId(alphaCats, 'Rent / Mortgage');
-  const aElectricity = catId(alphaCats, 'Electricity');
-  const aInternet = catId(alphaCats, 'Internet');
-  const aHomeInsurance = catId(alphaCats, 'Home Insurance');
-  const aGroceries = catId(alphaCats, 'Groceries');
-  const aDiningOut = catId(alphaCats, 'Dining Out');
-  const aCoffee = catId(alphaCats, 'Coffee & Cafes');
-  const aFuel = catId(alphaCats, 'Fuel / Gas');
-  const aVehicleIns = catId(alphaCats, 'Vehicle Insurance');
-  const aVehicleLoan = catId(alphaCats, 'Vehicle Loan');
-  const aDoctor = catId(alphaCats, 'Medical / Doctor');
-  const aPharmacy = catId(alphaCats, 'Vision & Pharmacy');
-  const aGym = catId(alphaCats, 'Fitness / Gym');
-  const aPersonalCare = catId(alphaCats, 'Personal Care');
-  const aClothing = catId(alphaCats, 'Clothing');
-  const aStreaming = catId(alphaCats, 'Streaming Services');
-  const aEvents = catId(alphaCats, 'Events & Tickets');
-  const aHouseholdGoods = catId(alphaCats, 'Household Goods');
-  const aGiftsGiven = catId(alphaCats, 'Gifts Given');
-  const aCcPayment = catId(alphaCats, 'Credit Card Payment');
-  const aTransfers = catId(alphaCats, 'Transfers');
-
-  // Shorthand category lookups for Beta
+  // Shorthand budget line refs for Beta
   const B = BETA_ID;
-  const bSalary = catId(betaCats, 'Salary / Wages');
-  const bOtherIncome = catId(betaCats, 'Other Income');
-  const bRentMortgage = catId(betaCats, 'Rent / Mortgage');
-  const bElectricity = catId(betaCats, 'Electricity');
-  const bInternet = catId(betaCats, 'Internet');
-  const bGroceries = catId(betaCats, 'Groceries');
-  const bDiningOut = catId(betaCats, 'Dining Out');
-  const bCoffee = catId(betaCats, 'Coffee & Cafes');
-  const bFuel = catId(betaCats, 'Fuel / Gas');
-  const bVehicleIns = catId(betaCats, 'Vehicle Insurance');
-  const bGym = catId(betaCats, 'Fitness / Gym');
-  const bStreaming = catId(betaCats, 'Streaming Services');
-  const bEvents = catId(betaCats, 'Events & Tickets');
-  const bHouseholdGoods = catId(betaCats, 'Household Goods');
-  const bElectronics = catId(betaCats, 'Electronics');
-  const bGiftsGiven = catId(betaCats, 'Gifts Given');
-  const bCcPayment = catId(betaCats, 'Credit Card Payment');
-  const bStudentLoan = catId(betaCats, 'Student Loan');
-  const bTransfers = catId(betaCats, 'Transfers');
+  const bSalary = B_BL_SALARY;
+  const bOtherIncome = B_BL_SIDE_INCOME;
+  const bRentMortgage = B_BL_MORTGAGE;
+  const bElectricity = B_BL_UTILITIES;
+  const bInternet = B_BL_INTERNET;
+  const bGroceries = B_BL_GROCERIES;
+  const bDiningOut = B_BL_DINING;
+  const bCoffee = B_BL_COFFEE;
+  const bFuel = B_BL_GAS;
+  const bVehicleIns = B_BL_CAR_INS;
+  const bGym = B_BL_GYM;
+  const bStreaming = B_BL_NETFLIX; // covers Netflix + Spotify transactions
+  const bStudentLoan = B_BL_STUDENT_LOAN;
+  // No budget lines for these — will be unassigned
+  const bEvents: string | null = null;
+  const bHouseholdGoods: string | null = null;
+  const bElectronics: string | null = null;
+  const bGiftsGiven: string | null = null;
 
   // September 2025
   addTx(txns, atx(), A, A_CHECKING, 3200.0, 'Employer Direct Deposit', '2025-09-03', aSalary);
@@ -1278,8 +1272,6 @@ export async function seed(knex: Knex): Promise<void> {
     1200.0,
     'Credit Card Payment',
     '2025-09-30',
-    aCcPayment,
-    aTransfers,
     'payment'
   );
 
@@ -1373,8 +1365,6 @@ export async function seed(knex: Knex): Promise<void> {
     1500.0,
     'Credit Card Payment',
     '2025-10-31',
-    aCcPayment,
-    aTransfers,
     'payment'
   );
 
@@ -1469,8 +1459,6 @@ export async function seed(knex: Knex): Promise<void> {
     500.0,
     'Savings Transfer',
     '2025-11-29',
-    aTransfers,
-    aTransfers,
     'transfer'
   );
   const aNovCcFromId = atx();
@@ -1487,8 +1475,6 @@ export async function seed(knex: Knex): Promise<void> {
     1100.0,
     'Credit Card Payment',
     '2025-11-30',
-    aCcPayment,
-    aTransfers,
     'payment'
   );
 
@@ -1642,8 +1628,6 @@ export async function seed(knex: Knex): Promise<void> {
     2200.0,
     'Credit Card Payment',
     '2025-12-31',
-    aCcPayment,
-    aTransfers,
     'payment'
   );
 
@@ -1740,8 +1724,6 @@ export async function seed(knex: Knex): Promise<void> {
     1400.0,
     'Credit Card Payment',
     '2026-01-31',
-    aCcPayment,
-    aTransfers,
     'payment'
   );
 
@@ -1922,8 +1904,6 @@ export async function seed(knex: Knex): Promise<void> {
     900.0,
     'Credit Card Payment',
     '2025-11-30',
-    bCcPayment,
-    bTransfers,
     'payment'
   );
 
@@ -2036,8 +2016,6 @@ export async function seed(knex: Knex): Promise<void> {
     800.0,
     'Transfer to Savings',
     '2025-12-30',
-    bTransfers,
-    bTransfers,
     'transfer'
   );
   const bDecCcFromId = btx();
@@ -2054,8 +2032,6 @@ export async function seed(knex: Knex): Promise<void> {
     1400.0,
     'Credit Card Payment',
     '2025-12-31',
-    bCcPayment,
-    bTransfers,
     'payment'
   );
 
@@ -2121,8 +2097,6 @@ export async function seed(knex: Knex): Promise<void> {
     800.0,
     'Credit Card Payment',
     '2026-01-31',
-    bCcPayment,
-    bTransfers,
     'payment'
   );
 

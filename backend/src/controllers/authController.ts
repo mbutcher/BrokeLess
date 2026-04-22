@@ -24,7 +24,9 @@ function getRequestMeta(req: Request) {
 
 class AuthController {
   register = asyncHandler(async (req: Request, res: Response) => {
-    const user = await authService.register(req.body as { username: string; email: string; password: string });
+    const user = await authService.register(
+      req.body as { username: string; email: string; password: string }
+    );
     res.status(201).json({ status: 'success', data: { user } });
   });
 

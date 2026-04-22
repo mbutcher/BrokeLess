@@ -157,7 +157,6 @@ export function buildLocalTransaction(
     notes?: string;
     date: string;
     tags?: string[];
-    categoryId?: string;
   },
   localId: string,
   userId: string
@@ -172,7 +171,6 @@ export function buildLocalTransaction(
     payee: data.payee ?? null,
     notes: data.notes ?? null,
     date: data.date,
-    categoryId: data.categoryId ?? null,
     budgetLineId: null,
     isTransfer: false,
     isCleared: false,

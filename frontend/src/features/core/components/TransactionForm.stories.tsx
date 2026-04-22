@@ -99,7 +99,7 @@ export const EditExpense: Story = {
 
 export const EditIncome: Story = {
   args: {
-    transaction: { ...mockTransactionList[2]!, amount: 2500, categoryId: 'cat-income' },
+    transaction: { ...mockTransactionList[2]!, amount: 2500 },
     onSuccess: () => {},
     onCancel: () => {},
   },

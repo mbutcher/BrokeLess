@@ -161,7 +161,12 @@ class DialectHelper {
   ): Promise<void> {
     if (rows.length === 0) return;
     const placeholders = rows.map(() => '(?, ?, ?, ?)').join(', ');
-    const values = rows.flatMap((r) => [randomUUID(), r.budget_id, r.category_id, r.allocated_amount]);
+    const values = rows.flatMap((r) => [
+      randomUUID(),
+      r.budget_id,
+      r.category_id,
+      r.allocated_amount,
+    ]);
 
     if (this.client === 'mysql2') {
       await db.raw(

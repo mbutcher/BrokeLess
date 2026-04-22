@@ -74,7 +74,9 @@ export async function up(knex: Knex): Promise<void> {
 
     // Recreate indexes that existed on the original accounts table.
     await knex.raw('CREATE INDEX accounts_user_id_index ON accounts (user_id)');
-    await knex.raw('CREATE INDEX accounts_user_id_is_active_index ON accounts (user_id, is_active)');
+    await knex.raw(
+      'CREATE INDEX accounts_user_id_is_active_index ON accounts (user_id, is_active)'
+    );
     await knex.raw(
       'CREATE UNIQUE INDEX accounts_user_id_simplefin_account_id_unique ON accounts (user_id, simplefin_account_id)'
     );

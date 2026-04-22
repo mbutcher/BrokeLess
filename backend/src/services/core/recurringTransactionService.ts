@@ -167,7 +167,6 @@ class RecurringTransactionService {
                 payee: record.payee ?? undefined,
                 notes: record.notes ?? undefined,
                 date: nextDue,
-                categoryId: record.categoryId ?? undefined,
               },
               trx
             );

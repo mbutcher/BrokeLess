@@ -447,7 +447,6 @@ export function CategoriesSettingsPage() {
   const [archiveTarget, setArchiveTarget] = useState<Category | null>(null);
 
   const budgetLines = budgetLinesData ?? [];
-  const categoryMap = new Map(categories.map((c) => [c.id, c]));
   const budgetLineMap = new Map(budgetLines.map((bl) => [bl.id, bl]));
 
   const active = categories.filter((c) => c.isActive);
@@ -568,12 +567,8 @@ export function CategoriesSettingsPage() {
           ) : (
             <div className="space-y-1">
               {rules.map((rule) => {
-                const category = rule.categoryId ? categoryMap.get(rule.categoryId) : null;
                 const budgetLine = rule.budgetLineId ? budgetLineMap.get(rule.budgetLineId) : null;
-                const appliesToParts: string[] = [];
-                if (category) appliesToParts.push(category.name);
-                if (budgetLine) appliesToParts.push(budgetLine.name);
-                const appliesTo = appliesToParts.join(' / ') || t('categorizationRules.noCategory');
+                const appliesTo = budgetLine?.name ?? t('categorizationRules.noCategory');
 
                 return (
                   <div

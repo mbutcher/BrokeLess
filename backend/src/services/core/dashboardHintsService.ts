@@ -57,24 +57,30 @@ class DashboardHintsService {
     const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
 
     // Run all hint queries in parallel
-    const [uncatCount, overAvgCategories, anchorRow, flexibleLineCount, dashboardRow, unlinkedSfCount] =
-      await Promise.all([
-        // Uncategorised transactions this month
-        db('transactions')
-          .where({ user_id: userId, is_transfer: false })
-          .whereNull('category_id')
-          .where('date', '>=', monthStart)
-          .where('date', '<=', monthEnd)
-          .count({ cnt: '*' })
-          .first() as Promise<TxCountRow | undefined>,
+    const [
+      uncatCount,
+      overAvgCategories,
+      anchorRow,
+      flexibleLineCount,
+      dashboardRow,
+      unlinkedSfCount,
+    ] = await Promise.all([
+      // Uncategorised transactions this month
+      db('transactions')
+        .where({ user_id: userId, is_transfer: false })
+        .whereNull('budget_line_id')
+        .where('date', '>=', monthStart)
+        .where('date', '<=', monthEnd)
+        .count({ cnt: '*' })
+        .first() as Promise<TxCountRow | undefined>,
 
-        // Categories where this month's spend > 3-month average by ≥15%.
-        // current_total is computed in a separate LEFT JOIN subquery to avoid
-        // the N×M Cartesian product (monthly_totals × transactions) that would
-        // inflate the SUM when a category has multiple months of history.
-        db
-          .raw(
-            `
+      // Categories where this month's spend > 3-month average by ≥15%.
+      // current_total is computed in a separate LEFT JOIN subquery to avoid
+      // the N×M Cartesian product (monthly_totals × transactions) that would
+      // inflate the SUM when a category has multiple months of history.
+      db
+        .raw(
+          `
         SELECT
           c.name AS category_name,
           COALESCE(curr.current_total, 0) AS current_total,
@@ -111,37 +117,43 @@ class DashboardHintsService {
           AND (current_total / AVG(monthly_totals.monthly_spend)) > 1.15
         LIMIT 3
         `,
-            [userId, monthStart, monthStart, userId, monthStart, monthEnd]
-          )
-          .then((result: unknown) => dialectHelper.rawRows<CategoryAvgRow>(result))
-          .catch(() => [] as CategoryAvgRow[]),
+          [userId, monthStart, monthStart, userId, monthStart, monthEnd]
+        )
+        .then((result: unknown) => dialectHelper.rawRows<CategoryAvgRow>(result))
+        .catch(() => [] as CategoryAvgRow[]),
 
-        // Fetch the pay-period anchor budget line (if one exists)
-        db('budget_lines')
-          .where({ user_id: userId, is_pay_period_anchor: true, is_active: true })
-          .select('frequency', 'anchor_date', 'frequency_interval', 'day_of_month_1', 'day_of_month_2')
-          .first() as Promise<AnchorRow | undefined>,
+      // Fetch the pay-period anchor budget line (if one exists)
+      db('budget_lines')
+        .where({ user_id: userId, is_pay_period_anchor: true, is_active: true })
+        .select(
+          'frequency',
+          'anchor_date',
+          'frequency_interval',
+          'day_of_month_1',
+          'day_of_month_2'
+        )
+        .first() as Promise<AnchorRow | undefined>,
 
-        // Count of active flexible expense budget lines (needed for rollover + annual review hints)
-        db('budget_lines')
-          .where({
-            user_id: userId,
-            classification: 'expense',
-            flexibility: 'flexible',
-            is_active: true,
-          })
-          .count({ cnt: '*' })
-          .first() as Promise<FlexibleLineCountRow | undefined>,
+      // Count of active flexible expense budget lines (needed for rollover + annual review hints)
+      db('budget_lines')
+        .where({
+          user_id: userId,
+          classification: 'expense',
+          flexibility: 'flexible',
+          is_active: true,
+        })
+        .count({ cnt: '*' })
+        .first() as Promise<FlexibleLineCountRow | undefined>,
 
-        // Dashboard config row — for acknowledged_rollovers and budget_lines_last_reviewed_at
-        db('user_dashboard_config')
-          .where({ user_id: userId })
-          .select('budget_lines_last_reviewed_at', 'acknowledged_rollovers')
-          .first() as Promise<BudgetReviewRow | undefined>,
+      // Dashboard config row — for acknowledged_rollovers and budget_lines_last_reviewed_at
+      db('user_dashboard_config')
+        .where({ user_id: userId })
+        .select('budget_lines_last_reviewed_at', 'acknowledged_rollovers')
+        .first() as Promise<BudgetReviewRow | undefined>,
 
-        // Unlinked SimpleFIN accounts (non-ignored)
-        simplefinAccountMappingRepository.countUnlinkedActive(userId),
-      ]);
+      // Unlinked SimpleFIN accounts (non-ignored)
+      simplefinAccountMappingRepository.countUnlinkedActive(userId),
+    ]);
 
     // 1. Uncategorised transactions
     const uncatNum = Number(uncatCount?.cnt ?? 0);
@@ -210,9 +222,10 @@ class DashboardHintsService {
       if (dashboardRow?.acknowledged_rollovers) {
         try {
           const raw = dashboardRow.acknowledged_rollovers;
-          acknowledgedRollovers = (
-            typeof raw === 'string' ? JSON.parse(raw) : raw
-          ) as Record<string, string>;
+          acknowledgedRollovers = (typeof raw === 'string' ? JSON.parse(raw) : raw) as Record<
+            string,
+            string
+          >;
         } catch {
           // Corrupt JSON — treat as empty (no acknowledged rollovers)
         }

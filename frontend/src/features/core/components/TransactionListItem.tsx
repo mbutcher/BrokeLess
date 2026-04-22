@@ -2,20 +2,18 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@lib/utils';
-import { CategoryBadge } from './CategoryBadge';
 import { AddBudgetLineDialog } from './AddBudgetLineDialog';
 import { SimilarTransactionsDialog } from './SimilarTransactionsDialog';
 import { useDeleteTransaction, useUpdateTransaction } from '../hooks/useTransactions';
-import type { Transaction, Category, Account, BudgetLineClassification } from '../types';
+import type { Transaction, Account, BudgetLineClassification } from '../types';
 
 export interface TransactionListItemProps {
   transaction: Transaction;
-  category: Category | null;
   account: Account | undefined;
   onEdit?: (tx: Transaction) => void;
 }
 
-export function TransactionListItem({ transaction: tx, category, account, onEdit }: TransactionListItemProps) {
+export function TransactionListItem({ transaction: tx, account, onEdit }: TransactionListItemProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const deleteTx = useDeleteTransaction();
@@ -24,7 +22,6 @@ export function TransactionListItem({ transaction: tx, category, account, onEdit
   const [showBudgetLineDialog, setShowBudgetLineDialog] = useState(false);
   const [similarTarget, setSimilarTarget] = useState<{
     budgetLineId: string;
-    categoryId: string | null;
     categoryName: string;
   } | null>(null);
   const isExpense = tx.amount < 0;
@@ -52,7 +49,6 @@ export function TransactionListItem({ transaction: tx, category, account, onEdit
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               <span className="text-xs text-muted-foreground">{tx.date.split('T')[0]}</span>
               {account && <span className="text-xs text-muted-foreground">· {account.name}</span>}
-              <CategoryBadge category={category} />
               {tx.isCleared && <span className="text-xs text-green-500">✓</span>}
               {tx.tags?.slice(0, 3).map((tag) => (
                 <span key={tag} className="text-xs bg-muted text-muted-foreground rounded px-1.5 py-0.5">
@@ -135,14 +131,13 @@ export function TransactionListItem({ transaction: tx, category, account, onEdit
         defaultName={tx.payee ?? tx.description ?? ''}
         defaultAmount={Math.abs(tx.amount)}
         defaultClassification={(tx.amount < 0 ? 'expense' : 'income') as BudgetLineClassification}
-        defaultCategoryId={tx.categoryId ?? undefined}
         defaultAccountId={tx.accountId}
         defaultAnchorDate={tx.date.split('T')[0]}
         defaultNotes={tx.notes ?? undefined}
         onClose={() => setShowBudgetLineDialog(false)}
-        onCreated={(budgetLineId, categoryId, categoryName) => {
-          void updateTx.mutateAsync({ id: tx.id, data: { budgetLineId, categoryId } }).then(() => {
-            setSimilarTarget({ budgetLineId, categoryId, categoryName });
+        onCreated={(budgetLineId, categoryName) => {
+          void updateTx.mutateAsync({ id: tx.id, data: { budgetLineId } }).then(() => {
+            setSimilarTarget({ budgetLineId, categoryName });
           });
         }}
       />
@@ -150,8 +145,7 @@ export function TransactionListItem({ transaction: tx, category, account, onEdit
 
     {similarTarget && (
       <SimilarTransactionsDialog
-        sourceTransaction={{ ...tx, budgetLineId: similarTarget.budgetLineId, categoryId: similarTarget.categoryId }}
-        categoryId={similarTarget.categoryId}
+        sourceTransaction={{ ...tx, budgetLineId: similarTarget.budgetLineId }}
         budgetLineId={similarTarget.budgetLineId}
         appliedLabel={similarTarget.categoryName}
         onClose={() => setSimilarTarget(null)}

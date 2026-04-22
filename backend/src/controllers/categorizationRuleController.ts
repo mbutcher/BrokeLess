@@ -9,14 +9,12 @@ class CategorizationRuleController {
   });
 
   create = asyncHandler(async (req: Request, res: Response) => {
-    const { payee, categoryId, budgetLineId } = req.body as {
+    const { payee, budgetLineId } = req.body as {
       payee: string;
-      categoryId?: string | null;
       budgetLineId?: string | null;
     };
     const rule = await categorizationRuleService.createRule(req.user!.id, {
       payee,
-      categoryId,
       budgetLineId,
     });
     res.status(201).json({ status: 'success', data: { rule } });

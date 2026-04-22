@@ -91,7 +91,6 @@ export interface Transaction {
   payee: string | null;
   notes: string | null;
   date: string;
-  categoryId: string | null;
   budgetLineId: string | null;
   isTransfer: boolean;
   isCleared: boolean;
@@ -107,7 +106,6 @@ export interface CreateTransactionInput {
   payee?: string;
   notes?: string;
   date: string;
-  categoryId?: string;
   tags?: string[];
 }
 
@@ -118,7 +116,6 @@ export interface UpdateTransactionInput {
   payee?: string | null;
   notes?: string | null;
   date?: string;
-  categoryId?: string | null;
   budgetLineId?: string | null;
   isCleared?: boolean;
   tags?: string[];
@@ -126,7 +123,6 @@ export interface UpdateTransactionInput {
 
 export interface TransactionFilters {
   accountId?: string;
-  categoryId?: string;
   budgetLineId?: string;
   startDate?: string;
   endDate?: string;
@@ -252,7 +248,7 @@ export interface CreateBudgetLineInput {
   categoryId: string;
   subcategoryId?: string | null;
   accountId?: string | null;
-  amount: number;
+  amount?: number | null;
   frequency: BudgetLineFrequency;
   frequencyInterval?: number | null;
   dayOfMonth1?: number | null;
@@ -557,7 +553,6 @@ export interface CategorizationRule {
   id: string;
   userId: string;
   payee: string;
-  categoryId: string | null;
   budgetLineId: string | null;
   createdAt: string;
   updatedAt: string;

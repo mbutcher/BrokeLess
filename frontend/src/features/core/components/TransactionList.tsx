@@ -1,7 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTransactions } from '../hooks/useTransactions';
-import { useCategories } from '../hooks/useCategories';
 import { useAccounts } from '../hooks/useAccounts';
 import { TransactionListItem } from './TransactionListItem';
 import type { Transaction, TransactionFilters } from '../types';
@@ -15,10 +14,8 @@ interface TransactionListProps {
 export function TransactionList({ filters, onEdit, onPageChange }: TransactionListProps) {
   const { t } = useTranslation();
   const { data, isLoading, error } = useTransactions(filters);
-  const { data: categories = [] } = useCategories();
   const { data: accounts = [] } = useAccounts();
 
-  const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c]));
   const accountMap = Object.fromEntries(accounts.map((a) => [a.id, a]));
 
   if (isLoading) {
@@ -51,7 +48,6 @@ export function TransactionList({ filters, onEdit, onPageChange }: TransactionLi
         <TransactionListItem
           key={tx.id}
           transaction={tx}
-          category={tx.categoryId ? (categoryMap[tx.categoryId] ?? null) : null}
           account={accountMap[tx.accountId]}
           onEdit={onEdit}
         />

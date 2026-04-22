@@ -57,7 +57,6 @@ export const transactionApi = {
 
   bulkCategorize: (data: {
     transactionIds: string[];
-    categoryId?: string | null;
     budgetLineId?: string | null;
   }) => apiClient.post<ApiResponse<{ updated: number }>>('/transactions/bulk-categorize', data),
 };

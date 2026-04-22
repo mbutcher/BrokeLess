@@ -20,7 +20,6 @@ function rowToTransaction(row: Record<string, unknown>): Transaction {
     payee: (row['payee'] as string | null) ?? null,
     notes: (row['notes'] as string | null) ?? null,
     date: new Date(row['date'] as string),
-    categoryId: (row['category_id'] as string | null) ?? null,
     budgetLineId: (row['budget_line_id'] as string | null) ?? null,
     isTransfer: Boolean(row['is_transfer']),
     isCleared: Boolean(row['is_cleared']),
@@ -58,7 +57,6 @@ class TransactionRepository {
     let query = this.db('transactions').where('transactions.user_id', userId);
 
     if (filters.accountId) query = query.where('account_id', filters.accountId);
-    if (filters.categoryId) query = query.where('category_id', filters.categoryId);
     if (filters.startDate) query = query.where('date', '>=', filters.startDate);
     if (filters.endDate) query = query.where('date', '<=', filters.endDate);
     if (filters.isTransfer !== undefined) query = query.where('is_transfer', filters.isTransfer);
@@ -105,7 +103,6 @@ class TransactionRepository {
       payee: data.payee ?? null,
       notes: data.notes ?? null,
       date: data.date,
-      category_id: data.categoryId ?? null,
       simplefin_transaction_id: data.simplefinTransactionId ?? null,
     });
     const row: unknown = await db('transactions').where({ id }).first();
@@ -167,7 +164,6 @@ class TransactionRepository {
     if (data.payee !== undefined) updates['payee'] = data.payee;
     if (data.notes !== undefined) updates['notes'] = data.notes;
     if (data.date !== undefined) updates['date'] = data.date;
-    if (data.categoryId !== undefined) updates['category_id'] = data.categoryId;
     if (data.budgetLineId !== undefined) updates['budget_line_id'] = data.budgetLineId;
     if (data.isCleared !== undefined) updates['is_cleared'] = data.isCleared;
 
@@ -179,27 +175,14 @@ class TransactionRepository {
     return row ? rowToTransaction(row as Record<string, unknown>) : null;
   }
 
-  /** Bulk-reassigns all transactions from one category to another for a user. Returns affected count. */
-  async reassignCategory(
-    userId: string,
-    fromCategoryId: string,
-    toCategoryId: string | null
-  ): Promise<number> {
-    return this.db('transactions')
-      .where({ user_id: userId, category_id: fromCategoryId })
-      .update({ category_id: toCategoryId, updated_at: new Date().toISOString() });
-  }
-
-  /** Bulk-update categoryId and/or budgetLineId on a set of transactions. */
+  /** Bulk-update budgetLineId on a set of transactions. Returns affected count. */
   async bulkCategorize(
     userId: string,
     transactionIds: string[],
-    categoryId: string | null | undefined,
     budgetLineId: string | null | undefined
   ): Promise<number> {
     if (transactionIds.length === 0) return 0;
     const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
-    if (categoryId !== undefined) update['category_id'] = categoryId;
     if (budgetLineId !== undefined) update['budget_line_id'] = budgetLineId;
     return this.db('transactions')
       .where('user_id', userId)
