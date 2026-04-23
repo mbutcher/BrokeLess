@@ -35,15 +35,6 @@ function rowToBudgetLine(row: Record<string, unknown>): BudgetLine {
   };
 }
 
-/**
- * Spending actuals for a set of category IDs within a date window.
- * Excludes transfers. Used by budgetLineService to compute BudgetViewLine.actualAmount.
- */
-export interface CategoryActuals {
-  categoryId: string;
-  actualAmount: number; // always positive
-}
-
 class BudgetLineRepository {
   private get db() {
     return getDatabase();
@@ -168,94 +159,24 @@ class BudgetLineRepository {
   }
 
   /**
-   * Returns spending actuals for a list of category IDs (and their subcategory IDs)
-   * within a date window. Excludes transfers and income transactions.
-   *
-   * Adapts the aggregation logic from budgetRepository.getBudgetProgress().
-   */
-  async getActuals(
-    userId: string,
-    categoryIds: string[],
-    start: string,
-    end: string
-  ): Promise<CategoryActuals[]> {
-    if (categoryIds.length === 0) return [];
-
-    const rows = await this.db('transactions')
-      .whereIn('category_id', categoryIds)
-      .andWhere('user_id', userId)
-      .andWhere('is_transfer', false)
-      .andWhere('amount', '<', 0)
-      .andWhereBetween('date', [start, end])
-      .groupBy('category_id')
-      .select('category_id', this.db.raw('SUM(ABS(amount)) as actual_amount'));
-
-    return rows.map((row: Record<string, unknown>) => ({
-      categoryId: row['category_id'] as string,
-      actualAmount: Number(row['actual_amount']),
-    }));
-  }
-
-  /**
-   * Returns income actuals for a list of category IDs within a date window.
-   * Excludes transfers; sums positive amounts.
-   */
-  async getIncomeActuals(
-    userId: string,
-    categoryIds: string[],
-    start: string,
-    end: string
-  ): Promise<CategoryActuals[]> {
-    if (categoryIds.length === 0) return [];
-
-    const rows = await this.db('transactions')
-      .whereIn('category_id', categoryIds)
-      .andWhere('user_id', userId)
-      .andWhere('is_transfer', false)
-      .andWhere('amount', '>', 0)
-      .andWhereBetween('date', [start, end])
-      .groupBy('category_id')
-      .select('category_id', this.db.raw('SUM(amount) as actual_amount'));
-
-    return rows.map((row: Record<string, unknown>) => ({
-      categoryId: row['category_id'] as string,
-      actualAmount: Number(row['actual_amount']),
-    }));
-  }
-
-  /**
-   * Returns the actual amount for a single budget line.
-   * Counts transactions where budget_line_id matches, OR where category_id matches and
-   * budget_line_id is null (uncategorized-to-line fallback). Income lines use positive amounts.
+   * Returns the actual amount for a single budget line, matched by budget_line_id.
+   * Income lines use positive amounts; expense lines use absolute negative amounts.
    */
   async getActualsForLine(
     userId: string,
     budgetLineId: string,
-    effectiveCategoryId: string | null,
     start: string,
     end: string,
     isIncome: boolean
   ): Promise<number> {
     const db = this.db;
-    let query = db('transactions')
+    const rows = await db('transactions')
       .where('user_id', userId)
       .where('is_transfer', false)
       .where('amount', isIncome ? '>' : '<', 0)
       .whereBetween('date', [start, end])
+      .where('budget_line_id', budgetLineId)
       .select(db.raw(isIncome ? 'SUM(amount) as total' : 'SUM(ABS(amount)) as total'));
-
-    if (effectiveCategoryId) {
-      query = query.where(
-        db.raw('(budget_line_id = ? OR (budget_line_id IS NULL AND category_id = ?))', [
-          budgetLineId,
-          effectiveCategoryId,
-        ])
-      );
-    } else {
-      query = query.where('budget_line_id', budgetLineId);
-    }
-
-    const rows = await query;
 
     return Number((rows[0] as Record<string, unknown> | undefined)?.['total'] ?? 0);
   }

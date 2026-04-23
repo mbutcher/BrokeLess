@@ -355,7 +355,6 @@ class BudgetLineService {
               await budgetLineRepository.getActualsForLine(
                 userId,
                 line.id,
-                line.subcategoryId ?? line.categoryId,
                 start,
                 end,
                 line.classification === 'income'
@@ -453,9 +452,17 @@ class BudgetLineService {
       (l) => l.classification === 'expense' && l.flexibility === 'flexible'
     );
 
-    const categoryIds = flexibleExpenseLines.map((l) => l.subcategoryId ?? l.categoryId);
-    const actuals = await budgetLineRepository.getActuals(userId, categoryIds, start, end);
-    const actualsMap = new Map(actuals.map((a) => [a.categoryId, a.actualAmount]));
+    const actualsPerLine = new Map(
+      await Promise.all(
+        flexibleExpenseLines.map(
+          async (line) =>
+            [
+              line.id,
+              await budgetLineRepository.getActualsForLine(userId, line.id, start, end, false),
+            ] as [string, number]
+        )
+      )
+    );
 
     const rolloverLines: RolloverLine[] = flexibleExpenseLines.map((line) => {
       const anchor = new Date(line.anchorDate + 'T00:00:00');
@@ -467,8 +474,7 @@ class BudgetLineService {
         windowStart,
         windowEnd
       );
-      const effectiveCategoryId = line.subcategoryId ?? line.categoryId;
-      const actual = actualsMap.get(effectiveCategoryId) ?? 0;
+      const actual = actualsPerLine.get(line.id) ?? 0;
       return {
         budgetLineId: line.id,
         name: line.name,
